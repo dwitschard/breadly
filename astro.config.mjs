@@ -8,5 +8,5 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
 	site: 'https://dwitschard.github.io/breadly/',
 	integrations: [mdx(), sitemap()],
-	base: '.',
+	base: '/breadly/',
 });
