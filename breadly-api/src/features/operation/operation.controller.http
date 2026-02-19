@@ -1,0 +1,8 @@
+### GET request to example server
+GET localhost:3000/ping
+
+### Application Error
+GET localhost:3000/application-error
+
+### Generic Error
+GET localhost:3000/generic-error

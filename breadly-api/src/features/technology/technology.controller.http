@@ -1,0 +1,13 @@
+### GET request to example server
+GET http://localhost:3000/technologies
+
+### GET Technology By Id
+GET http://localhost:3000/technologies/69957475d2a8668289ba067e
+
+### Persist new Technology
+POST http://localhost:3000/technologies
+Content-Type: application/json
+
+{
+  "name": "Angular"
+}
