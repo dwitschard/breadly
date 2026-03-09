@@ -29,6 +29,9 @@ yarn-error.log
 !.vscode/mcp.json
 .history/*
 
+# Generated API client (regenerate with: npm run generate-api)
+/src/app/generated
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/
