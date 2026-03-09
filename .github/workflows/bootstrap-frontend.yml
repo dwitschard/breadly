@@ -26,12 +26,6 @@
 name: Bootstrap Frontend
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "infrastructure/aws/frontend/bootstrap/**"
-
   workflow_dispatch:
     inputs:
       environment:

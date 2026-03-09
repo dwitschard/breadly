@@ -22,8 +22,6 @@ name: Build Frontend
 
 on:
   push:
-    branches:
-      - main
     paths:
       - "breadly-frontend/**"
 
