@@ -1,0 +1,10 @@
+### GET Recipes
+GET http://localhost:3000/recipe
+
+### Persist new recipe
+POST http://localhost:3000/recipe
+Content-Type: application/json
+
+{
+  "name": "Sauerteigbrot v1"
+}

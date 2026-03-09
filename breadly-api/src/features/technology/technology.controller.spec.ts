@@ -5,8 +5,8 @@ import { ApplicationDatabase } from '../../database/application-database';
 const request = supertest(app);
 
 afterEach(async () => {
-  const { TechnologyCollection } = ApplicationDatabase.getCollections();
-  await TechnologyCollection.deleteMany({});
+  const { RecipeCollection } = ApplicationDatabase.getCollections();
+  await RecipeCollection.deleteMany({});
 });
 
 describe('GET /technologies', () => {
@@ -19,8 +19,8 @@ describe('GET /technologies', () => {
 
   it('responds with one technology', async () => {
     const mockTechnology = { name: 'ArgoCD' };
-    const { TechnologyCollection } = ApplicationDatabase.getCollections();
-    await TechnologyCollection.insertOne(mockTechnology);
+    const { RecipeCollection } = ApplicationDatabase.getCollections();
+    await RecipeCollection.insertOne(mockTechnology);
 
     const response = await request.get('/technologies').expect(200);
 
