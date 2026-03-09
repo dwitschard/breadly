@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx --env-file=./src/.env src/server.ts",
     "test": "jest --no-cache  --detectOpenHandles",
-    "lint": "eslint ."
+    "lint": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
