@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "npm run generate-api && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "generate-api": "openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript-angular -o src/app/generated/api --additional-properties=ngVersion=21,supportsES6=true,withInterfaces=true",
