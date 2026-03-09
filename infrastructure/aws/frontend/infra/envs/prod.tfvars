@@ -28,7 +28,7 @@ project_name = "breadly"
 # Path to the Angular build output relative to the Terraform working directory.
 # The CI pipeline overrides this with the absolute artifact path via
 # TF_VAR_frontend_dist_path. This default covers local runs from the repo root.
-frontend_dist_path = "../../../breadly-frontend/dist/breadly-frontend/browser"
+frontend_dist_path = "../../../../breadly-frontend/dist/breadly-frontend/browser"
 
 # SPA routing: both index and error point to index.html.
 index_document = "index.html"

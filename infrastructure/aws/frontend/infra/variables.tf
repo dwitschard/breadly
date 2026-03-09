@@ -81,7 +81,7 @@ variable "frontend_dist_path" {
     recommended for CI/CD pipelines.
   EOT
   type        = string
-  default     = "../../../breadly-frontend/dist/breadly-frontend/browser"
+  default     = "../../../../breadly-frontend/dist/breadly-frontend/browser"
 }
 
 variable "index_document" {

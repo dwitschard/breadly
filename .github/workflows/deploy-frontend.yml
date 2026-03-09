@@ -257,12 +257,10 @@ jobs:
           # they never appear in the var-file committed to source control.
           TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-          # frontend_dist_path is overridden here to use the absolute path of
-          # the artifact downloaded by the runner in this workspace.
-          TF_VAR_frontend_dist_path: ${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser
         run: |
           terraform plan \
-            -var-file="envs/${{ env.TARGET_ENV }}.tfvars"
+            -var-file="envs/${{ env.TARGET_ENV }}.tfvars" \
+            -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
 
       # ── Terraform apply ────────────────────────────────────────────────────
       # Applies the plan. -auto-approve is intentional in CI: the human
@@ -273,11 +271,11 @@ jobs:
         env:
           TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-          TF_VAR_frontend_dist_path: ${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser
         run: |
           terraform apply \
             -auto-approve \
-            -var-file="envs/${{ env.TARGET_ENV }}.tfvars"
+            -var-file="envs/${{ env.TARGET_ENV }}.tfvars" \
+            -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
 
       # ── Print deployment URL ───────────────────────────────────────────────
       - name: Print website URL
