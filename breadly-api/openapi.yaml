@@ -1,0 +1,212 @@
+openapi: 3.1.0
+info:
+  title: Breadly API
+  description: REST API contract for the Breadly application
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+paths:
+  /recipe:
+    get:
+      operationId: getRecipes
+      summary: List all recipes
+      tags:
+        - Recipes
+      responses:
+        '200':
+          description: A list of recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+
+    post:
+      operationId: createRecipe
+      summary: Create a new recipe
+      tags:
+        - Recipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecipeDto'
+      responses:
+        '201':
+          description: Recipe created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recipe/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: MongoDB ObjectId of the recipe
+        schema:
+          type: string
+
+    get:
+      operationId: getRecipeById
+      summary: Get a recipe by ID
+      tags:
+        - Recipes
+      responses:
+        '200':
+          description: The recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      operationId: replaceRecipe
+      summary: Fully replace a recipe
+      tags:
+        - Recipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecipeDto'
+      responses:
+        '200':
+          description: Recipe replaced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      operationId: updateRecipe
+      summary: Partially update a recipe
+      tags:
+        - Recipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchRecipeDto'
+      responses:
+        '200':
+          description: Recipe updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      operationId: deleteRecipe
+      summary: Delete a recipe
+      tags:
+        - Recipes
+      responses:
+        '204':
+          description: Recipe deleted successfully
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Recipe:
+      type: object
+      required:
+        - name
+      properties:
+        _id:
+          type: string
+          description: MongoDB ObjectId (string representation)
+          readOnly: true
+        name:
+          type: string
+          description: Name of the recipe
+          minLength: 1
+
+    CreateRecipeDto:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the recipe
+          minLength: 1
+
+    UpdateRecipeDto:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the recipe
+          minLength: 1
+
+    PatchRecipeDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the recipe
+          minLength: 1
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Human-readable error description
+        statusCode:
+          type: integer
+          description: HTTP status code
