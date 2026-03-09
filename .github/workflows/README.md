@@ -1,41 +1,67 @@
 # GitHub Actions — Workflows
 
-## `bootstrap-frontend.yml`
+## `build-frontend.yml`
 
-Provisions the S3 state bucket and DynamoDB lock table for the target environment.
-Must complete successfully before the first frontend deployment can run.
+Lints, tests, and produces a production build artifact for the Angular frontend.
+No AWS credentials or infrastructure involvement.
 
 ### Triggers
 
 | Trigger | Behaviour |
 |---|---|
-| Push to `main` (paths: `infrastructure/aws/frontend/bootstrap/**`) | Runs automatically; on success triggers `deploy-frontend.yml` via `workflow_run` |
-| `workflow_dispatch` → select `dev` or `prod` | Manual run for a specific environment |
+| Push to `main` (paths: `breadly-frontend/**`) | Runs automatically on every frontend source change |
+| `workflow_dispatch` | Manual re-run of CI on demand |
 
 ### What it does
 
-1. Authenticates to AWS via OIDC
-2. `terraform init` (local backend — no remote state needed)
-3. `terraform plan -detailed-exitcode` — exit `0` skips apply (already exists), exit `2` applies
-4. `terraform apply` — only runs if plan found changes
+1. `npm ci`
+2. `npm run lint` (Prettier)
+3. `npm run test:ci` (Vitest, no-watch)
+4. `npm run build` (generates API client, then `ng build`)
+5. Uploads `dist/breadly-frontend/browser/` as artifact `frontend-dist` (retained 1 day)
 
 ---
 
 ## `deploy-frontend.yml`
 
-Lints, tests, builds, and deploys the Angular frontend to S3 via Terraform.
+Bootstraps the Terraform remote state backend (if needed) and deploys the Angular
+SPA to S3 via Terraform. `build` and `bootstrap` run in parallel; `deploy` waits
+for both to succeed.
 
 ### Triggers
 
 | Trigger | Target environment |
 |---|---|
-| Push to `main` (paths: `breadly-frontend/**`, `infrastructure/aws/frontend/infra/**`) | `dev` (automatic) |
+| Push to `main` (paths: `breadly-frontend/**`, `infrastructure/aws/frontend/bootstrap/**`, `infrastructure/aws/frontend/infra/**`) | `dev` (automatic) |
 | `workflow_dispatch` → select `dev` or `prod` | chosen environment (manual) |
-| `workflow_run: Bootstrap Frontend completed` on `main` | `dev` (automatic, only if Bootstrap Frontend succeeded) |
 
 Production is **never deployed automatically**. Use the GitHub Actions UI "Run workflow" button and select `prod`.
 
-The `workflow_run` trigger chains the two workflows: when a push only touches bootstrap files, `bootstrap-frontend.yml` runs first and triggers `deploy-frontend.yml` once it completes successfully. If Bootstrap Frontend fails, the deploy is skipped.
+### Jobs
+
+```
+build ──┐
+        ├──▶ deploy
+bootstrap─┘
+```
+
+**`build`** — same steps as `build-frontend.yml`: lint → test → build → upload artifact.
+
+**`bootstrap`** — runs with `environment: <TARGET_ENV>` so GitHub injects the correct
+scoped secrets and variables. Uses a local Terraform backend (no remote state needed):
+1. Authenticates to AWS via OIDC
+2. `terraform init` (local backend)
+3. `terraform plan -detailed-exitcode` — exit `0` skips apply (already exists), exit `2` applies
+4. `terraform apply` — only runs if plan found changes
+
+**`deploy`** — needs both `build` and `bootstrap`:
+1. Downloads the `frontend-dist` artifact
+2. Authenticates to AWS via OIDC
+3. Derives state bucket / lock table names from `AWS_ACCOUNT_ID` and `TARGET_ENV`
+4. `terraform init` (remote S3 backend)
+5. `terraform workspace select -or-create <env>`
+6. `terraform plan` + `terraform apply -auto-approve`
+7. Prints the deployed website URL
 
 ---
 
@@ -57,7 +83,7 @@ Navigate to **Settings → Secrets and variables → Actions** to add the follow
 | `AWS_REGION` | AWS region for all resources and the Terraform state bucket. | `eu-central-1` |
 
 > `TF_STATE_BUCKET` and `TF_LOCK_TABLE` are not required as GitHub Variables.
-> Both workflows derive their names from `AWS_ACCOUNT_ID` and the target environment
+> The deploy workflow derives their names from `AWS_ACCOUNT_ID` and the target environment
 > using the same convention as the bootstrap Terraform root:
 > `<account_id>-breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
 
@@ -65,13 +91,16 @@ Navigate to **Settings → Secrets and variables → Actions** to add the follow
 
 ### One-time setup per environment
 
-The S3 state bucket and DynamoDB lock table are created by the **bootstrap Terraform root**,
-which the `bootstrap-frontend.yml` workflow runs automatically. For the very first deployment,
-trigger it manually:
+The S3 state bucket and DynamoDB lock table are created by the **bootstrap** job inside
+`deploy-frontend.yml`. For the very first deployment, trigger it manually:
+
+```
+GitHub UI: Actions → Deploy Frontend → Run workflow → select environment
+```
+
+Or locally:
 
 ```bash
-# Via GitHub UI: Actions → Bootstrap Frontend → Run workflow → select environment
-# Or locally:
 cd infrastructure/aws/frontend/bootstrap
 terraform init
 terraform apply \

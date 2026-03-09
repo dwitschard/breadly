@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# build-frontend.yml
+#
+# CI pipeline for the Breadly frontend.
+# Lints, tests, and produces a production build artifact.
+# No AWS credentials or infrastructure involvement.
+#
+# Jobs
+# ────
+#   build   Lint → test → production build → upload dist/ artifact
+#
+# Triggers
+# ────────
+#   push to main          Runs automatically when frontend source files change.
+#
+#   workflow_dispatch     Manual trigger for re-running CI on demand.
+#
+# Required GitHub Secrets / Variables — none (no AWS access required).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Build Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "breadly-frontend/**"
+
+  workflow_dispatch:
+
+# Prevent concurrent builds on the same ref.
+# A new run will cancel any in-progress run targeting the same ref.
+concurrency:
+  group: build-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: breadly-frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: breadly-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: breadly-frontend/dist/breadly-frontend/browser/
+          retention-days: 1
