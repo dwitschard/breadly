@@ -10,6 +10,6 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(),
-    provideApi('http://localhost:3000'),
+    provideApi('/api'),
   ],
 };
