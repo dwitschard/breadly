@@ -1,0 +1,219 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# deploy-frontend.yml
+#
+# CI/CD pipeline for the Breadly frontend.
+#
+# Jobs
+# ────
+#   build   Lint → test → production build → upload dist/ artifact
+#   deploy  Download artifact → configure AWS via OIDC → Terraform init/apply
+#
+# The deploy job only runs after build succeeds.
+#
+# Triggers
+# ────────
+#   push to main          Automatically deploys to the `dev` environment.
+#                         Only fires when frontend source or infrastructure
+#                         files actually changed.
+#
+#   workflow_dispatch     Manual trigger from the GitHub Actions UI.
+#                         Exposes an `environment` input (dev | prod) so an
+#                         operator can choose the deployment target.
+#                         Use this for all production deployments.
+#
+# Required GitHub Secrets — see .github/workflows/README.md for full details.
+#   AWS_OIDC_ROLE_ARN   AWS_REGION   AWS_ACCOUNT_ID
+#   TF_STATE_BUCKET     TF_LOCK_TABLE
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Re-run when frontend source code changes.
+      - "breadly-frontend/**"
+      # Re-run when Terraform configuration changes.
+      - "infrastructure/aws/frontend/**"
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment to deploy to"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
+
+# Prevent concurrent deployments to the same environment.
+# A new run will cancel any in-progress run targeting the same ref.
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Job 1: build ─────────────────────────────────────────────────────────────
+  # Lint, test, and produce a production build.
+  # The compiled dist/ folder is uploaded as a workflow artifact so the deploy
+  # job can download it without re-running the build.
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: breadly-frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: breadly-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Lint ────────────────────────────────────────────────────────────────
+      # Runs Prettier in check-only mode. Exits non-zero if any file is
+      # formatted incorrectly, blocking the rest of the pipeline.
+      - name: Lint
+        run: npm run lint
+
+      # ── Test ─────────────────────────────────────────────────────────────────
+      # Runs the full test suite once (no watch mode) using the Angular CLI
+      # unit-test builder backed by Vitest.
+      - name: Test
+        run: npm run test:ci
+
+      # ── Build ─────────────────────────────────────────────────────────────────
+      # `ng build` defaults to the `production` configuration (outputHashing,
+      # budgets, tree-shaking, minification). See angular.json for details.
+      - name: Build (production)
+        run: npm run build
+
+      # Upload the compiled output so the deploy job can access it.
+      # The artifact is retained for 1 day — enough for the deploy job and
+      # any immediate rollback, without accumulating unnecessary storage.
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: breadly-frontend/dist/breadly-frontend/browser/
+          retention-days: 1
+
+  # ── Job 2: deploy ─────────────────────────────────────────────────────────────
+  # Resolves the target environment, authenticates to AWS via OIDC, then runs
+  # Terraform to sync the compiled frontend into the correct S3 bucket.
+  deploy:
+    name: Deploy (${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+    needs: build
+
+    # GitHub Environments can be configured with protection rules (e.g. required
+    # reviewers for prod). The environment name is resolved dynamically so the
+    # same job definition covers both dev and prod.
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+
+    # Resolve the target environment once and make it available to all steps.
+    env:
+      TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+      TF_WORKING_DIR: infrastructure/aws/frontend
+
+    # Required for the OIDC token that configure-aws-credentials exchanges for
+    # short-lived AWS credentials. No static keys are stored anywhere.
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          # Restore into the same relative path that Terraform expects.
+          path: breadly-frontend/dist/breadly-frontend/browser/
+
+      # ── AWS authentication via OIDC ──────────────────────────────────────────
+      # Exchanges the GitHub OIDC token for short-lived AWS credentials by
+      # assuming the configured IAM role. No AWS_ACCESS_KEY_ID or
+      # AWS_SECRET_ACCESS_KEY secrets are required.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: github-deploy-frontend-${{ env.TARGET_ENV }}
+
+      # ── Terraform setup ──────────────────────────────────────────────────────
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+
+      # ── Terraform init ───────────────────────────────────────────────────────
+      # Backend configuration is injected entirely from GitHub Secrets so that
+      # no account-specific values are hardcoded in backend.tf.
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
+            -backend-config="region=${{ secrets.AWS_REGION }}"
+
+      # ── Terraform workspace ──────────────────────────────────────────────────
+      # Selects (or creates) the workspace that matches the target environment.
+      # Workspaces isolate state and produce workspace-scoped resource names
+      # (e.g. breadly-dev-frontend vs breadly-prod-frontend).
+      - name: Select Terraform workspace
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform workspace select -or-create ${{ env.TARGET_ENV }}
+
+      # ── Terraform plan ───────────────────────────────────────────────────────
+      # Generates an execution plan and prints it to the log. The plan is not
+      # saved to a file here; apply re-computes it. This step is kept separate
+      # so that a plan failure is clearly distinguishable from an apply failure.
+      - name: Terraform plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          # Sensitive variables are passed as TF_VAR_* environment variables so
+          # they never appear in the var-file committed to source control.
+          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+          # frontend_dist_path is overridden here to use the absolute path of
+          # the artifact downloaded by the runner in this workspace.
+          TF_VAR_frontend_dist_path: ${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser
+        run: |
+          terraform plan \
+            -var-file="envs/${{ env.TARGET_ENV }}.tfvars"
+
+      # ── Terraform apply ──────────────────────────────────────────────────────
+      # Applies the plan. -auto-approve is intentional in CI: the human
+      # approval gate is the workflow_dispatch trigger for prod, or the PR/push
+      # review process for dev.
+      - name: Terraform apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+          TF_VAR_frontend_dist_path: ${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser
+        run: |
+          terraform apply \
+            -auto-approve \
+            -var-file="envs/${{ env.TARGET_ENV }}.tfvars"
+
+      # ── Print deployment URL ─────────────────────────────────────────────────
+      - name: Print website URL
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform output -raw frontend_website_url
