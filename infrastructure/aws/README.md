@@ -9,81 +9,31 @@ All resources are managed via [Terraform](https://www.terraform.io/) and organis
 
 ```
 aws/
-├── main.sh                          # Entry point — fill in config, then run up/down
-├── frontend-stack.sh                # Worker — accepts args, builds frontend, runs Terraform
-├── frontend/                        # Root module — frontend deployment
-│   ├── providers.tf                 # AWS provider + account guard + optional role assumption
-│   ├── backend.tf                   # S3 remote state + DynamoDB locking
-│   ├── variables.tf                 # All input variables
-│   ├── main.tf                      # Calls modules, workspace-aware resource naming
-│   ├── outputs.tf                   # Prints website URL and bucket details after apply
-│   ├── envs/
-│   │   ├── dev.tfvars               # Dev environment variable values
-│   │   └── prod.tfvars              # Prod environment variable values
-│   └── modules/
-│       └── s3_static_site/          # Reusable module: public S3 static website
-│           ├── variables.tf
-│           ├── main.tf
-│           └── outputs.tf
+├── frontend/
+│   ├── bootstrap/                   # Run once per environment to create state bucket + lock table
+│   │   ├── providers.tf             # AWS provider (no role assumption)
+│   │   ├── backend.tf               # Local backend (state stored on disk, gitignored)
+│   │   ├── variables.tf             # aws_account_id, aws_region, project_name, environment
+│   │   ├── main.tf                  # S3 state bucket, DynamoDB lock table
+│   │   └── outputs.tf               # Prints bucket/table names and next steps
+│   └── infra/                       # Root module — frontend deployment (runs on every deploy)
+│       ├── providers.tf             # AWS provider + account guard + optional role assumption
+│       ├── backend.tf               # S3 remote state + DynamoDB locking
+│       ├── variables.tf             # All input variables
+│       ├── main.tf                  # Calls modules, workspace-aware resource naming
+│       ├── outputs.tf               # Prints website URL and bucket details after apply
+│       ├── envs/
+│       │   ├── dev.tfvars           # Dev environment variable values
+│       │   └── prod.tfvars          # Prod environment variable values
+│       └── modules/
+│           └── s3_static_site/      # Reusable module: public S3 static website
+│               ├── variables.tf
+│               ├── main.tf
+│               └── outputs.tf
 ```
 
 ---
 
-## Local usage (test scripts)
-
-`main.sh` is the single entry point for running the stack locally.
-Fill in the configuration block at the top of the file, then use one command to deploy or destroy.
-
-### 1. Configure
-
-Open `infrastructure/aws/main.sh` and fill in the configuration block:
-
-```bash
-AWS_ACCOUNT_ID="123456789012"
-AWS_REGION="eu-central-1"
-TF_STATE_BUCKET="123456789012-breadly-tfstate"
-TF_LOCK_TABLE="breadly-tfstate-lock"
-AWS_ROLE_ARN=""          # optional — leave empty to use ambient credentials
-```
-
-Uncomment one of the AWS credential options in the same block (named profile or explicit keys).
-
-### 2. Deploy the dev stack
-
-```bash
-./infrastructure/aws/main.sh        # "up" is the default
-./infrastructure/aws/main.sh up     # explicit
-```
-
-What this does:
-1. Validates all arguments and checks that `terraform`, `aws`, and `npm` are on `PATH`
-2. Runs `npm ci && npm run build` in `breadly-frontend/` (production mode)
-3. `terraform init` with backend config injected from your values
-4. `terraform workspace select -or-create dev`
-5. `terraform apply -auto-approve -var-file=envs/dev.tfvars`
-6. Prints the live website URL
-
-### 3. Tear down the dev stack
-
-```bash
-./infrastructure/aws/main.sh down
-```
-
-Prompts for confirmation before destroying. The `dev` workspace uses `force_destroy = true` so the S3 bucket is emptied automatically.
-
-### How the two scripts relate
-
-```
-main.sh  ──(config values as arguments)──▶  frontend-stack.sh
-```
-
-`main.sh` owns all configuration. `frontend-stack.sh` is a pure worker — it accepts everything as positional arguments and contains no hardcoded values. You can call `frontend-stack.sh` directly from other scripts or pipelines by passing values in the same argument order:
-
-```bash
-./frontend-stack.sh <up|down> <account_id> <region> <state_bucket> <lock_table> <role_arn>
-```
-
----
 
 ## Prerequisites
 
@@ -110,42 +60,59 @@ export AWS_SESSION_TOKEN=...        # if using temporary credentials
 
 ## One-time bootstrap
 
-The S3 state bucket and DynamoDB lock table must exist **before** running `terraform init`.
-They are intentionally managed outside this configuration to avoid a chicken-and-egg problem.
+The S3 state bucket and DynamoDB lock table are managed by the `frontend/bootstrap/` Terraform root.
+Run this **once per environment per AWS account** before the first frontend deployment.
 
-Create them once (replace the placeholder values):
+Bootstrap creates:
+
+| Resource | Name pattern | Purpose |
+|---|---|---|
+| S3 bucket | `<account_id>-<project>-<env>-tfstate` | Stores Terraform remote state |
+| DynamoDB table | `<project>-<env>-tfstate-lock` | Terraform state locking |
+
+### Run bootstrap
 
 ```bash
-ACCOUNT_ID="123456789012"
-REGION="eu-central-1"
-STATE_BUCKET="${ACCOUNT_ID}-breadly-tfstate"
-LOCK_TABLE="breadly-tfstate-lock"
+cd infrastructure/aws/frontend/bootstrap
 
-# State bucket
-aws s3api create-bucket \
-  --bucket "$STATE_BUCKET" \
-  --region "$REGION" \
-  --create-bucket-configuration LocationConstraint="$REGION"
+terraform init
 
-# Enable versioning so state history is preserved
-aws s3api put-bucket-versioning \
-  --bucket "$STATE_BUCKET" \
-  --versioning-configuration Status=Enabled
+# For dev:
+terraform apply \
+  -var="aws_account_id=123456789012" \
+  -var="aws_region=eu-central-1"    \
+  -var="environment=dev"
 
-# Enable server-side encryption
-aws s3api put-bucket-encryption \
-  --bucket "$STATE_BUCKET" \
-  --server-side-encryption-configuration \
-  '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
-
-# DynamoDB lock table (LockID is the required partition key name)
-aws dynamodb create-table \
-  --table-name "$LOCK_TABLE" \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region "$REGION"
+# For prod:
+terraform apply \
+  -var="aws_account_id=123456789012" \
+  -var="aws_region=eu-central-1"    \
+  -var="environment=prod"
 ```
+
+Credentials used here must have permission to create S3 buckets and DynamoDB tables.
+
+### Store the outputs as GitHub repository settings
+
+After each `terraform apply` completes, the output block prints all required values.
+The deploy workflow derives the state bucket and lock table names automatically from
+`AWS_ACCOUNT_ID` and the environment, so only the following need to be stored in GitHub:
+
+```
+Settings → Secrets and variables → Actions → Variables:
+  AWS_REGION       = eu-central-1
+
+Settings → Secrets and variables → Actions → Secrets:
+  AWS_ACCOUNT_ID   = 123456789012
+  AWS_OIDC_ROLE_ARN = <ARN of your IAM role for GitHub Actions OIDC>
+```
+
+### Bootstrap state file
+
+The bootstrap root uses a **local backend** — its state file is stored at
+`infrastructure/aws/frontend/bootstrap/terraform.tfstate` and is covered by `.gitignore`.
+Back it up somewhere safe (a personal S3 bucket or a password manager) so you
+can manage bootstrap resources later (e.g. adding a new environment).
 
 ---
 
@@ -180,7 +147,7 @@ The provider will assume this role before making any AWS API call.
 
 ## Deployment workflow
 
-All commands are run from `infrastructure/aws/frontend/`.
+All commands are run from `infrastructure/aws/frontend/infra/`.
 
 ### 1. Build the Angular frontend
 
@@ -194,7 +161,7 @@ npm run build
 ### 2. Initialise Terraform
 
 ```bash
-cd infrastructure/aws/frontend
+cd infrastructure/aws/frontend/infra
 
 terraform init \
   -backend-config="bucket=123456789012-breadly-tfstate" \
@@ -252,7 +219,7 @@ Only modified files are re-uploaded — no full re-sync is needed.
 cd breadly-frontend && npm run build
 
 # 2. Apply (Terraform will upload only changed files)
-cd infrastructure/aws/frontend
+cd infrastructure/aws/frontend/infra
 terraform apply -var-file=envs/dev.tfvars
 ```
 
@@ -275,7 +242,7 @@ terraform destroy -var-file=envs/prod.tfvars
 
 ## Inputs reference
 
-### Root module (`frontend/`)
+### Root module (`frontend/infra/`)
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
@@ -319,7 +286,7 @@ terraform destroy -var-file=envs/prod.tfvars
 Add new modules alongside `s3_static_site/` in the `modules/` directory, then call them from `main.tf`:
 
 ```hcl
-# infrastructure/aws/frontend/main.tf
+# infrastructure/aws/frontend/infra/main.tf
 
 module "api_ecs" {
   source = "./modules/ecs_service"
@@ -340,7 +307,7 @@ Deployments are driven by the GitHub Actions workflow at
 
 | Event | Environment deployed |
 |---|---|
-| Push to `main` (paths: `breadly-frontend/**` or `infrastructure/aws/frontend/**`) | `dev` — automatic |
+| Push to `main` (paths: `breadly-frontend/**` or `infrastructure/aws/frontend/infra/**`) | `dev` — automatic |
 | `workflow_dispatch` → select `dev` or `prod` | chosen environment — manual |
 
 **Production is never deployed automatically.** To deploy to prod:
@@ -348,16 +315,18 @@ Deployments are driven by the GitHub Actions workflow at
 2. Go to **Actions → Deploy Frontend**.
 3. Click **Run workflow**, select `prod`, and confirm.
 
-### How secrets map to Terraform
+### How secrets and variables map to Terraform
 
-All sensitive values are passed into Terraform as `TF_VAR_*` environment variables sourced from GitHub Secrets — nothing is hardcoded in any committed file.
+All sensitive values are passed into Terraform as `TF_VAR_*` environment variables sourced from GitHub Secrets — nothing is hardcoded in any committed file. Non-sensitive values are stored as GitHub Variables.
 
-| GitHub Secret | Terraform variable / flag | Purpose |
-|---|---|---|
-| `AWS_OIDC_ROLE_ARN` | `configure-aws-credentials` action | OIDC role the runner assumes |
-| `AWS_REGION` | `TF_VAR_aws_region` + `-backend-config="region=..."` | AWS region |
-| `AWS_ACCOUNT_ID` | `TF_VAR_aws_account_id` | Provider account guard |
-| `TF_STATE_BUCKET` | `-backend-config="bucket=..."` | S3 state bucket |
-| `TF_LOCK_TABLE` | `-backend-config="dynamodb_table=..."` | DynamoDB lock table |
+| GitHub setting | Type | Terraform variable / flag | Purpose |
+|---|---|---|---|
+| `AWS_OIDC_ROLE_ARN` | Secret | `configure-aws-credentials` action | OIDC role the runner assumes (created manually in IAM) |
+| `AWS_ACCOUNT_ID` | Secret | `TF_VAR_aws_account_id` | Provider account guard |
+| `AWS_REGION` | Variable | `TF_VAR_aws_region` + `-backend-config="region=..."` | AWS region |
+
+> `TF_STATE_BUCKET` and `TF_LOCK_TABLE` are not required as GitHub Variables.
+> Both workflows derive their names from `AWS_ACCOUNT_ID` and the target environment
+> using the convention: `<account_id>-breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
 
 For setup instructions (OIDC trust policy, IAM permissions, adding secrets to the repository) see **`.github/workflows/README.md`**.

@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .gitignore (root)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Terraform ─────────────────────────────────────────────────────────────────
+
+# Local .terraform directories (downloaded providers and modules)
+**/.terraform/
+
+# Terraform lock files are committed for reproducible provider versions,
+# but ignore any that end up in unexpected locations
+# (the canonical lock file at infrastructure/aws/frontend/infra/.terraform.lock.hcl
+#  and infrastructure/aws/frontend/bootstrap/.terraform.lock.hcl ARE committed)
+
+# Terraform plan files — may contain sensitive values
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Bootstrap local state — environment-specific, must not be committed.
+# Back this file up externally (e.g. a personal S3 bucket or 1Password)
+# after the first apply so you can manage bootstrap resources later.
+infrastructure/aws/frontend/bootstrap/terraform.tfstate
+infrastructure/aws/frontend/bootstrap/terraform.tfstate.backup
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo

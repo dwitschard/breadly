@@ -1,5 +1,26 @@
 # GitHub Actions — Workflows
 
+## `bootstrap-frontend.yml`
+
+Provisions the S3 state bucket and DynamoDB lock table for the target environment.
+Must complete successfully before the first frontend deployment can run.
+
+### Triggers
+
+| Trigger | Behaviour |
+|---|---|
+| Push to `main` (paths: `infrastructure/aws/frontend/bootstrap/**`) | Runs automatically; on success triggers `deploy-frontend.yml` via `workflow_run` |
+| `workflow_dispatch` → select `dev` or `prod` | Manual run for a specific environment |
+
+### What it does
+
+1. Authenticates to AWS via OIDC
+2. `terraform init` (local backend — no remote state needed)
+3. `terraform plan -detailed-exitcode` — exit `0` skips apply (already exists), exit `2` applies
+4. `terraform apply` — only runs if plan found changes
+
+---
+
 ## `deploy-frontend.yml`
 
 Lints, tests, builds, and deploys the Angular frontend to S3 via Terraform.
@@ -8,95 +29,58 @@ Lints, tests, builds, and deploys the Angular frontend to S3 via Terraform.
 
 | Trigger | Target environment |
 |---|---|
-| Push to `main` (paths: `breadly-frontend/**`, `infrastructure/aws/frontend/**`) | `dev` (automatic) |
+| Push to `main` (paths: `breadly-frontend/**`, `infrastructure/aws/frontend/infra/**`) | `dev` (automatic) |
 | `workflow_dispatch` → select `dev` or `prod` | chosen environment (manual) |
+| `workflow_run: Bootstrap Frontend completed` on `main` | `dev` (automatic, only if Bootstrap Frontend succeeded) |
 
 Production is **never deployed automatically**. Use the GitHub Actions UI "Run workflow" button and select `prod`.
 
+The `workflow_run` trigger chains the two workflows: when a push only touches bootstrap files, `bootstrap-frontend.yml` runs first and triggers `deploy-frontend.yml` once it completes successfully. If Bootstrap Frontend fails, the deploy is skipped.
+
 ---
 
-### Required GitHub Secrets
+### Required GitHub Secrets and Variables
 
-Navigate to **Settings → Secrets and variables → Actions → New repository secret** to add each of the following.
+Navigate to **Settings → Secrets and variables → Actions** to add the following.
+
+#### Secrets (encrypted — not visible in logs)
 
 | Secret | Description | Example |
 |---|---|---|
-| `AWS_OIDC_ROLE_ARN` | ARN of the IAM role the runner assumes via OIDC. Must have a trust policy allowing `token.actions.githubusercontent.com`. | `arn:aws:iam::123456789012:role/BreadlyGitHubDeploy` |
-| `AWS_REGION` | AWS region for all resources and the Terraform state bucket. | `eu-central-1` |
+| `AWS_OIDC_ROLE_ARN` | ARN of the IAM role the runner assumes via OIDC. | `arn:aws:iam::123456789012:role/breadly-github-deploy` |
 | `AWS_ACCOUNT_ID` | 12-digit AWS account ID. Used by the Terraform provider as a deployment guard. | `123456789012` |
-| `TF_STATE_BUCKET` | Name of the S3 bucket that stores Terraform state. Must exist before the first run — see the bootstrap section in `infrastructure/aws/README.md`. | `123456789012-breadly-tfstate` |
-| `TF_LOCK_TABLE` | Name of the DynamoDB table used for Terraform state locking. Must exist before the first run. | `breadly-tfstate-lock` |
+
+#### Variables (plaintext — visible in logs)
+
+| Variable | Description | Example |
+|---|---|---|
+| `AWS_REGION` | AWS region for all resources and the Terraform state bucket. | `eu-central-1` |
+
+> `TF_STATE_BUCKET` and `TF_LOCK_TABLE` are not required as GitHub Variables.
+> Both workflows derive their names from `AWS_ACCOUNT_ID` and the target environment
+> using the same convention as the bootstrap Terraform root:
+> `<account_id>-breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
 
 ---
 
-### One-time OIDC IAM setup
+### One-time setup per environment
 
-Create an IAM role in your AWS account with the following trust policy. Replace `YOUR_GITHUB_ORG` and `YOUR_REPO_NAME` with the actual values.
+The S3 state bucket and DynamoDB lock table are created by the **bootstrap Terraform root**,
+which the `bootstrap-frontend.yml` workflow runs automatically. For the very first deployment,
+trigger it manually:
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
-        "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_ORG/YOUR_REPO_NAME:*"
-        }
-      }
-    }
-  ]
-}
+```bash
+# Via GitHub UI: Actions → Bootstrap Frontend → Run workflow → select environment
+# Or locally:
+cd infrastructure/aws/frontend/bootstrap
+terraform init
+terraform apply \
+  -var="aws_account_id=123456789012" \
+  -var="aws_region=eu-central-1"    \
+  -var="environment=dev"
 ```
 
-The role needs the following IAM permissions at minimum:
+Repeat for `prod` when needed.
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "S3StateBucket",
-      "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
-      "Resource": [
-        "arn:aws:s3:::YOUR_STATE_BUCKET",
-        "arn:aws:s3:::YOUR_STATE_BUCKET/*"
-      ]
-    },
-    {
-      "Sid": "DynamoDBLock",
-      "Effect": "Allow",
-      "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"],
-      "Resource": "arn:aws:dynamodb:*:*:table/YOUR_LOCK_TABLE"
-    },
-    {
-      "Sid": "FrontendBucket",
-      "Effect": "Allow",
-      "Action": [
-        "s3:CreateBucket", "s3:DeleteBucket",
-        "s3:GetBucketPolicy", "s3:PutBucketPolicy", "s3:DeleteBucketPolicy",
-        "s3:GetBucketWebsite", "s3:PutBucketWebsite", "s3:DeleteBucketWebsite",
-        "s3:GetBucketVersioning", "s3:PutBucketVersioning",
-        "s3:GetBucketPublicAccessBlock", "s3:PutBucketPublicAccessBlock",
-        "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration",
-        "s3:ListBucket",
-        "s3:GetObject", "s3:PutObject", "s3:DeleteObject"
-      ],
-      "Resource": [
-        "arn:aws:s3:::breadly-*-frontend",
-        "arn:aws:s3:::breadly-*-frontend/*"
-      ]
-    }
-  ]
-}
-```
-
-Once the role is created, store its ARN as the `AWS_OIDC_ROLE_ARN` secret.
+The OIDC identity provider and IAM deployment role must be created separately in IAM
+and stored as `AWS_OIDC_ROLE_ARN`. See `infrastructure/aws/README.md` for full details.

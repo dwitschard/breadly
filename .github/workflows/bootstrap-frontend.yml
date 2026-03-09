@@ -1,0 +1,115 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# bootstrap-frontend.yml
+#
+# Ensures the S3 state bucket and DynamoDB lock table exist for the target
+# environment before any frontend deployment runs.
+#
+# Jobs
+# ────
+#   bootstrap  terraform init → plan (-detailed-exitcode) → apply if needed
+#
+# Triggers
+# ────────
+#   push to main          Runs automatically when bootstrap Terraform files
+#                         change. On completion, the Deploy Frontend workflow
+#                         is triggered via workflow_run.
+#
+#   workflow_dispatch     Manual trigger with environment selector (dev | prod).
+#                         Use this to provision a new environment or to re-run
+#                         bootstrap after a manual change.
+#
+# Required GitHub Secrets / Variables — see .github/workflows/README.md.
+#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
+#   Variables: AWS_REGION
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Bootstrap Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "infrastructure/aws/frontend/bootstrap/**"
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment to bootstrap"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
+
+# Prevent concurrent bootstrap runs against the same ref.
+concurrency:
+  group: bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bootstrap:
+    name: Bootstrap Frontend (${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+
+    env:
+      TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+      TF_BOOTSTRAP_DIR: infrastructure/aws/frontend/bootstrap
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── AWS authentication via OIDC ──────────────────────────────────────────
+      # Exchanges the GitHub OIDC token for short-lived AWS credentials by
+      # assuming the configured IAM role. No static keys are stored anywhere.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: github-bootstrap-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+
+      # Bootstrap uses a local backend — no remote state bucket is needed yet.
+      - name: Terraform init
+        working-directory: ${{ env.TF_BOOTSTRAP_DIR }}
+        run: terraform init
+
+      # Plan with -detailed-exitcode:
+      #   exit 0 → no changes (resources already exist) → skip apply
+      #   exit 1 → error
+      #   exit 2 → changes pending → apply
+      - name: Terraform plan
+        id: plan
+        working-directory: ${{ env.TF_BOOTSTRAP_DIR }}
+        env:
+          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_environment: ${{ env.TARGET_ENV }}
+        run: |
+          set +e
+          terraform plan \
+            -detailed-exitcode \
+            -out=bootstrap.tfplan
+          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+
+      # Only runs when plan detected changes (exit code 2).
+      # Exit code 0 means resources already exist — apply is skipped.
+      - name: Terraform apply
+        if: steps.plan.outputs.exitcode == '2'
+        working-directory: ${{ env.TF_BOOTSTRAP_DIR }}
+        env:
+          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_environment: ${{ env.TARGET_ENV }}
+        run: terraform apply -auto-approve bootstrap.tfplan

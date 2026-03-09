@@ -21,9 +21,16 @@
 #                         operator can choose the deployment target.
 #                         Use this for all production deployments.
 #
-# Required GitHub Secrets — see .github/workflows/README.md for full details.
-#   AWS_OIDC_ROLE_ARN   AWS_REGION   AWS_ACCOUNT_ID
-#   TF_STATE_BUCKET     TF_LOCK_TABLE
+#   workflow_run          Fires automatically when the Bootstrap Frontend workflow
+#                         completes successfully on main. This ensures that
+#                         a bootstrap-only push (e.g. adding a new environment)
+#                         is followed by a frontend deploy once the state
+#                         bucket and lock table are ready.
+#                         Only runs when the Bootstrap workflow succeeded.
+#
+# Required GitHub Secrets / Variables — see .github/workflows/README.md.
+#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
+#   Variables: AWS_REGION
 # ─────────────────────────────────────────────────────────────────────────────
 
 name: Deploy Frontend
@@ -33,10 +40,8 @@ on:
     branches:
       - main
     paths:
-      # Re-run when frontend source code changes.
       - "breadly-frontend/**"
-      # Re-run when Terraform configuration changes.
-      - "infrastructure/aws/frontend/**"
+      - "infrastructure/aws/frontend/infra/**"
 
   workflow_dispatch:
     inputs:
@@ -49,6 +54,13 @@ on:
           - dev
           - prod
 
+  # Triggered automatically when the Bootstrap Frontend workflow finishes on main.
+  # The deploy job guards against running when bootstrap failed.
+  workflow_run:
+    workflows: ["Bootstrap Frontend"]
+    types: [completed]
+    branches: [main]
+
 # Prevent concurrent deployments to the same environment.
 # A new run will cancel any in-progress run targeting the same ref.
 concurrency:
@@ -56,10 +68,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Job 1: build ─────────────────────────────────────────────────────────────
-  # Lint, test, and produce a production build.
-  # The compiled dist/ folder is uploaded as a workflow artifact so the deploy
-  # job can download it without re-running the build.
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -81,27 +89,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ── Lint ────────────────────────────────────────────────────────────────
-      # Runs Prettier in check-only mode. Exits non-zero if any file is
-      # formatted incorrectly, blocking the rest of the pipeline.
       - name: Lint
         run: npm run lint
 
-      # ── Test ─────────────────────────────────────────────────────────────────
-      # Runs the full test suite once (no watch mode) using the Angular CLI
-      # unit-test builder backed by Vitest.
       - name: Test
         run: npm run test:ci
 
-      # ── Build ─────────────────────────────────────────────────────────────────
-      # `ng build` defaults to the `production` configuration (outputHashing,
-      # budgets, tree-shaking, minification). See angular.json for details.
-      - name: Build (production)
+      - name: Build
         run: npm run build
 
-      # Upload the compiled output so the deploy job can access it.
-      # The artifact is retained for 1 day — enough for the deploy job and
-      # any immediate rollback, without accumulating unnecessary storage.
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -109,23 +105,22 @@ jobs:
           path: breadly-frontend/dist/breadly-frontend/browser/
           retention-days: 1
 
-  # ── Job 2: deploy ─────────────────────────────────────────────────────────────
-  # Resolves the target environment, authenticates to AWS via OIDC, then runs
-  # Terraform to sync the compiled frontend into the correct S3 bucket.
   deploy:
     name: Deploy (${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }})
     runs-on: ubuntu-latest
     needs: build
 
-    # GitHub Environments can be configured with protection rules (e.g. required
-    # reviewers for prod). The environment name is resolved dynamically so the
-    # same job definition covers both dev and prod.
+    # When triggered by workflow_run, only proceed if Bootstrap succeeded.
+    # For push and workflow_dispatch triggers this condition is always true.
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
 
-    # Resolve the target environment once and make it available to all steps.
     env:
       TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
-      TF_WORKING_DIR: infrastructure/aws/frontend
+      TF_WORKING_DIR: infrastructure/aws/frontend/infra
 
     # Required for the OIDC token that configure-aws-credentials exchanges for
     # short-lived AWS credentials. No static keys are stored anywhere.
@@ -155,21 +150,30 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-session-name: github-deploy-frontend-${{ env.TARGET_ENV }}
 
-      # ── Terraform setup ──────────────────────────────────────────────────────
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.6"
 
-      # ── Terraform init ───────────────────────────────────────────────────────
-      # Backend configuration is injected entirely from GitHub Secrets so that
-      # no account-specific values are hardcoded in backend.tf.
+      # ── Derive backend resource names ────────────────────────────────────────
+      # The state bucket and lock table names follow the same convention as the
+      # bootstrap root: <account_id>-breadly-<env>-tfstate and
+      # breadly-<env>-tfstate-lock. Deriving them here avoids a dependency on
+      # GitHub Variables being set before the first bootstrap run.
+      - name: Derive backend config
+        id: backend
+        env:
+          ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        run: |
+          echo "state_bucket=${ACCOUNT_ID}-breadly-${{ env.TARGET_ENV }}-tfstate" >> "$GITHUB_OUTPUT"
+          echo "lock_table=breadly-${{ env.TARGET_ENV }}-tfstate-lock"            >> "$GITHUB_OUTPUT"
+
       - name: Terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform init \
-            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
-            -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}" \
+            -backend-config="bucket=${{ steps.backend.outputs.state_bucket }}" \
+            -backend-config="dynamodb_table=${{ steps.backend.outputs.lock_table }}" \
             -backend-config="region=${{ vars.AWS_REGION }}"
 
       # ── Terraform workspace ──────────────────────────────────────────────────
