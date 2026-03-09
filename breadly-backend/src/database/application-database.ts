@@ -1,8 +1,11 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { DbCollectionType, MONGODB_CONFIG } from './mongodb.config';
+import { RecipeDocument } from '../features/recipe/recipe.document';
+import { TechnologyDocument } from '../features/technology/technology.document';
 
 export type DbCollections = {
-  [K in DbCollectionType]: Collection;
+  RecipeCollection: Collection<RecipeDocument>;
+  TechnologyCollection: Collection<TechnologyDocument>;
 };
 
 export class ApplicationDatabase {
@@ -17,20 +20,15 @@ export class ApplicationDatabase {
   }
 
   static getCollections(): DbCollections {
-    if (!ApplicationDatabase.db) {
+    const db = ApplicationDatabase.db;
+    if (!db) {
       throw new Error('DB not initialized');
     }
 
-    const collections : DbCollections = {} as DbCollections;
-
-    for (const key in MONGODB_CONFIG.COLLECTIONS) {
-      const collectionKey = key as DbCollectionType;
-      const collectionString = MONGODB_CONFIG.COLLECTIONS[collectionKey];
-      collections[collectionKey] =
-        ApplicationDatabase.db.collection(collectionString);
-    }
-
-    return collections;
+    return {
+      RecipeCollection: db.collection<RecipeDocument>(MONGODB_CONFIG.COLLECTIONS.RecipeCollection),
+      TechnologyCollection: db.collection<TechnologyDocument>(MONGODB_CONFIG.COLLECTIONS.TechnologyCollection),
+    };
   }
 
   static async close(): Promise<void> {
@@ -42,3 +40,6 @@ export class ApplicationDatabase {
     }
   }
 }
+
+// Ensure DbCollections covers every key in DbCollectionType (compile-time check)
+type _AssertAllCollectionsCovered = DbCollections extends Record<DbCollectionType, Collection> ? true : never;

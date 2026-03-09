@@ -17,4 +17,4 @@ export const postTechnology = async (technology: Technology) => {
 };
 
 const getTechnologyCollection = () =>
-  ApplicationDatabase.getCollections().RecipeCollection;
+  ApplicationDatabase.getCollections().TechnologyCollection;
