@@ -95,11 +95,15 @@ runs:
         TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
         TF_VAR_aws_region: ${{ inputs.aws_region }}
       run: |
+        VAR_FILE=""
+        if [[ "${{ inputs.local_backend }}" != "true" ]]; then
+          VAR_FILE="-var-file=envs/${{ inputs.environment }}.tfvars"
+        fi
         set +e
         terraform plan \
           -detailed-exitcode \
           -out=tf.tfplan \
-          ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
+          $VAR_FILE \
           ${{ inputs.extra_tf_vars }}
         echo "exitcode=$?" >> "$GITHUB_OUTPUT"
 
