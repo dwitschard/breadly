@@ -1,22 +1,16 @@
-# ─────────────────────────────────────────────────────────────────────────────
 # build-frontend.yml
 #
 # CI pipeline for the Breadly frontend.
 # Lints, tests, and produces a production build artifact.
-# No AWS credentials or infrastructure involvement.
+# On main, also creates a GitHub Release with the dist zip attached.
 #
 # Jobs
-# ────
-#   build   Lint → test → production build → upload dist/ artifact
+#   build    Lint → test → build → upload dist artifact
+#   release  (main only) Create GitHub Release with dist.zip asset
 #
 # Triggers
-# ────────
-#   push to main          Runs automatically when frontend source files change.
-#
-#   workflow_dispatch     Manual trigger for re-running CI on demand.
-#
-# Required GitHub Secrets / Variables — none (no AWS access required).
-# ─────────────────────────────────────────────────────────────────────────────
+#   push              Runs when frontend source files change.
+#   workflow_dispatch Manual trigger for re-running CI on demand.
 
 name: Build Frontend
 
@@ -27,8 +21,6 @@ on:
 
   workflow_dispatch:
 
-# Prevent concurrent builds on the same ref.
-# A new run will cancel any in-progress run targeting the same ref.
 concurrency:
   group: build-frontend-${{ github.ref }}
   cancel-in-progress: true
@@ -70,3 +62,30 @@ jobs:
           name: frontend-dist
           path: breadly-frontend/dist/breadly-frontend/browser/
           retention-days: 1
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Zip dist
+        run: zip -r dist.zip dist/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create frontend-${{ github.sha }} dist.zip \
+            --title "frontend-${{ github.sha }}" \
+            --generate-notes
