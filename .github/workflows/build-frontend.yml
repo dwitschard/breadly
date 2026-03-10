@@ -17,9 +17,6 @@ name: Build Frontend
 
 on:
   push:
-  # Remove after testing again
-  #paths:
-  # - "breadly-frontend/**"
 
   workflow_dispatch:
 
