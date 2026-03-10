@@ -105,6 +105,7 @@ runs:
           -out=tf.tfplan \
           ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
           ${{ inputs.extra_tf_vars }}
+        echo "Terraform plan exit code: $?"
         echo "exitcode=$?" >> "$GITHUB_OUTPUT"
 
     - name: Terraform apply
