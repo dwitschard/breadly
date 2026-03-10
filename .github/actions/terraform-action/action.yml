@@ -40,6 +40,10 @@ runs:
     # `uses:` steps in local composite actions (uses: ./). Writing inputs to
     # $GITHUB_ENV first ensures they resolve correctly in the next step.
     - name: Export credentials to environment
+      env:
+        TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
+        TF_VAR_aws_region: ${{ inputs.aws_region }}
+        TF_VAR_environment: ${{ inputs.environment }}
       shell: bash
       run: |
         echo "TF_ACTION_ROLE_ARN=${{ inputs.aws_oidc_role_arn }}" >> "$GITHUB_ENV"
