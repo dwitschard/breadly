@@ -89,7 +89,7 @@ runs:
       id: plan
       shell: bash
       working-directory: ${{ inputs.working_dir }}
-      env:
+      #env:
         #TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
         #TF_VAR_aws_region: ${{ inputs.aws_region }}
       run: |
