@@ -71,7 +71,9 @@ jobs:
         run: gh release download ${{ env.RELEASE_TAG }} --pattern dist.zip
 
       - name: Unzip dist
-        run: unzip dist.zip -d breadly-frontend/dist/breadly-frontend/browser/
+        run: |
+          mkdir -p breadly-frontend/dist/breadly-frontend/browser/
+          unzip dist.zip -d breadly-frontend/dist/breadly-frontend/browser/
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
