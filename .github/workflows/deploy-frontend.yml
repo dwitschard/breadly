@@ -57,6 +57,7 @@ jobs:
   bootstrap:
     name: Bootstrap (${{ inputs.environment || 'dev' }})
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
     permissions:
       id-token: write
       contents: read
