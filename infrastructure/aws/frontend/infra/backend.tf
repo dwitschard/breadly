@@ -18,7 +18,7 @@
 # Terraform root) so that we avoid a chicken-and-egg problem.
 #
 # Recommended bucket name convention:
-#   <account-id>-<project>-tfstate
+#   <project>-tfstate
 # Recommended DynamoDB table name:
 #   <project>-tfstate-lock
 #
@@ -31,7 +31,7 @@
 #
 # Local development:
 #   terraform init \
-#     -backend-config="bucket=123456789012-breadly-tfstate" \
+#     -backend-config="bucket=breadly-tfstate" \
 #     -backend-config="dynamodb_table=breadly-tfstate-lock" \
 #     -backend-config="region=eu-central-1"
 # ─────────────────────────────────────────────────────────────────────────────

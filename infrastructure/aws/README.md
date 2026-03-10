@@ -67,7 +67,7 @@ Bootstrap creates:
 
 | Resource | Name pattern | Purpose |
 |---|---|---|
-| S3 bucket | `<account_id>-<project>-<env>-tfstate` | Stores Terraform remote state |
+| S3 bucket | `<project>-<env>-tfstate` | Stores Terraform remote state |
 | DynamoDB table | `<project>-<env>-tfstate-lock` | Terraform state locking |
 
 ### Run bootstrap
@@ -164,8 +164,8 @@ npm run build
 cd infrastructure/aws/frontend/infra
 
 terraform init \
-  -backend-config="bucket=123456789012-breadly-tfstate" \
-  -backend-config="dynamodb_table=breadly-tfstate-lock" \
+  -backend-config="bucket=breadly-dev-tfstate" \
+  -backend-config="dynamodb_table=breadly-dev-tfstate-lock" \
   -backend-config="region=eu-central-1"
 ```
 
@@ -327,6 +327,6 @@ All sensitive values are passed into Terraform as `TF_VAR_*` environment variabl
 
 > `TF_STATE_BUCKET` and `TF_LOCK_TABLE` are not required as GitHub Variables.
 > Both workflows derive their names from `AWS_ACCOUNT_ID` and the target environment
-> using the convention: `<account_id>-breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
+> using the convention: `breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
 
 For setup instructions (OIDC trust policy, IAM permissions, adding secrets to the repository) see **`.github/workflows/README.md`**.

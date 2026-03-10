@@ -85,7 +85,7 @@ Navigate to **Settings → Secrets and variables → Actions** to add the follow
 > `TF_STATE_BUCKET` and `TF_LOCK_TABLE` are not required as GitHub Variables.
 > The deploy workflow derives their names from `AWS_ACCOUNT_ID` and the target environment
 > using the same convention as the bootstrap Terraform root:
-> `<account_id>-breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
+> `breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
 
 ---
 

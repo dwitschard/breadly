@@ -25,7 +25,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 locals {
-  state_bucket_name = "${var.aws_account_id}-${var.project_name}-${var.environment}-tfstate"
+  state_bucket_name = "${var.project_name}-${var.environment}-tfstate"
   lock_table_name   = "${var.project_name}-${var.environment}-tfstate-lock"
 }
 
