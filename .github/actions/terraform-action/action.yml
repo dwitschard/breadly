@@ -43,7 +43,7 @@ runs:
         echo "TF_ACTION_AWS_REGION=${{ inputs.aws_region }}"       >> "$GITHUB_ENV"
         echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"   >> "$GITHUB_ENV"
         echo "TF_VAR_environment=${{ inputs.environment }}"        >> "$GITHUB_ENV"
-        echo "TF_VAR_aws_account_id:${{ inputs.aws_account_id }}"  >> "$GITHUB_ENV"        
+        echo "TF_VAR_aws_account_id=${{ inputs.aws_account_id }}"  >> "$GITHUB_ENV"        
 
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
