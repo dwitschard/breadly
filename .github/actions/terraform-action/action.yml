@@ -1,0 +1,95 @@
+name: Terraform Action
+description: >
+  Generic Terraform composite action: init → plan → apply (if changes detected).
+  AWS credentials are consumed from the calling job's environment
+  (AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID, AWS_REGION).
+
+inputs:
+  working_dir:
+    description: Path to the Terraform root module
+    required: true
+  environment:
+    description: Target environment (dev | prod)
+    required: true
+  session_name:
+    description: OIDC role session name
+    required: true
+  local_backend:
+    description: >
+      Use local backend (true for bootstrap roots).
+      When true, skips -backend-config flags, workspace selection, and var file.
+    required: false
+    default: "false"
+  extra_tf_vars:
+    description: Additional -var flags as a single string — skipped when empty
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-session-name: ${{ inputs.session_name }}
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "~1.6"
+        terraform_wrapper: false
+
+    # Local backend for bootstrap roots (no remote state bucket exists yet).
+    # Remote backend for all other roots — bucket and table are derived from
+    # the fixed convention: breadly-<env>-tfstate / breadly-<env>-tfstate-lock.
+    - name: Terraform init
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      run: |
+        if [[ "${{ inputs.local_backend }}" == "true" ]]; then
+          terraform init
+        else
+          terraform init \
+            -backend-config="bucket=breadly-${{ inputs.environment }}-tfstate" \
+            -backend-config="dynamodb_table=breadly-${{ inputs.environment }}-tfstate-lock" \
+            -backend-config="region=${{ env.AWS_REGION }}"
+        fi
+
+    # Workspaces isolate dev and prod state within the same backend.
+    # Skipped for bootstrap roots which use a local backend.
+    - name: Select Terraform workspace
+      if: inputs.local_backend != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      run: terraform workspace select -or-create ${{ inputs.environment }}
+
+    # -detailed-exitcode:
+    #   0 → no changes  → apply is skipped
+    #   1 → error
+    #   2 → changes pending → apply runs
+    - name: Terraform plan
+      id: plan
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      env:
+        TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+        TF_VAR_aws_region: ${{ env.AWS_REGION }}
+      run: |
+        set +e
+        terraform plan \
+          -detailed-exitcode \
+          -out=tf.tfplan \
+          ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
+          ${{ inputs.extra_tf_vars }}
+        echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Terraform apply
+      if: steps.plan.outputs.exitcode == '2'
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      env:
+        TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
+        TF_VAR_aws_region: ${{ env.AWS_REGION }}
+      run: terraform apply -auto-approve tf.tfplan

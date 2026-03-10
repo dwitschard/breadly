@@ -1,10 +1,11 @@
 # deploy-frontend.yml
 #
 # Deployment pipeline for the Breadly frontend.
-# Deploys the Angular SPA to S3 via Terraform.
+# Bootstraps the Terraform state backend, then deploys the Angular SPA to S3.
 #
 # Jobs
-#   deploy  Download release asset → configure AWS via OIDC → Terraform init/apply
+#   bootstrap  Ensures the S3 state bucket and DynamoDB lock table exist.
+#   deploy     Downloads the release asset and deploys via Terraform.
 #
 # Triggers
 #   workflow_call     Called by build-frontend.yml on main to auto-deploy to dev.
@@ -46,21 +47,39 @@ concurrency:
   group: deploy-frontend-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TARGET_ENV: ${{ inputs.environment || 'dev' }}
+  AWS_OIDC_ROLE_ARN: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
 jobs:
-  deploy:
-    name: Deploy (${{ inputs.environment || 'dev' }})
+  bootstrap:
+    name: Bootstrap (${{ inputs.environment || 'dev' }})
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'dev' }}
-
-    env:
-      TARGET_ENV: ${{ inputs.environment || 'dev' }}
-      RELEASE_TAG: ${{ inputs.release_tag }}
-      TF_WORKING_DIR: infrastructure/aws/frontend/infra
-
     permissions:
       id-token: write
       contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Bootstrap state backend
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/frontend/bootstrap
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-bootstrap-frontend-${{ env.TARGET_ENV }}
+          local_backend: "true"
+
+  deploy:
+    name: Deploy (${{ inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    environment: ${{ inputs.environment || 'dev' }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,66 +87,22 @@ jobs:
       - name: Download release asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release download ${{ env.RELEASE_TAG }} --pattern dist.zip
+        run: gh release download ${{ inputs.release_tag }} --pattern dist.zip
 
       - name: Unzip dist
         run: |
           mkdir -p breadly-frontend/dist/breadly-frontend/browser/
           unzip dist.zip -d breadly-frontend/dist/breadly-frontend/browser/
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy stack
+        uses: ./.github/actions/terraform-action
         with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-          role-session-name: github-deploy-frontend-${{ env.TARGET_ENV }}
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.6"
-
-      - name: Derive backend config
-        id: backend
-        env:
-          ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-        run: |
-          echo "state_bucket=${ACCOUNT_ID}-breadly-${{ env.TARGET_ENV }}-tfstate" >> "$GITHUB_OUTPUT"
-          echo "lock_table=breadly-${{ env.TARGET_ENV }}-tfstate-lock"            >> "$GITHUB_OUTPUT"
-
-      - name: Terraform init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ steps.backend.outputs.state_bucket }}" \
-            -backend-config="dynamodb_table=${{ steps.backend.outputs.lock_table }}" \
-            -backend-config="region=${{ vars.AWS_REGION }}"
-
-      - name: Select Terraform workspace
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform workspace select -or-create ${{ env.TARGET_ENV }}
-
-      - name: Terraform plan
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        env:
-          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-        run: |
-          terraform plan \
-            -var-file="envs/${{ env.TARGET_ENV }}.tfvars" \
-            -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
-
-      - name: Terraform apply
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        env:
-          TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-        run: |
-          terraform apply \
-            -auto-approve \
-            -var-file="envs/${{ env.TARGET_ENV }}.tfvars" \
+          working_dir: infrastructure/aws/frontend/infra
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-deploy-frontend-${{ env.TARGET_ENV }}
+          extra_tf_vars: >-
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
 
       - name: Print website URL
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: infrastructure/aws/frontend/infra
         run: terraform output -raw frontend_website_url
