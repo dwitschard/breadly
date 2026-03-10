@@ -31,8 +31,8 @@ runs:
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
-        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+        aws-region: ${{ vars.AWS_REGION }}
         role-session-name: ${{ inputs.session_name }}
 
     - name: Set up Terraform
@@ -54,7 +54,7 @@ runs:
           terraform init \
             -backend-config="bucket=breadly-${{ inputs.environment }}-tfstate" \
             -backend-config="dynamodb_table=breadly-${{ inputs.environment }}-tfstate-lock" \
-            -backend-config="region=${{ env.AWS_REGION }}"
+            -backend-config="region=${{ vars.AWS_REGION }}"
         fi
 
     # Workspaces isolate dev and prod state within the same backend.
@@ -74,8 +74,8 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       env:
-        TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
-        TF_VAR_aws_region: ${{ env.AWS_REGION }}
+        TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+        TF_VAR_aws_region: ${{ vars.AWS_REGION }}
       run: |
         set +e
         terraform plan \
@@ -90,6 +90,6 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       env:
-        TF_VAR_aws_account_id: ${{ env.AWS_ACCOUNT_ID }}
-        TF_VAR_aws_region: ${{ env.AWS_REGION }}
+        TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+        TF_VAR_aws_region: ${{ vars.AWS_REGION }}
       run: terraform apply -auto-approve tf.tfplan
