@@ -45,6 +45,7 @@ runs:
         echo "TF_ACTION_ROLE_ARN=${{ inputs.aws_oidc_role_arn }}" >> "$GITHUB_ENV"
         echo "TF_ACTION_AWS_REGION=${{ inputs.aws_region }}"       >> "$GITHUB_ENV"
         echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"   >> "$GITHUB_ENV"
+        echo "TF_VAR_environment=${{ inputs.environment }}"        >> "$GITHUB_ENV"
 
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
@@ -95,15 +96,11 @@ runs:
         TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
         TF_VAR_aws_region: ${{ inputs.aws_region }}
       run: |
-        VAR_FILE=""
-        if [[ "${{ inputs.local_backend }}" != "true" ]]; then
-          VAR_FILE="-var-file=envs/${{ inputs.environment }}.tfvars"
-        fi
         set +e
         terraform plan \
           -detailed-exitcode \
           -out=tf.tfplan \
-          $VAR_FILE \
+          ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
           ${{ inputs.extra_tf_vars }}
         echo "exitcode=$?" >> "$GITHUB_OUTPUT"
 
