@@ -40,14 +40,12 @@ runs:
     # `uses:` steps in local composite actions (uses: ./). Writing inputs to
     # $GITHUB_ENV first ensures they resolve correctly in the next step.
     - name: Export credentials to environment
-      env:
-        TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
-        TF_VAR_aws_region: ${{ inputs.aws_region }}
-        TF_VAR_environment: ${{ inputs.environment }}
       shell: bash
       run: |
         echo "TF_ACTION_ROLE_ARN=${{ inputs.aws_oidc_role_arn }}" >> "$GITHUB_ENV"
+        echo "TF_ACTION_AWS_REGION=${{ inputs.aws_region }}"       >> "$GITHUB_ENV"
         echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"   >> "$GITHUB_ENV"
+        echo "TF_VAR_environment=${{ inputs.environment }}"        >> "$GITHUB_ENV"
 
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
@@ -84,10 +82,6 @@ runs:
       if: inputs.local_backend != 'true'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
-      env:
-        TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
-        TF_VAR_aws_region: ${{ inputs.aws_region }}
-        TF_VAR_environment: ${{ inputs.environment }}
       run: terraform workspace select -or-create ${{ inputs.environment }}
 
     # -detailed-exitcode:
@@ -101,7 +95,6 @@ runs:
       env:
         TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
         TF_VAR_aws_region: ${{ inputs.aws_region }}
-        TF_VAR_environment: ${{ inputs.environment }}
       run: |
         set +e
         terraform plan \
@@ -109,7 +102,6 @@ runs:
           -out=tf.tfplan \
           ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
           ${{ inputs.extra_tf_vars }}
-        echo "Terraform plan exit code: $?"
         echo "exitcode=$?" >> "$GITHUB_OUTPUT"
 
     - name: Terraform apply
