@@ -36,12 +36,22 @@ inputs:
 runs:
   using: composite
   steps:
+    # Workaround: ${{ inputs.* }} is not evaluated in `with:` blocks of nested
+    # `uses:` steps in local composite actions (uses: ./). Writing inputs to
+    # $GITHUB_ENV first ensures they resolve correctly in the next step.
+    - name: Export credentials to environment
+      shell: bash
+      run: |
+        echo "TF_ACTION_ROLE_ARN=${{ inputs.aws_oidc_role_arn }}" >> "$GITHUB_ENV"
+        echo "TF_ACTION_AWS_REGION=${{ inputs.aws_region }}"       >> "$GITHUB_ENV"
+        echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"   >> "$GITHUB_ENV"
+
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: ${{ inputs.aws_oidc_role_arn }}
-        aws-region: ${{ inputs.aws_region }}
-        role-session-name: ${{ inputs.session_name }}
+        role-to-assume: ${{ env.TF_ACTION_ROLE_ARN }}
+        aws-region: ${{ env.TF_ACTION_AWS_REGION }}
+        role-session-name: ${{ env.TF_ACTION_SESSION_NAME }}
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v3

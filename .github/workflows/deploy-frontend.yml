@@ -49,6 +49,9 @@ concurrency:
 
 env:
   TARGET_ENV: ${{ inputs.environment || 'dev' }}
+  # Note: vars.* and secrets.* are intentionally not set here — they are not
+  # available at workflow-level env when called via workflow_call. They are
+  # passed directly at each composite action call site instead.
 
 jobs:
   bootstrap:
