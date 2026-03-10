@@ -17,8 +17,9 @@ name: Build Frontend
 
 on:
   push:
-    paths:
-      - "breadly-frontend/**"
+  # Remove after testing
+  #paths:
+  # - "breadly-frontend/**"
 
   workflow_dispatch:
 
@@ -99,7 +100,7 @@ jobs:
 
   deploy:
     name: Deploy Dev
-    needs: [build, release]
+    needs: [ build, release ]
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy-frontend.yml
     with:
