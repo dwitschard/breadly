@@ -10,7 +10,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
   imports: [ReactiveFormsModule],
   template: `
     <main class="max-w-2xl mx-auto p-6">
-      <h1 class="text-2xl font-bold mb-6">Recipes</h1>
+      <h1 class="text-2xl font-bold mb-6">Breadly Recipes</h1>
 
       <section aria-label="Add a new recipe" class="mb-8">
         <h2 class="text-lg font-semibold mb-3">Add Recipe</h2>
