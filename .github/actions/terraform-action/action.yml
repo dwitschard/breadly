@@ -97,8 +97,15 @@ runs:
           -out=tf.tfplan \
           ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
           ${{ inputs.extra_tf_vars }}
-        echo "Terraform Exitcode=$?"
-        echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+        TF_EXIT=$?
+        echo "exitcode=$TF_EXIT" >> "$GITHUB_OUTPUT"
+        echo "Terraform plan exit code: $TF_EXIT"
+
+    - name: Debug plan exitcode
+      shell: bash
+      run: |
+        echo "steps.plan.outputs.exitcode = ${{ steps.plan.outputs.exitcode }}"
+        echo "condition (exitcode == '2') = ${{ steps.plan.outputs.exitcode == '2' }}"
 
     - name: Terraform apply
       if: steps.plan.outputs.exitcode == '2'
