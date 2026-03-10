@@ -90,9 +90,6 @@ runs:
       id: plan
       shell: bash
       working-directory: ${{ inputs.working_dir }}
-      #env:
-        #TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
-        #TF_VAR_aws_region: ${{ inputs.aws_region }}
       run: |
         set +e
         terraform plan \
@@ -100,13 +97,11 @@ runs:
           -out=tf.tfplan \
           ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
           ${{ inputs.extra_tf_vars }}
+        echo "Terraform Exitcode=$?"
         echo "exitcode=$?" >> "$GITHUB_OUTPUT"
 
     - name: Terraform apply
       if: steps.plan.outputs.exitcode == '2'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
-      #env:
-        #TF_VAR_aws_account_id: ${{ inputs.aws_account_id }}
-        #TF_VAR_aws_region: ${{ inputs.aws_region }}
       run: terraform apply -auto-approve tf.tfplan
