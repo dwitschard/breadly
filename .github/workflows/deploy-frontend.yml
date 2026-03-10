@@ -49,9 +49,6 @@ concurrency:
 
 env:
   TARGET_ENV: ${{ inputs.environment || 'dev' }}
-  AWS_OIDC_ROLE_ARN: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
   bootstrap:
@@ -70,6 +67,9 @@ jobs:
           working_dir: infrastructure/aws/frontend/bootstrap
           environment: ${{ env.TARGET_ENV }}
           session_name: github-bootstrap-frontend-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
           local_backend: "true"
 
   deploy:
@@ -100,6 +100,9 @@ jobs:
           working_dir: infrastructure/aws/frontend/infra
           environment: ${{ env.TARGET_ENV }}
           session_name: github-deploy-frontend-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
           extra_tf_vars: >-
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
 
