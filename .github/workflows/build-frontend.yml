@@ -86,7 +86,8 @@ jobs:
           path: dist/
 
       - name: Zip dist
-        run: zip -r dist.zip dist/
+        working-directory: dist/
+        run: zip -r ../dist.zip .
 
       - name: Create GitHub Release
         env:
