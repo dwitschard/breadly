@@ -2,11 +2,12 @@
 #
 # CI pipeline for the Breadly frontend.
 # Lints, tests, and produces a production build artifact.
-# On main, also creates a GitHub Release with the dist zip attached.
+# On main, also creates a GitHub Release and triggers a dev deployment.
 #
 # Jobs
 #   build    Lint → test → build → upload dist artifact
 #   release  (main only) Create GitHub Release with dist.zip asset
+#   deploy   (main only) Call deploy-frontend.yml to deploy to dev
 #
 # Triggers
 #   push              Runs when frontend source files change.
@@ -29,6 +30,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.sha.outputs.short }}
     defaults:
       run:
         working-directory: breadly-frontend
@@ -36,6 +39,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -86,6 +93,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create frontend-${{ github.sha }} dist.zip \
-            --title "frontend-${{ github.sha }}" \
+          gh release create frontend-${{ needs.build.outputs.short_sha }} dist.zip \
+            --title "frontend-${{ needs.build.outputs.short_sha }}" \
             --generate-notes
+
+  deploy:
+    name: Deploy Dev
+    needs: [build, release]
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy-frontend.yml
+    with:
+      release_tag: frontend-${{ needs.build.outputs.short_sha }}
+      environment: dev
+    secrets: inherit
