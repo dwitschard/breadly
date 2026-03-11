@@ -8,6 +8,11 @@
 4. Authenticate Frontend using Cognito User Pool
 5. Possibility to only allow authenticated users to access backend
 
+## Bugs
+1. Build Open API Spec for FE and BE differently (if needed)
+   2. Development on BE and FE should be possible at the same time
+   3. Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
+
 ## Ideas
 1. Implement a custom ui for login / registration
 2. decide on ui library / elements

@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx --env-file=./src/.env src/server.ts",
-    "generate-api": "npm run generate --prefix ../breadly-api",
+    "generate-api": "openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript -o src/app/generated/api --additional-properties=",
     "build": "npm run generate-api && tsc",
     "test": "jest --no-cache --detectOpenHandles",
     "test:ci": "jest --no-cache --detectOpenHandles --forceExit",

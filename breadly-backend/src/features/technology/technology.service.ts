@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
-import { ApplicationDatabase } from '../../database/application-database.js';
-import { Technology } from './technology.types.js';
+import { ApplicationDatabase } from '../../database/application-database';
+import { Technology } from './technology.types';
 
 export const getAllTechnologies = async () => {
   return getTechnologyCollection().find({}).toArray();

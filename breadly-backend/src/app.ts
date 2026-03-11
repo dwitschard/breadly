@@ -1,8 +1,8 @@
 import express from 'express';
-import {globalErrorHandler} from './middleware/error.middleware.js';
-import {technologyController} from './features/technology/technology.controller.js';
-import {operationController} from './features/operation/operation.controller.js';
-import {recipeController} from "./features/recipe/recipe.controller.js";
+import {globalErrorHandler} from './middleware/error.middleware';
+import {technologyController} from './features/technology/technology.controller';
+import {operationController} from './features/operation/operation.controller';
+import {recipeController} from "./features/recipe/recipe.controller";
 
 const app = express();
 
