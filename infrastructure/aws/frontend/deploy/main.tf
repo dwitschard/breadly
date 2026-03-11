@@ -5,7 +5,7 @@ module "frontend" {
 
   bucket_name   = "${var.project_name}-${terraform.workspace}-frontend"
   dist_path     = var.frontend_dist_path
-  force_destroy = terraform.workspace != "prod"
+  force_destroy = true
 
   tags = {
     Component = "frontend"

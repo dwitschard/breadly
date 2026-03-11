@@ -10,8 +10,3 @@ Deploy setup:
 > echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"   >> "$GITHUB_ENV"
 > echo "TF_VAR_environment=${{ inputs.environment }}"        >> "$GITHUB_ENV"
 > echo "TF_VAR_aws_account_id=${{ inputs.aws_account_id }}"  >> "$GITHUB_ENV"
-
-Terraform Cleanup ([plan](docs/plans/terraform-cleanup.md))
-1. Fix path for static resources in terraform and github, lot of `../../../` which is not good and error prone.
-2. Rename `bootstrap-frontend` and `bootsrap` to setup-frontend-infrastructure or simliar
-3. Rename `aws/frontend/infra` to `deploy-frontend` or similar

@@ -1,14 +1,15 @@
 # deploy-frontend.yml
 #
 # Deployment pipeline for the Breadly frontend.
-# Deploys the Angular SPA to S3 via Terraform.
+# Deploys or tears down the Angular SPA on S3 via Terraform.
 #
 # Jobs
-#   deploy     Downloads the release asset and deploys via Terraform.
+#   deploy    Downloads the release asset and deploys via Terraform.
+#   teardown  Destroys all frontend infrastructure via terraform destroy.
 #
 # Triggers
 #   workflow_call     Called by build-frontend.yml on main to auto-deploy to dev.
-#   workflow_dispatch Manually deploy a specific release tag to dev or prod.
+#   workflow_dispatch Manually deploy or teardown a specific environment.
 #
 # Prerequisites
 #   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
@@ -27,14 +28,17 @@ on:
         required: true
         type: string
       environment:
+        required: true
+        type: string
+      action:
         required: false
-        default: dev
+        default: deploy
         type: string
 
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag to deploy (e.g. frontend-a1b2c3d)"
+        description: "Release tag to deploy (e.g. frontend-a1b2c3d) — required for deploy, ignored for teardown"
         required: true
         type: string
       environment:
@@ -45,6 +49,14 @@ on:
         options:
           - dev
           - prod
+      action:
+        description: "Action to perform"
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - teardown
 
 concurrency:
   group: deploy-frontend-${{ github.ref }}
@@ -55,7 +67,8 @@ env:
 
 jobs:
   deploy:
-    name: ${{ inputs.environment }}
+    name: Deploy (${{ inputs.environment }})
+    if: inputs.action == 'deploy'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -96,3 +109,32 @@ jobs:
       - name: Print website URL
         working-directory: infrastructure/aws/frontend/deploy
         run: terraform output -raw frontend_website_url
+
+  teardown:
+    name: Teardown (${{ inputs.environment }})
+    if: inputs.action == 'teardown'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/frontend/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-teardown-frontend-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+
+      - name: Terraform destroy
+        working-directory: infrastructure/aws/frontend/deploy
+        shell: bash
+        run: |
+          terraform workspace select ${{ env.TARGET_ENV }}
+          terraform destroy -auto-approve
