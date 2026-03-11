@@ -49,14 +49,6 @@ on:
         options:
           - dev
           - prod
-      action:
-        description: "Action to perform"
-        required: true
-        default: deploy
-        type: choice
-        options:
-          - deploy
-          - teardown
 
 concurrency:
   group: deploy-frontend-${{ github.ref }}
@@ -67,8 +59,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy (${{ inputs.environment }})
-    if: inputs.action == 'deploy'
+    name: Deploy ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -109,32 +100,3 @@ jobs:
       - name: Print website URL
         working-directory: infrastructure/aws/frontend/deploy
         run: terraform output -raw frontend_website_url
-
-  teardown:
-    name: Teardown (${{ inputs.environment }})
-    if: inputs.action == 'teardown'
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Terraform
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/frontend/deploy
-          environment: ${{ env.TARGET_ENV }}
-          session_name: github-teardown-frontend-${{ env.TARGET_ENV }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-
-      - name: Terraform destroy
-        working-directory: infrastructure/aws/frontend/deploy
-        shell: bash
-        run: |
-          terraform workspace select ${{ env.TARGET_ENV }}
-          terraform destroy -auto-approve

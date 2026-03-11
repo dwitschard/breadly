@@ -1,0 +1,50 @@
+
+name: Teardown Application
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - prod
+
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_ENV: ${{ inputs.environment }}
+
+jobs:
+  teardown-frontend:
+    name: Teardown Frontend (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/frontend/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-teardown-frontend-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+
+      - name: Terraform destroy
+        working-directory: infrastructure/aws/frontend/deploy
+        shell: bash
+        run: |
+          terraform workspace select ${{ env.TARGET_ENV }}
+          terraform destroy -auto-approve
