@@ -55,7 +55,7 @@ runs:
         role-session-name: ${{ env.TF_ACTION_SESSION_NAME }}
 
     - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v3
+      uses: hashicorp/setup-terraform@v4
       with:
         terraform_version: "~1.6"
         terraform_wrapper: false
