@@ -14,7 +14,7 @@ on:
           - prod
 
 concurrency:
-  group: deploy-frontend-${{ github.ref }}
+  group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -44,6 +44,34 @@ jobs:
 
       - name: Terraform destroy
         working-directory: infrastructure/aws/frontend/deploy
+        shell: bash
+        run: |
+          terraform workspace select ${{ env.TARGET_ENV }}
+          terraform destroy -auto-approve
+
+  teardown-backend:
+    name: Teardown Backend (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/backend/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-teardown-backend-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+
+      - name: Terraform destroy
+        working-directory: infrastructure/aws/backend/deploy
         shell: bash
         run: |
           terraform workspace select ${{ env.TARGET_ENV }}

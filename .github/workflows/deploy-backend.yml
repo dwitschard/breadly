@@ -1,15 +1,14 @@
-# deploy-frontend.yml
+# deploy-backend.yml
 #
-# Deployment pipeline for the Breadly frontend.
-# Deploys or tears down the Angular SPA on S3 via Terraform.
+# Deployment pipeline for the Breadly backend.
+# Deploys the Express API as an AWS Lambda function via Terraform.
 #
 # Jobs
 #   deploy    Downloads the release asset and deploys via Terraform.
-#   teardown  Destroys all frontend infrastructure via terraform destroy.
 #
 # Triggers
-#   workflow_call     Called by build-frontend.yml on main to auto-deploy to dev.
-#   workflow_dispatch Manually deploy or teardown a specific environment.
+#   workflow_call     Called by build-backend.yml on main to auto-deploy to dev.
+#   workflow_dispatch Manually deploy a specific release to a target environment.
 #
 # Prerequisites
 #   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
@@ -19,7 +18,7 @@
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
 #   Variables: AWS_REGION
 
-name: Deploy Frontend
+name: Deploy Backend
 
 on:
   workflow_call:
@@ -34,7 +33,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag to deploy (e.g. frontend-a1b2c3d)"
+        description: "Release tag to deploy (e.g. backend-a1b2c3d)"
         required: true
         type: string
       environment:
@@ -47,7 +46,7 @@ on:
           - prod
 
 concurrency:
-  group: deploy-frontend-${{ github.ref }}
+  group: deploy-backend-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -68,19 +67,14 @@ jobs:
       - name: Download release asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release download ${{ inputs.release_tag }} --pattern dist.zip
-
-      - name: Unzip dist
-        run: |
-          mkdir -p breadly-frontend/dist/browser/
-          unzip dist.zip -d breadly-frontend/dist/browser/
+        run: gh release download ${{ inputs.release_tag }} --pattern backend.zip
 
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
         with:
-          working_dir: infrastructure/aws/frontend/deploy
+          working_dir: infrastructure/aws/backend/deploy
           environment: ${{ env.TARGET_ENV }}
-          session_name: github-deploy-frontend-${{ env.TARGET_ENV }}
+          session_name: github-deploy-backend-${{ env.TARGET_ENV }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
@@ -88,11 +82,11 @@ jobs:
       - name: Deploy stack
         uses: ./.github/actions/terraform-action
         with:
-          working_dir: infrastructure/aws/frontend/deploy
+          working_dir: infrastructure/aws/backend/deploy
           environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
-            -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"
+            -var="dist_zip_path=${{ github.workspace }}/backend.zip"
 
-      - name: Print website URL
-        working-directory: infrastructure/aws/frontend/deploy
-        run: terraform output -raw frontend_website_url
+      - name: Print backend URL
+        working-directory: infrastructure/aws/backend/deploy
+        run: terraform output -raw backend_function_url

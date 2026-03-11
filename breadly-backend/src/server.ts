@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
-import { app } from './app';
-import { MONGODB_CONFIG } from './database/mongodb.config';
-import { ApplicationDatabase } from './database/application-database';
+import { app } from './app.js';
+import { MONGODB_CONFIG } from './database/mongodb.config.js';
+import { ApplicationDatabase } from './database/application-database.js';
 
 dotenv.config();
 

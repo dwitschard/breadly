@@ -1,5 +1,18 @@
 # Notes
 
+## Next Steps
+1. Build Backend Artifact and upload it to aws lambda using terraform. Rights? ACLs? ... 
+2. API should be accessible from public internet
+2. Check Pricing Cloud-Front? Decide if necessary
+3. Add AWS Cognito as Infrastucture
+4. Authenticate Frontend using Cognito User Pool
+5. Possibility to only allow authenticated users to access backend
+
+## Ideas
+1. Implement a custom ui for login / registration
+2. decide on ui library / elements
+
+## Questions
 Deploy setup:
 1. Where to Store if Boostrap is done or not (Chicken and Egg problem)
 

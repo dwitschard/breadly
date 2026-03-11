@@ -7,4 +7,10 @@ export default {
   globalSetup: './globalSetup.ts',
   globalTeardown: './globalTeardown.ts',
   setupFilesAfterEnv: ['./setupFile.ts'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { useESM: false, tsconfig: 'tsconfig.test.json' }],
+  },
 };
