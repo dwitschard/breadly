@@ -93,6 +93,8 @@ jobs:
 
       - name: Import State Resources
         working-directory: ${{ env.WORKING_DIR }}
+        with:
+          aws-account-id: ${{ secrets.AWS_ACCOUNT_ID }}
         shell: bash
         run: |
           terraform import aws_s3_bucket.tfstate breadly-${{ inputs.environment }}-tfstate

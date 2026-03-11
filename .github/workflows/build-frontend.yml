@@ -17,6 +17,9 @@ name: Build Frontend
 
 on:
   push:
+    paths:
+      - "breadly-frontend/**"
+      - ".github/workflows/build-frontend.yml"
 
   workflow_dispatch:
 
