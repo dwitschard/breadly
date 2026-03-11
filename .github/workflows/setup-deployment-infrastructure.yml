@@ -1,4 +1,4 @@
-# setup-deployment-infra.yml
+# setup-deployment-infrastructure.yml
 #
 # One-time setup and teardown of the Terraform state backend for the frontend.
 # Creates (or destroys) the S3 state bucket and DynamoDB lock table that all
@@ -70,6 +70,15 @@ jobs:
     env:
       WORKING_DIR: infrastructure/aws/frontend/bootstrap
     steps:
+      - name: Export credentials to environment
+        shell: bash
+        run: |
+          echo "TF_ACTION_ROLE_ARN=${{ inputs.aws_oidc_role_arn }}"  >> "$GITHUB_ENV"
+          echo "TF_ACTION_AWS_REGION=${{ inputs.aws_region }}"       >> "$GITHUB_ENV"
+          echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"   >> "$GITHUB_ENV"
+          echo "TF_VAR_environment=${{ inputs.environment }}"        >> "$GITHUB_ENV"
+          echo "TF_VAR_aws_account_id=${{ inputs.aws_account_id }}"  >> "$GITHUB_ENV"        
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
