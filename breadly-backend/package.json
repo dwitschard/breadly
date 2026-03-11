@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx --env-file=./src/.env src/server.ts",
-    "build": "tsc",
+    "generate-api": "npm run generate --prefix ../breadly-api",
+    "build": "npm run generate-api && tsc",
     "test": "jest --no-cache --detectOpenHandles",
     "test:ci": "jest --no-cache --detectOpenHandles --forceExit",
     "lint": "eslint . --fix"
