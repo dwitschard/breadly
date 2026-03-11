@@ -38,7 +38,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag to deploy (e.g. frontend-a1b2c3d) — required for deploy, ignored for teardown"
+        description: "Release tag to deploy (e.g. frontend-a1b2c3d)"
         required: true
         type: string
       environment:
