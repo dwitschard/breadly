@@ -105,14 +105,13 @@ runs:
         echo "Terraform plan exit code: $TF_EXIT"
 
     - name: Debug plan exitcode
-      if: inputs.teardown == 'false'
       shell: bash
       run: |
         echo "steps.plan.outputs.exitcode = ${{ steps.plan.outputs.exitcode }}"
         echo "condition (exitcode == '2') = ${{ steps.plan.outputs.exitcode == '2' }}"
 
     - name: Terraform apply
-      if: inputs.teardown == 'false' && steps.plan.outputs.exitcode == '2'
+      if: steps.plan.outputs.exitcode == '2'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: terraform apply -auto-approve tf.tfplan

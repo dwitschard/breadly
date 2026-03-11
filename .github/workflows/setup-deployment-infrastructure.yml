@@ -37,7 +37,7 @@ on:
 
 jobs:
   setup:
-    name: Setup (${{ inputs.environment }})
+    name: Setup Deployment State (${{ inputs.environment }})
     if: inputs.teardown == false
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -60,7 +60,7 @@ jobs:
           local_backend: "true"
 
   teardown:
-    name: Teardown State Infrastructure (${{ inputs.environment }})
+    name: Teardown Deployment State (${{ inputs.environment }})
     if: inputs.teardown == true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
