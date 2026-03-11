@@ -54,7 +54,7 @@ jobs:
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
         with:
-          working_dir: infrastructure/aws/frontend/bootstrap
+          working_dir: infrastructure/aws/frontend/setup
           environment: ${{ inputs.environment }}
           session_name: github-setup-frontend-${{ inputs.environment }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
@@ -65,7 +65,7 @@ jobs:
       - name: Frontend Deployment State
         uses: ./.github/actions/terraform-action
         with:
-          working_dir: infrastructure/aws/frontend/bootstrap
+          working_dir: infrastructure/aws/frontend/setup
           environment: ${{ inputs.environment }}
           local_backend: "true"
 
@@ -78,7 +78,7 @@ jobs:
       id-token: write
       contents: read
     env:
-      WORKING_DIR: infrastructure/aws/frontend/bootstrap
+      WORKING_DIR: infrastructure/aws/frontend/setup
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -86,7 +86,7 @@ jobs:
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
         with:
-          working_dir: infrastructure/aws/frontend/bootstrap
+          working_dir: infrastructure/aws/frontend/setup
           environment: ${{ inputs.environment }}
           session_name: github-teardown-frontend-${{ inputs.environment }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}

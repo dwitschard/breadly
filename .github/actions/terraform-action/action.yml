@@ -12,8 +12,8 @@ inputs:
     required: true
   local_backend:
     description: >
-      Use local backend (true for bootstrap roots).
-      When true, skips workspace selection and var file.
+      Use local backend (true for setup roots).
+      When true, skips workspace selection.
     required: false
     default: "false"
   extra_tf_vars:
@@ -25,7 +25,7 @@ runs:
   using: composite
   steps:
     # Workspaces isolate dev and prod state within the same backend.
-    # Skipped for bootstrap roots which use a local backend.
+    # Skipped for setup roots which use a local backend.
     - name: Select Terraform workspace
       if: inputs.local_backend == 'false'
       shell: bash
@@ -45,17 +45,10 @@ runs:
         terraform plan \
           -detailed-exitcode \
           -out=tf.tfplan \
-          ${{ inputs.local_backend != 'true' && format('-var-file="envs/{0}.tfvars"', inputs.environment) || '' }} \
           ${{ inputs.extra_tf_vars }}
         TF_EXIT=$?
         echo "exitcode=$TF_EXIT" >> "$GITHUB_OUTPUT"
         echo "Terraform plan exit code: $TF_EXIT"
-
-    - name: Debug plan exitcode
-      shell: bash
-      run: |
-        echo "steps.plan.outputs.exitcode = ${{ steps.plan.outputs.exitcode }}"
-        echo "condition (exitcode == '2') = ${{ steps.plan.outputs.exitcode == '2' }}"
 
     - name: Terraform apply
       if: steps.plan.outputs.exitcode == '2'

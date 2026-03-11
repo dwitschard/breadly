@@ -24,7 +24,7 @@ inputs:
     required: true
   local_backend:
     description: >
-      Use local backend (true for bootstrap roots).
+      Use local backend (true for setup roots).
       When true, skips -backend-config flags during terraform init.
     required: false
     default: "false"
@@ -60,7 +60,7 @@ runs:
         terraform_version: "~1.6"
         terraform_wrapper: false
 
-    # Local backend for bootstrap roots (no remote state bucket exists yet).
+    # Local backend for setup roots (no remote state bucket exists yet).
     # Remote backend for all other roots — bucket and table are derived from
     # the fixed convention: breadly-<env>-tfstate / breadly-<env>-tfstate-lock.
     - name: Terraform init

@@ -81,7 +81,7 @@ jobs:
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
         with:
-          working_dir: infrastructure/aws/frontend/infra
+          working_dir: infrastructure/aws/frontend/deploy
           environment: ${{ env.TARGET_ENV }}
           session_name: github-deploy-frontend-${{ env.TARGET_ENV }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
@@ -91,11 +91,11 @@ jobs:
       - name: Deploy stack
         uses: ./.github/actions/terraform-action
         with:
-          working_dir: infrastructure/aws/frontend/infra
+          working_dir: infrastructure/aws/frontend/deploy
           environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
 
       - name: Print website URL
-        working-directory: infrastructure/aws/frontend/infra
+        working-directory: infrastructure/aws/frontend/deploy
         run: terraform output -raw frontend_website_url

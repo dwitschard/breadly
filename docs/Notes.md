@@ -2,9 +2,6 @@
 
 Deploy setup:
 1. Where to Store if Boostrap is done or not (Chicken and Egg problem)
-   1. extract setup of infra in own workflow and trigger it manually if needed -> Setup Dev Infrastructure
-   2. Add a tear down workflow to remove all setup resources  -> Tear Down Dev Infrastructure
-   3. How to Tear down all deployments of given infrastructure -> should be done before tearing down dev infra
 
 2. Is it safe to expose the following variables to $GITHUB_ENV in [action.yml](../.github/actions/terraform-action/action.yml)
    1. Is this the preferred way of injecting env vars for terraform from github actions?
