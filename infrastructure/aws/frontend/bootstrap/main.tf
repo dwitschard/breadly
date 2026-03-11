@@ -36,11 +36,9 @@ locals {
 resource "aws_s3_bucket" "tfstate" {
   bucket = local.state_bucket_name
 
-  # Prevent accidental deletion of the bucket that holds all Terraform state.
-  # To actually delete this bucket, remove the lifecycle block and re-apply first.
-  lifecycle {
-    prevent_destroy = true
-  }
+  # Allows Terraform to delete the bucket even when it still contains objects
+  # and versioned state files. Required for a clean `terraform destroy`.
+  force_destroy = true
 }
 
 # ── 2. State bucket versioning ────────────────────────────────────────────────
@@ -94,11 +92,5 @@ resource "aws_dynamodb_table" "tfstate_lock" {
   attribute {
     name = "LockID"
     type = "S"
-  }
-
-  # Prevent destruction of the lock table — losing it while state files exist
-  # means future applies cannot acquire locks and will fail.
-  lifecycle {
-    prevent_destroy = true
   }
 }
