@@ -49,7 +49,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
@@ -81,7 +81,7 @@ jobs:
       WORKING_DIR: infrastructure/aws/frontend/bootstrap
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
