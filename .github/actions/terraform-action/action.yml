@@ -28,6 +28,11 @@ inputs:
       When true, skips -backend-config flags, workspace selection, and var file.
     required: false
     default: "false"
+  teardown:
+    description: >
+      When true, runs terraform destroy instead of plan/apply.
+    required: false
+    default: "false"
   extra_tf_vars:
     description: Additional -var flags as a single string — skipped when empty
     required: false
@@ -36,6 +41,9 @@ inputs:
 runs:
   using: composite
   steps:
+    # Workaround: ${{ inputs.* }} is not evaluated in `with:` blocks of nested
+    # `uses:` steps in local composite actions (uses: ./). Writing inputs to
+    # $GITHUB_ENV first ensures they resolve correctly in the next step.
     - name: Export credentials to environment
       shell: bash
       run: |
@@ -77,7 +85,7 @@ runs:
     # Workspaces isolate dev and prod state within the same backend.
     # Skipped for bootstrap roots which use a local backend.
     - name: Select Terraform workspace
-      if: inputs.local_backend != 'true'
+      if: inputs.local_backend == 'false'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: terraform workspace select -or-create ${{ inputs.environment }}
@@ -87,6 +95,7 @@ runs:
     #   1 → error
     #   2 → changes pending → apply runs
     - name: Terraform plan
+      if: inputs.teardown == 'false'
       id: plan
       shell: bash
       working-directory: ${{ inputs.working_dir }}
@@ -102,13 +111,20 @@ runs:
         echo "Terraform plan exit code: $TF_EXIT"
 
     - name: Debug plan exitcode
+      if: inputs.teardown == 'false'
       shell: bash
       run: |
         echo "steps.plan.outputs.exitcode = ${{ steps.plan.outputs.exitcode }}"
         echo "condition (exitcode == '2') = ${{ steps.plan.outputs.exitcode == '2' }}"
 
     - name: Terraform apply
-      if: steps.plan.outputs.exitcode == '2'
+      if: inputs.teardown == 'false' && steps.plan.outputs.exitcode == '2'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: terraform apply -auto-approve tf.tfplan
+
+    - name: Terraform destroy
+      if: inputs.teardown == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      run: terraform destroy -auto-approve

@@ -1,0 +1,59 @@
+# setup-deployment-infrastructure.yml
+#
+# One-time setup and teardown of the Terraform state backend for the frontend.
+# Creates (or destroys) the S3 state bucket and DynamoDB lock table that all
+# other frontend Terraform roots depend on.
+#
+# Jobs
+#   setup  Runs terraform plan/apply (or destroy) against the bootstrap root.
+#
+# Triggers
+#   workflow_dispatch  Manual trigger only — this workflow is run once per
+#                      environment, not as part of the regular deploy pipeline.
+#
+# Required secrets/variables — see .github/workflows/README.md.
+#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
+#   Variables: AWS_REGION
+
+name: Setup Deployment Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - prod
+      teardown:
+        description: "Destroy the bootstrap stack (S3 bucket + DynamoDB table)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  setup:
+    name: Setup (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Frontend Deployment State
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/frontend/bootstrap
+          environment: ${{ inputs.environment }}
+          session_name: github-setup-frontend-${{ inputs.environment }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          local_backend: "true"
+          teardown: ${{ inputs.teardown }}

@@ -1,15 +1,18 @@
 # deploy-frontend.yml
 #
 # Deployment pipeline for the Breadly frontend.
-# Bootstraps the Terraform state backend, then deploys the Angular SPA to S3.
+# Deploys the Angular SPA to S3 via Terraform.
 #
 # Jobs
-#   bootstrap  Ensures the S3 state bucket and DynamoDB lock table exist.
 #   deploy     Downloads the release asset and deploys via Terraform.
 #
 # Triggers
 #   workflow_call     Called by build-frontend.yml on main to auto-deploy to dev.
 #   workflow_dispatch Manually deploy a specific release tag to dev or prod.
+#
+# Prerequisites
+#   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
+#   Run setup-deployment-infrastructure.yml once per environment before the first deploy.
 #
 # Required secrets/variables — see .github/workflows/README.md.
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
@@ -54,32 +57,9 @@ env:
   # passed directly at each composite action call site instead.
 
 jobs:
-  bootstrap:
-    name: Bootstrap (${{ inputs.environment || 'dev' }})
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'dev' }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Bootstrap state backend
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/frontend/bootstrap
-          environment: ${{ env.TARGET_ENV }}
-          session_name: github-bootstrap-frontend-${{ env.TARGET_ENV }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          local_backend: "true"
-
   deploy:
     name: Deploy (${{ inputs.environment || 'dev' }})
     runs-on: ubuntu-latest
-    needs: bootstrap
     environment: ${{ inputs.environment || 'dev' }}
     permissions:
       id-token: write
