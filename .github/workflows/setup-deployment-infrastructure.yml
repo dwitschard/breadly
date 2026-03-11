@@ -5,7 +5,8 @@
 # other frontend Terraform roots depend on.
 #
 # Jobs
-#   setup  Runs terraform plan/apply (or destroy) against the bootstrap root.
+#   setup     Runs terraform plan/apply against the bootstrap root.
+#   teardown  Imports and destroys all bootstrap resources.
 #
 # Triggers
 #   workflow_dispatch  Manual trigger only — this workflow is run once per
@@ -37,6 +38,7 @@ on:
 jobs:
   setup:
     name: Setup (${{ inputs.environment }})
+    if: inputs.teardown == false
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -56,4 +58,47 @@ jobs:
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
           local_backend: "true"
-          teardown: ${{ inputs.teardown }}
+
+  teardown:
+    name: Teardown State Infrastructure (${{ inputs.environment }})
+    if: inputs.teardown == true
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      WORKING_DIR: infrastructure/aws/frontend/bootstrap
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: github-teardown-frontend-state-${{ inputs.environment }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        run: terraform init
+
+      - name: Import State Resources
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        run: |
+          terraform import aws_s3_bucket.tfstate breadly-${{ inputs.environment }}-tfstate
+          terraform import aws_dynamodb_table.tfstate_lock breadly-${{ inputs.environment }}-tfstate-lock
+
+      - name: Terraform destroy
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        run: terraform destroy -auto-approve

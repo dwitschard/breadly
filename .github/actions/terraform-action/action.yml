@@ -28,11 +28,6 @@ inputs:
       When true, skips -backend-config flags, workspace selection, and var file.
     required: false
     default: "false"
-  teardown:
-    description: >
-      When true, runs terraform destroy instead of plan/apply.
-    required: false
-    default: "false"
   extra_tf_vars:
     description: Additional -var flags as a single string — skipped when empty
     required: false
@@ -95,7 +90,6 @@ runs:
     #   1 → error
     #   2 → changes pending → apply runs
     - name: Terraform plan
-      if: inputs.teardown == 'false'
       id: plan
       shell: bash
       working-directory: ${{ inputs.working_dir }}
@@ -122,9 +116,3 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: terraform apply -auto-approve tf.tfplan
-
-    - name: Terraform destroy
-      if: inputs.teardown == 'true'
-      shell: bash
-      working-directory: ${{ inputs.working_dir }}
-      run: terraform destroy -auto-approve
