@@ -52,9 +52,6 @@ concurrency:
 
 env:
   TARGET_ENV: ${{ inputs.environment || 'dev' }}
-  # Note: vars.* and secrets.* are intentionally not set here — they are not
-  # available at workflow-level env when called via workflow_call. They are
-  # passed directly at each composite action call site instead.
 
 jobs:
   deploy:
@@ -75,8 +72,8 @@ jobs:
 
       - name: Unzip dist
         run: |
-          mkdir -p breadly-frontend/dist/breadly-frontend/browser/
-          unzip dist.zip -d breadly-frontend/dist/breadly-frontend/browser/
+          mkdir -p breadly-frontend/dist/browser/
+          unzip dist.zip -d breadly-frontend/dist/browser/
 
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
@@ -94,7 +91,7 @@ jobs:
           working_dir: infrastructure/aws/frontend/deploy
           environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
-            -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
+            -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"
 
       - name: Print website URL
         working-directory: infrastructure/aws/frontend/deploy
