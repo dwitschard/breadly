@@ -29,16 +29,19 @@ on:
         options:
           - dev
           - prod
-      teardown:
-        description: "Destroy the bootstrap stack (S3 bucket + DynamoDB table)"
-        required: false
-        default: false
-        type: boolean
+      action:
+        description: "Action to perform on the bootstrap stack"
+        required: true
+        default: create
+        type: choice
+        options:
+          - create
+          - destroy
 
 jobs:
   setup:
-    name: Setup Deployment State (${{ inputs.environment }})
-    if: inputs.teardown == false
+    name: Setup (${{ inputs.environment }})
+    if: inputs.action == 'create'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -48,8 +51,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Frontend Deployment State
-        uses: ./.github/actions/terraform-action
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/frontend/bootstrap
           environment: ${{ inputs.environment }}
@@ -59,9 +62,16 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           local_backend: "true"
 
+      - name: Frontend Deployment State
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/frontend/bootstrap
+          environment: ${{ inputs.environment }}
+          local_backend: "true"
+
   teardown:
-    name: Teardown Deployment State (${{ inputs.environment }})
-    if: inputs.teardown == true
+    name: Teardown (${{ inputs.environment }})
+    if: inputs.action == 'destroy'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -70,35 +80,19 @@ jobs:
     env:
       WORKING_DIR: infrastructure/aws/frontend/bootstrap
     steps:
-      - name: Export credentials to environment
-        shell: bash
-        run: |
-          echo "TF_ACTION_ROLE_ARN=${{ secrets.AWS_OIDC_ROLE_ARN }}"  >> "$GITHUB_ENV"
-          echo "TF_ACTION_AWS_REGION=${{ vars.AWS_REGION }}"       >> "$GITHUB_ENV"
-          echo "TF_ACTION_SESSION_NAME=github-setup-frontend-${{ inputs.environment }}"   >> "$GITHUB_ENV"
-          echo "TF_VAR_environment=${{ inputs.environment }}"        >> "$GITHUB_ENV"
-          echo "TF_VAR_aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}"  >> "$GITHUB_ENV"        
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
         with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-          role-session-name: github-teardown-frontend-state-${{ inputs.environment }}
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.6"
-          terraform_wrapper: false
-
-      - name: Terraform init
-        working-directory: ${{ env.WORKING_DIR }}
-        shell: bash
-        run: terraform init
+          working_dir: infrastructure/aws/frontend/bootstrap
+          environment: ${{ inputs.environment }}
+          session_name: github-teardown-frontend-${{ inputs.environment }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          local_backend: "true"
 
       - name: Import State Resources
         working-directory: ${{ env.WORKING_DIR }}

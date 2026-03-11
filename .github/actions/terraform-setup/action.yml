@@ -1,0 +1,77 @@
+name: Terraform Setup
+description: >
+  Configures AWS credentials via OIDC, installs Terraform, and runs terraform init.
+  Exports TF_VAR_* and TF_ACTION_* to $GITHUB_ENV for use by subsequent steps.
+
+inputs:
+  aws_oidc_role_arn:
+    description: IAM role ARN to assume via OIDC
+    required: true
+  aws_account_id:
+    description: 12-digit AWS account ID
+    required: true
+  aws_region:
+    description: AWS region for all resources
+    required: true
+  session_name:
+    description: OIDC role session name
+    required: true
+  working_dir:
+    description: Path to the Terraform root module
+    required: true
+  environment:
+    description: Target environment (dev | prod)
+    required: true
+  local_backend:
+    description: >
+      Use local backend (true for bootstrap roots).
+      When true, skips -backend-config flags during terraform init.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    # Workaround: ${{ inputs.* }} is not evaluated in `with:` blocks of nested
+    # `uses:` steps in local composite actions (uses: ./). Writing inputs to
+    # $GITHUB_ENV first ensures they resolve correctly in the configure step.
+    # TF_VAR_* are also exported here so all subsequent steps in the calling
+    # job (plan, apply, destroy) pick them up automatically.
+    - name: Export to environment
+      shell: bash
+      run: |
+        echo "TF_ACTION_ROLE_ARN=${{ inputs.aws_oidc_role_arn }}"    >> "$GITHUB_ENV"
+        echo "TF_ACTION_AWS_REGION=${{ inputs.aws_region }}"          >> "$GITHUB_ENV"
+        echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"      >> "$GITHUB_ENV"
+        echo "TF_VAR_aws_account_id=${{ inputs.aws_account_id }}"     >> "$GITHUB_ENV"
+        echo "TF_VAR_aws_region=${{ inputs.aws_region }}"             >> "$GITHUB_ENV"
+        echo "TF_VAR_environment=${{ inputs.environment }}"           >> "$GITHUB_ENV"
+
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.TF_ACTION_ROLE_ARN }}
+        aws-region: ${{ env.TF_ACTION_AWS_REGION }}
+        role-session-name: ${{ env.TF_ACTION_SESSION_NAME }}
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "~1.6"
+        terraform_wrapper: false
+
+    # Local backend for bootstrap roots (no remote state bucket exists yet).
+    # Remote backend for all other roots — bucket and table are derived from
+    # the fixed convention: breadly-<env>-tfstate / breadly-<env>-tfstate-lock.
+    - name: Terraform init
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      run: |
+        if [[ "${{ inputs.local_backend }}" == "true" ]]; then
+          terraform init
+        else
+          terraform init \
+            -backend-config="bucket=breadly-${{ inputs.environment }}-tfstate" \
+            -backend-config="dynamodb_table=breadly-${{ inputs.environment }}-tfstate-lock" \
+            -backend-config="region=${{ inputs.aws_region }}"
+        fi

@@ -78,8 +78,8 @@ jobs:
           mkdir -p breadly-frontend/dist/breadly-frontend/browser/
           unzip dist.zip -d breadly-frontend/dist/breadly-frontend/browser/
 
-      - name: Deploy stack
-        uses: ./.github/actions/terraform-action
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/frontend/infra
           environment: ${{ env.TARGET_ENV }}
@@ -87,6 +87,12 @@ jobs:
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy stack
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/frontend/infra
+          environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/breadly-frontend/browser"
 
