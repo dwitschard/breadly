@@ -48,7 +48,7 @@ runs:
         echo "TF_VAR_environment=${{ inputs.environment }}"           >> "$GITHUB_ENV"
 
     - name: Configure AWS credentials (OIDC)
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         role-to-assume: ${{ env.TF_ACTION_ROLE_ARN }}
         aws-region: ${{ env.TF_ACTION_AWS_REGION }}
