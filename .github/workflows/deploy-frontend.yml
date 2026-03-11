@@ -12,7 +12,7 @@
 #
 # Prerequisites
 #   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
-#   Run setup-deployment-infrastructure.yml once per environment before the first deploy.
+#   Run setup-deployment-infra.yml once per environment before the first deploy.
 #
 # Required secrets/variables — see .github/workflows/README.md.
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID

@@ -1,4 +1,4 @@
-# setup-deployment-infrastructure.yml
+# setup-deployment-infra.yml
 #
 # One-time setup and teardown of the Terraform state backend for the frontend.
 # Creates (or destroys) the S3 state bucket and DynamoDB lock table that all
