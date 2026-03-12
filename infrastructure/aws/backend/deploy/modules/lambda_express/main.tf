@@ -121,7 +121,7 @@ resource "aws_route_table_association" "private" {
 
 resource "aws_security_group" "lambda" {
   name        = "${var.name}-lambda-sg"
-  description = "Lambda function security group — allows all outbound traffic to reach MongoDB Atlas via NAT."
+  description = "Lambda function security group - allows all outbound traffic to reach MongoDB Atlas via NAT."
   vpc_id      = aws_vpc.this.id
 
   # No ingress rules: Lambda Function URL ingress is handled by AWS infrastructure,
