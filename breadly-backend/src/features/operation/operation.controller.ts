@@ -12,9 +12,9 @@ operationController.get('/generic-error', () => {
 });
 
 operationController.get(
-  '/ping',
+  '/health',
   (req: express.Request, res: express.Response): express.Response =>
-    res.json('pong'),
+    res.json('up and running!'),
 );
 
 export { operationController };

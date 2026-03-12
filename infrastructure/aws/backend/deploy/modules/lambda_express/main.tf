@@ -140,13 +140,5 @@ resource "aws_lambda_function" "this" {
 
 resource "aws_lambda_function_url" "this" {
   function_name      = aws_lambda_function.this.function_name
-  authorization_type = "NONE"
-
-  cors {
-    allow_origins  = ["*"]
-    allow_methods  = ["*"]
-    allow_headers  = ["*"]
-    expose_headers = ["*"]
-    max_age        = 86400
-  }
+  authorization_type = "AWS_IAM"
 }
