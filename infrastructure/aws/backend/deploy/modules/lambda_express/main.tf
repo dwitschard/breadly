@@ -1,10 +1,8 @@
-# modules/lambda_express/main.tf — provisions VPC, IAM, SSM placeholder, Lambda function,
+# modules/lambda_express/main.tf — provisions IAM, SSM placeholder, Lambda function,
 # and Lambda Function URL to expose an Express app publicly from AWS Lambda.
 #
-# Network topology:
-#   Public subnets  → Internet Gateway (for inbound traffic handled by Lambda Function URL)
-#   Private subnets → NAT Gateway → Internet (for outbound calls, e.g. MongoDB Atlas)
-#   Lambda runs in private subnets; the Function URL is handled by AWS infra, not the VPC.
+# Lambda runs outside a VPC; AWS services (SSM, etc.) are reached directly over
+# the internet via IAM. MongoDB Atlas is a public SaaS endpoint — no NAT Gateway needed.
 #
 # Lambda Web Adapter:
 #   The official AWS Lambda Web Adapter layer is attached as a Lambda layer.
@@ -23,119 +21,6 @@ locals {
   }
 
   lwa_layer_arn = local.lwa_layer_arns[var.aws_region]
-}
-
-# ---------------------------------------------------------------------------
-# Networking
-# ---------------------------------------------------------------------------
-
-resource "aws_vpc" "this" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-
-  tags = merge(var.tags, { Name = "${var.name}-vpc" })
-}
-
-resource "aws_internet_gateway" "this" {
-  vpc_id = aws_vpc.this.id
-
-  tags = merge(var.tags, { Name = "${var.name}-igw" })
-}
-
-# Public subnets — used by the NAT Gateway only (Lambda does not run here).
-resource "aws_subnet" "public" {
-  count             = 2
-  vpc_id            = aws_vpc.this.id
-  cidr_block        = "10.0.${100 + count.index}.0/24"
-  availability_zone = "${var.aws_region}${["a", "b"][count.index]}"
-
-  map_public_ip_on_launch = true
-
-  tags = merge(var.tags, { Name = "${var.name}-public-${["a", "b"][count.index]}" })
-}
-
-# Private subnets — Lambda runs here; outbound via NAT.
-resource "aws_subnet" "private" {
-  count             = 2
-  vpc_id            = aws_vpc.this.id
-  cidr_block        = "10.0.${count.index + 1}.0/24"
-  availability_zone = "${var.aws_region}${["a", "b"][count.index]}"
-
-  tags = merge(var.tags, { Name = "${var.name}-private-${["a", "b"][count.index]}" })
-}
-
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = merge(var.tags, { Name = "${var.name}-nat-eip" })
-}
-
-# Single NAT Gateway in the first public subnet.
-resource "aws_nat_gateway" "this" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
-
-  depends_on = [aws_internet_gateway.this]
-
-  tags = merge(var.tags, { Name = "${var.name}-nat" })
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.this.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.this.id
-  }
-
-  tags = merge(var.tags, { Name = "${var.name}-rt-public" })
-}
-
-resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.this.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.this.id
-  }
-
-  tags = merge(var.tags, { Name = "${var.name}-rt-private" })
-}
-
-resource "aws_route_table_association" "public" {
-  count          = 2
-  subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_route_table_association" "private" {
-  count          = 2
-  subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private.id
-}
-
-# ---------------------------------------------------------------------------
-# Security Group
-# ---------------------------------------------------------------------------
-
-resource "aws_security_group" "lambda" {
-  name        = "${var.name}-lambda-sg"
-  description = "Lambda function security group - allows all outbound traffic to reach MongoDB Atlas via NAT."
-  vpc_id      = aws_vpc.this.id
-
-  # No ingress rules: Lambda Function URL ingress is handled by AWS infrastructure,
-  # not by the VPC security group.
-
-  egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = merge(var.tags, { Name = "${var.name}-lambda-sg" })
 }
 
 # ---------------------------------------------------------------------------
@@ -161,10 +46,10 @@ resource "aws_iam_role" "lambda" {
   tags = var.tags
 }
 
-# Grants Lambda permission to create ENIs in the VPC and write CloudWatch logs.
-resource "aws_iam_role_policy_attachment" "vpc_access" {
+# Grants Lambda permission to write CloudWatch logs.
+resource "aws_iam_role_policy_attachment" "basic_execution" {
   role       = aws_iam_role.lambda.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 # Allows Lambda to read the MongoDB connection string from SSM Parameter Store.
@@ -225,11 +110,6 @@ resource "aws_lambda_function" "this" {
   # invocations as HTTP requests to localhost:var.port.
   layers = [local.lwa_layer_arn]
 
-  vpc_config {
-    subnet_ids         = aws_subnet.private[*].id
-    security_group_ids = [aws_security_group.lambda.id]
-  }
-
   environment {
     variables = {
       # Required by Lambda Web Adapter to hook into the Lambda runtime.
@@ -249,7 +129,7 @@ resource "aws_lambda_function" "this" {
   tags = var.tags
 
   depends_on = [
-    aws_iam_role_policy_attachment.vpc_access,
+    aws_iam_role_policy_attachment.basic_execution,
     aws_iam_role_policy_attachment.ssm_read,
   ]
 }
