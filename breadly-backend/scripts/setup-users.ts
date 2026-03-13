@@ -70,7 +70,7 @@ interface AdminUser {
   description: string;
 }
 
-type Environment = 'dev' | 'staging' | 'prod';
+type Environment = 'dev' | 'prod';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -120,12 +120,14 @@ async function prompt(question: string, silent = false): Promise<string> {
  */
 async function promptPassword(label: string): Promise<string> {
   while (true) {
-    const pw1 = await prompt(`  Password for ${label}: `, true);
+    process.stdout.write(`  Enter password for ${label}: `);
+    const pw1 = await prompt('', true);
     if (pw1.length === 0) {
       console.error('  Password must not be empty. Try again.');
       continue;
     }
-    const pw2 = await prompt(`  Confirm password: `, true);
+    process.stdout.write('  Confirm password: ');
+    const pw2 = await prompt('', true);
     if (pw1 === pw2) {
       return pw1;
     }

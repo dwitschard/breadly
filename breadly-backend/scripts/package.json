@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "setup-users:dev":     "tsx setup-users.ts dev",
-    "setup-users:staging": "tsx setup-users.ts staging",
     "setup-users:prod":    "tsx setup-users.ts prod"
   },
   "dependencies": {
