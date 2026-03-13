@@ -19,6 +19,7 @@ on:
   push:
     paths:
       - "breadly-backend/**"
+      - "infrastructure/aws/backend/**"
       - ".github/workflows/build-backend.yml"
 
   workflow_dispatch:
