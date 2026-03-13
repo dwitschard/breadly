@@ -37,3 +37,9 @@ variable "admin_email" {
   description = "Email address of the admin Cognito user. Terraform provisions a locked placeholder; run scripts/setup-users.ts to activate it with a real password."
   type        = string
 }
+
+variable "frontend_urls" {
+  description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). Set via the FRONTEND_URLS GitHub Actions variable."
+  type        = string
+  default     = ""
+}

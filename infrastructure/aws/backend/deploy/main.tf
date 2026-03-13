@@ -20,6 +20,7 @@ module "api_gateway" {
   lambda_function_name = module.backend.function_name
   aws_region           = var.aws_region
   admin_email          = var.admin_email
+  frontend_urls        = var.frontend_urls
 
   tags = {
     Component = "backend"

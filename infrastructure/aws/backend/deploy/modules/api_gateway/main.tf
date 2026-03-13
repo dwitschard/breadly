@@ -73,15 +73,9 @@ resource "aws_cognito_user_pool_client" "this" {
   allowed_oauth_scopes                 = ["openid", "email"]
   supported_identity_providers         = ["COGNITO"]
 
-  callback_urls = [
-    "http://localhost:4200",
-    "http://breadly-dev-frontend.s3-website.eu-central-1.amazonaws.com",
-  ]
+  callback_urls = local.frontend_callback_urls
 
-  logout_urls = [
-    "http://localhost:4200",
-    "http://breadly-dev-frontend.s3-website.eu-central-1.amazonaws.com",
-  ]
+  logout_urls = local.frontend_callback_urls
 }
 
 # Cognito Hosted UI domain — required to expose the /oauth2/authorize and
@@ -131,9 +125,10 @@ resource "aws_cognito_user" "admin" {
   temporary_password = random_password.admin_placeholder.result
 
   # Prevent Terraform from resetting the password after the script has
-  # activated the account.
+  # activated the account, and tolerate the user already existing in the
+  # pool (e.g. created by a previous manual run of setup-users.ts).
   lifecycle {
-    ignore_changes = [temporary_password]
+    ignore_changes = all
   }
 }
 
@@ -194,7 +189,11 @@ resource "aws_lambda_permission" "apigw" {
 # ---------------------------------------------------------------------------
 
 locals {
-  cognito_issuer_url = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.this.id}"
+  cognito_issuer_url  = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.this.id}"
+
+  # Parse the comma-separated frontend_urls string into a list, dropping any
+  # blank entries that result from an empty variable value.
+  frontend_callback_urls = compact(split(",", var.frontend_urls))
 }
 
 resource "aws_apigatewayv2_authorizer" "cognito" {
