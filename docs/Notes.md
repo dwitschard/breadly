@@ -1,13 +1,13 @@
 # Notes
 
 ## Next Steps
-1. Build Backend Artifact and upload it to aws lambda using terraform. Rights? ACLs? ... 
-2. API should be accessible from public internet
-2. Check Pricing Cloud-Front? Decide if necessary -> not yet I guess
-3. Add AWS Cognito as Infrastucture
-4. Authenticate Frontend using Cognito User Pool
-5. Possibility to only allow authenticated users to access backend
-6. Implement FE and BE for login / registration
+- Authenticate Frontend using Cognito User Pool -> make it work  
+- Remove /health endpoint from Gateway
+- Secure lambda invocation using IAM Role
+- Extract Role in Backend and use it for Business Logic
+- Check Connectivity to MongoDB Atlas from Lambda
+- Check Connectivity to DynamoDB from Lambda
+- Think about a public lambda API that does not require authentication (how to separate on code level?)
 
 ## Bugs
 1. Build Open API Spec for FE and BE differently (if needed)
@@ -21,6 +21,8 @@
 ## Questions
 Deploy setup:
 1. Where to Store if Boostrap is done or not (Chicken and Egg problem)
+
+Answer: Don't store it -> leave the bucket there forever ;-) 
 
 2. Is it safe to expose the following variables to $GITHUB_ENV in [action.yml](../.github/actions/terraform-action/action.yml)
    1. Is this the preferred way of injecting env vars for terraform from github actions?

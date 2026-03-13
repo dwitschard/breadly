@@ -87,52 +87,6 @@ resource "aws_cognito_user_pool_domain" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# Admin user placeholder
-#
-# Terraform creates the admin account in FORCE_CHANGE_PASSWORD status using a
-# random 32-character password that is never revealed.  The account cannot be
-# used to log in until an operator runs:
-#
-#   npm run setup-users -- <env>   (from breadly-backend/)
-#
-# That script calls AdminSetUserPassword (Permanent: true) to activate the
-# account with a real password that is prompted interactively and never stored
-# in any file, environment variable, or Terraform state.
-#
-# Security properties:
-#   • The random placeholder password ends up in tfstate, but it is never
-#     usable because the script immediately overwrites it with a permanent one.
-#   • Re-applying Terraform after the script has run does NOT reset the
-#     password — lifecycle.ignore_changes prevents that.
-#   • No invitation email is sent (message_action = "SUPPRESS").
-# ---------------------------------------------------------------------------
-
-resource "random_password" "admin_placeholder" {
-  length           = 32
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
-
-resource "aws_cognito_user" "admin" {
-  user_pool_id = aws_cognito_user_pool.this.id
-  username     = var.admin_email
-
-  # Do not send an invitation email — this is a locked placeholder.
-  message_action = "SUPPRESS"
-
-  # A random temporary password that is never exposed or communicated.
-  # The setup script will replace this with a permanent password.
-  temporary_password = random_password.admin_placeholder.result
-
-  # Prevent Terraform from resetting the password after the script has
-  # activated the account, and tolerate the user already existing in the
-  # pool (e.g. created by a previous manual run of setup-users.ts).
-  lifecycle {
-    ignore_changes = all
-  }
-}
-
-# ---------------------------------------------------------------------------
 # HTTP API
 # ---------------------------------------------------------------------------
 

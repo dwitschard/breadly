@@ -26,11 +26,6 @@ variable "tags" {
   default     = {}
 }
 
-variable "admin_email" {
-  description = "Email address of the admin user. Terraform creates a placeholder Cognito user; run scripts/setup-users.ts to activate it with a real password."
-  type        = string
-}
-
 variable "frontend_urls" {
   description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). All URLs are used as-is."
   type        = string

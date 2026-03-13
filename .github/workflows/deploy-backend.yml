@@ -86,7 +86,6 @@ jobs:
           environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
-            -var="admin_email=${{ vars.ADMIN_EMAIL }}"
             -var="frontend_urls=${{ vars.OIDC_CALLBACK_URL }}"
 
       - name: Print backend URL
