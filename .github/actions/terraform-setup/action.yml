@@ -75,4 +75,3 @@ runs:
             -backend-config="dynamodb_table=breadly-${{ inputs.environment }}-tfstate-lock" \
             -backend-config="region=${{ inputs.aws_region }}"
         fi
-        terraform state rm 'module.api_gateway.random_password.admin_placeholder'
