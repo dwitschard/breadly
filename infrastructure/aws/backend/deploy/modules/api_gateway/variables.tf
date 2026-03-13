@@ -25,3 +25,8 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "admin_email" {
+  description = "Email address of the admin user. Terraform creates a placeholder Cognito user; run scripts/setup-users.ts to activate it with a real password."
+  type        = string
+}

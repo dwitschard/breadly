@@ -32,3 +32,8 @@ variable "dist_zip_path" {
   type        = string
   default     = "../../../../breadly-backend/backend.zip"
 }
+
+variable "admin_email" {
+  description = "Email address of the admin Cognito user. Terraform provisions a locked placeholder; run scripts/setup-users.ts to activate it with a real password."
+  type        = string
+}
