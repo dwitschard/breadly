@@ -49,9 +49,12 @@ runs:
         TF_EXIT=$?
         echo "exitcode=$TF_EXIT" >> "$GITHUB_OUTPUT"
         echo "Terraform plan exit code: $TF_EXIT"
+        if [ $TF_EXIT -eq 1 ]; then exit 1; fi
 
     - name: Terraform apply
       if: steps.plan.outputs.exitcode == '2'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
-      run: terraform apply -auto-approve tf.tfplan
+      run: |
+        set -e
+        terraform apply -auto-approve tf.tfplan
