@@ -79,6 +79,10 @@ jobs:
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
 
+      - name: Remove legacy random_password state entry
+        working-directory: infrastructure/aws/backend/deploy
+        run: terraform state rm 'module.api_gateway.random_password.admin_placeholder' || true
+
       - name: Deploy stack
         uses: ./.github/actions/terraform-action
         with:
