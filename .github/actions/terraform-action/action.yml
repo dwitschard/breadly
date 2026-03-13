@@ -32,7 +32,12 @@ runs:
       working-directory: ${{ inputs.working_dir }}
       run: |
         terraform workspace select -or-create ${{ inputs.environment }}
-        terraform state rm 'module.api_gateway.random_password.admin_placeholder'
+
+    - name: Update Terraform State
+      if: inputs.local_backend == 'false'
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      run: echo "Update Terraform state if needed"
 
     # -detailed-exitcode:
     #   0 → no changes  → apply is skipped
