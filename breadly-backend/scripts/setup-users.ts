@@ -8,10 +8,10 @@
  * Self-registered users (anyone not listed in ADMIN_USERS below) are NEVER
  * touched by this script.
  *
- * Usage (from breadly-backend/):
- *   npm run setup-users -- dev
- *   npm run setup-users -- staging
- *   npm run setup-users -- prod
+ * Usage (from breadly-backend/scripts/):
+ *   npm run setup-users:dev
+ *   npm run setup-users:staging
+ *   npm run setup-users:prod
  *
  * Prerequisites:
  *   • AWS CLI configured with credentials that have Cognito admin permissions

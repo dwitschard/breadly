@@ -10,8 +10,7 @@
     "build": "npm run generate-api && tsc",
     "test": "jest --no-cache --detectOpenHandles",
     "test:ci": "jest --no-cache --detectOpenHandles --forceExit",
-    "lint": "eslint . --fix",
-    "setup-users": "tsx scripts/setup-users.ts"
+    "lint": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +22,6 @@
     "mongodb": "^7.1.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.1008.0",
     "@eslint/js": "^10.0.1",
     "@openapitools/openapi-generator-cli": "^2.20.0",
     "@types/express": "^5.0.6",
