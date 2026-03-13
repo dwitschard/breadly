@@ -3,10 +3,11 @@
 ## Next Steps
 1. Build Backend Artifact and upload it to aws lambda using terraform. Rights? ACLs? ... 
 2. API should be accessible from public internet
-2. Check Pricing Cloud-Front? Decide if necessary
+2. Check Pricing Cloud-Front? Decide if necessary -> not yet I guess
 3. Add AWS Cognito as Infrastucture
 4. Authenticate Frontend using Cognito User Pool
 5. Possibility to only allow authenticated users to access backend
+6. Implement FE and BE for login / registration
 
 ## Bugs
 1. Build Open API Spec for FE and BE differently (if needed)
@@ -28,3 +29,6 @@ Deploy setup:
 > echo "TF_ACTION_SESSION_NAME=${{ inputs.session_name }}"   >> "$GITHUB_ENV"
 > echo "TF_VAR_environment=${{ inputs.environment }}"        >> "$GITHUB_ENV"
 > echo "TF_VAR_aws_account_id=${{ inputs.aws_account_id }}"  >> "$GITHUB_ENV"
+
+Answer: Use a Setup-Script that needs to be run manually from local machine using AWS CLI
+    1. Also provision Cognito Users this way?

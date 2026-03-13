@@ -66,6 +66,30 @@ resource "aws_cognito_user_pool_client" "this" {
     id_token      = "hours"
     refresh_token = "days"
   }
+
+  # Enable OAuth2 / OIDC authorization code flow (required for PKCE).
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "email"]
+  supported_identity_providers         = ["COGNITO"]
+
+  callback_urls = [
+    "http://localhost:4200",
+    "http://breadly-dev-frontend.s3-website.eu-central-1.amazonaws.com",
+  ]
+
+  logout_urls = [
+    "http://localhost:4200",
+    "http://breadly-dev-frontend.s3-website.eu-central-1.amazonaws.com",
+  ]
+}
+
+# Cognito Hosted UI domain — required to expose the /oauth2/authorize and
+# /oauth2/token endpoints used by the PKCE authorization code flow.
+# Resulting domain: <var.name>.auth.<region>.amazoncognito.com
+resource "aws_cognito_user_pool_domain" "this" {
+  domain       = var.name
+  user_pool_id = aws_cognito_user_pool.this.id
 }
 
 # ---------------------------------------------------------------------------
