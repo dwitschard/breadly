@@ -18,7 +18,7 @@ variable "aws_region" {
 variable "handler" {
   description = "Lambda handler in module/file notation (no .js extension — Lambda splits on the last dot to derive the module path and exported function name)."
   type        = string
-  default     = "dist/server"
+  default     = "server"
 }
 
 variable "runtime" {
