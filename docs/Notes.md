@@ -2,8 +2,8 @@
 
 ## Next Steps
 - First Api Call to Lambda
+- Re-enable Testµ
 - Logout locally does not yet work 
-  - Remove /health endpoint from Gateway
 - Secure lambda invocation using IAM Role
 - Extract Role in Backend and use it for Business Logic
 - Check Connectivity to MongoDB Atlas from Lambda
