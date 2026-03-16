@@ -11,7 +11,12 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
-    provideOAuthClient(),
+    provideOAuthClient({
+      resourceServer: {
+        allowedUrls: ['http://localhost:3000/api', 'https://d3ja5ewqxjy62d.cloudfront.net'],
+        sendAccessToken: true,
+      },
+    }),
     provideApi('/api'),
   ],
 };
