@@ -1,8 +1,5 @@
 import express from 'express';
-import {globalErrorHandler} from './middleware/error.middleware';
-import {technologyController} from './features/technology/technology.controller';
 import {operationController} from './features/operation/operation.controller';
-import {recipeController} from "./features/recipe/recipe.controller";
 
 const app = express();
 
@@ -10,9 +7,9 @@ const app = express();
 app.use(express.json());
 
 app.use('/', operationController);
-app.use('/technologies', technologyController);
-app.use('/recipe', recipeController);
+// app.use('/technologies', technologyController);
+// app.use('/recipe', recipeController);
 
-app.use(globalErrorHandler);
+// app.use(globalErrorHandler);
 
 export {app};
