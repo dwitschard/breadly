@@ -1,5 +1,5 @@
 import express from 'express';
-import {operationController} from './features/operation/operation.controller';
+import {operationController} from './features/operation/operation.controller.js';
 
 const app = express();
 
