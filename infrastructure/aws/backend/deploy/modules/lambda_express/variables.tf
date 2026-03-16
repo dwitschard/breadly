@@ -24,7 +24,7 @@ variable "handler" {
 variable "runtime" {
   description = "Lambda runtime identifier."
   type        = string
-  default     = "nodejs24.x"
+  default     = "nodejs22.x"
 }
 
 variable "timeout" {
