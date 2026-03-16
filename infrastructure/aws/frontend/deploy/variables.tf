@@ -30,8 +30,3 @@ variable "frontend_dist_path" {
   type        = string
   default     = "../../../../breadly-frontend/dist/breadly-frontend/browser"
 }
-
-variable "api_gateway_url" {
-  description = "HTTPS URL of the API Gateway endpoint (no trailing slash). Used as the CloudFront origin for /api/* requests."
-  type        = string
-}
