@@ -1,7 +1,7 @@
 import {ObjectId, UpdateFilter, WithId} from 'mongodb';
-import {ApplicationDatabase} from '../../database/application-database';
-import {RecipeDocument} from './recipe.document';
-import { CreateRecipeDto, PatchRecipeDto, Recipe, UpdateRecipeDto } from "../../app/generated/api";
+import {ApplicationDatabase} from '../../database/application-database.js';
+import {RecipeDocument} from './recipe.document.js';
+import { CreateRecipeDto, PatchRecipeDto, Recipe, UpdateRecipeDto } from "../../app/generated/api/index.js";
 
 const toRecipe = (doc: WithId<RecipeDocument>): Recipe => ({
     id: doc._id.toHexString(),

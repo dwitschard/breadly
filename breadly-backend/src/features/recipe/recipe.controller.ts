@@ -6,8 +6,8 @@ import {
     patchRecipe,
     replaceRecipe,
     saveRecipe,
-} from './recipe.service';
-import {CreateRecipeDto, UpdateRecipeDto, PatchRecipeDto} from "../../app/generated/api";
+} from './recipe.service.js';
+import {CreateRecipeDto, UpdateRecipeDto, PatchRecipeDto} from "../../app/generated/api/index.js";
 
 const recipeController = Router();
 
