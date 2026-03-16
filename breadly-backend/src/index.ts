@@ -1,6 +1,4 @@
-export const handler = async(event: unknown) => {
-    return {
-        msg: 'Hello World',
-        event: event,
-    }
-};
+import serverless from "serverless-http";
+import {app} from "./app";
+
+export const handler = serverless(app);
