@@ -19,6 +19,7 @@ module "cdn" {
   bucket_id                   = module.frontend.bucket_id
   bucket_arn                  = module.frontend.bucket_arn
   bucket_regional_domain_name = module.frontend.bucket_regional_domain_name
+  api_gateway_url             = var.api_gateway_url
 
   tags = {
     Component = "frontend"

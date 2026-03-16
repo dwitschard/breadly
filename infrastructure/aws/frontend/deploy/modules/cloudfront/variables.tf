@@ -20,6 +20,11 @@ variable "bucket_regional_domain_name" {
   type        = string
 }
 
+variable "api_gateway_url" {
+  description = "HTTPS URL of the API Gateway endpoint (no trailing slash), e.g. https://xxxxx.execute-api.eu-central-1.amazonaws.com. Used as the CloudFront origin for /api/* requests."
+  type        = string
+}
+
 variable "tags" {
   description = "Additional tags merged onto all resources."
   type        = map(string)

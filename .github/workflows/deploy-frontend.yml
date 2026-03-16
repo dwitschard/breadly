@@ -92,6 +92,7 @@ jobs:
           environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"
+            -var="api_gateway_url=${{ vars.API_GATEWAY_URL }}"
 
       - name: Print website URL
         working-directory: infrastructure/aws/frontend/deploy

@@ -13,7 +13,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptorsFromDi()),
     provideOAuthClient({
       resourceServer: {
-        allowedUrls: ['http://localhost:3000/api', 'https://d3ja5ewqxjy62d.cloudfront.net'],
+        allowedUrls: [`${window.location.origin}/api`],
         sendAccessToken: true,
       },
     }),

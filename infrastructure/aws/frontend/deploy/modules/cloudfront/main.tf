@@ -11,9 +11,43 @@
 #   • Default root object: index.html
 #   • Custom error responses map 403 and 404 (returned by S3 for missing keys) to
 #     /index.html with HTTP 200, enabling Angular's client-side router to handle the URL.
+#
+# API routing:
+#   • /api/* requests are forwarded to the API Gateway origin.
+#   • A CloudFront Function strips the /api prefix before forwarding, so
+#     GET /api/recipe → GET https://<apigw>/recipe (as API Gateway expects).
+#   • The Authorization header is forwarded via the AllViewerExceptHostHeader
+#     managed origin request policy so the JWT reaches the Cognito authorizer.
+#   • Caching is fully disabled for API responses (CachingDisabled managed policy).
+
+locals {
+  # Strip the https:// scheme — CloudFront origin domain_name must be a bare hostname.
+  api_gateway_host = replace(var.api_gateway_url, "https://", "")
+}
 
 # ---------------------------------------------------------------------------
-# Origin Access Control
+# CloudFront Function — strip /api prefix from viewer requests
+# ---------------------------------------------------------------------------
+
+resource "aws_cloudfront_function" "strip_api_prefix" {
+  name    = "${var.name}-strip-api-prefix"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+
+  # Removes the leading /api segment so API Gateway receives the correct path.
+  # e.g. /api/recipe  →  /recipe
+  #      /api          →  /
+  code = <<-EOF
+    function handler(event) {
+      var request = event.request;
+      request.uri = request.uri.replace(/^\/api/, '') || '/';
+      return request;
+    }
+  EOF
+}
+
+# ---------------------------------------------------------------------------
+# Origin Access Control (S3)
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudfront_origin_access_control" "this" {
@@ -34,12 +68,49 @@ resource "aws_cloudfront_distribution" "this" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100" # EU + North America
 
+  # S3 origin — serves the Angular SPA static files.
   origin {
     domain_name              = var.bucket_regional_domain_name
     origin_id                = "s3-${var.bucket_id}"
     origin_access_control_id = aws_cloudfront_origin_access_control.this.id
   }
 
+  # API Gateway origin — receives /api/* traffic after prefix stripping.
+  origin {
+    domain_name = local.api_gateway_host
+    origin_id   = "apigw"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  # /api/* → API Gateway (evaluated before the default S3 behavior).
+  ordered_cache_behavior {
+    path_pattern           = "/api/*"
+    target_origin_id       = "apigw"
+    viewer_protocol_policy = "https-only"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    # AWS-managed CachingDisabled: no caching, all requests forwarded to origin.
+    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+
+    # AWS-managed AllViewerExceptHostHeader: forwards all viewer headers
+    # (including Authorization) except Host, which API Gateway sets itself.
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.strip_api_prefix.arn
+    }
+  }
+
+  # Default behavior → S3 (Angular SPA).
   default_cache_behavior {
     target_origin_id       = "s3-${var.bucket_id}"
     viewer_protocol_policy = "redirect-to-https"
@@ -116,3 +187,4 @@ resource "aws_s3_bucket_policy" "cloudfront_oac" {
     }]
   })
 }
+
