@@ -21,8 +21,10 @@
 #   • Caching is fully disabled for API responses (CachingDisabled managed policy).
 
 locals {
-  # Strip the https:// scheme — CloudFront origin domain_name must be a bare hostname.
-  api_gateway_host = replace(var.api_gateway_url, "https://", "")
+  # Extract the bare hostname from the URL — CloudFront requires a domain name with
+  # no scheme and no trailing slash or path (e.g. API Gateway's $default stage invoke
+  # URL ends with a trailing slash which CloudFront rejects).
+  api_gateway_host = regex("^https://([^/]+)", var.api_gateway_url)[0]
 }
 
 # ---------------------------------------------------------------------------
