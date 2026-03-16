@@ -11,3 +11,16 @@ module "frontend" {
     Component = "frontend"
   }
 }
+
+module "cdn" {
+  source = "./modules/cloudfront"
+
+  name                        = "${var.project_name}-${terraform.workspace}-frontend"
+  bucket_id                   = module.frontend.bucket_id
+  bucket_arn                  = module.frontend.bucket_arn
+  bucket_regional_domain_name = module.frontend.bucket_regional_domain_name
+
+  tags = {
+    Component = "frontend"
+  }
+}

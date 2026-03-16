@@ -58,32 +58,13 @@ resource "aws_s3_bucket_website_configuration" "this" {
 resource "aws_s3_bucket_public_access_block" "this" {
   bucket = aws_s3_bucket.this.id
 
-  # ACL-based access stays blocked; policy-based public read is allowed below.
+  # All public access is blocked — CloudFront OAC is the sole access path.
   block_public_acls       = true
   ignore_public_acls      = true
-  block_public_policy     = false
-  restrict_public_buckets = false
+  block_public_policy     = true
+  restrict_public_buckets = true
 
   depends_on = [aws_s3_bucket.this]
-}
-
-resource "aws_s3_bucket_policy" "public_read" {
-  bucket = aws_s3_bucket.this.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.this.arn}/*"
-      }
-    ]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.this]
 }
 
 resource "aws_s3_object" "frontend_files" {
@@ -106,5 +87,5 @@ resource "aws_s3_object" "frontend_files" {
   #   the URL changes on every build, making long caching safe.
   cache_control = endswith(each.value, ".html") ? "no-cache, no-store, must-revalidate" : "public, max-age=31536000, immutable"
 
-  depends_on = [aws_s3_bucket_policy.public_read]
+  depends_on = [aws_s3_bucket_public_access_block.this]
 }

@@ -24,3 +24,13 @@ output "frontend_uploaded_file_count" {
   description = "Number of files synced to S3 in the last apply."
   value       = module.frontend.uploaded_file_count
 }
+
+output "frontend_cloudfront_url" {
+  description = "HTTPS CloudFront URL for the frontend — use this as the Cognito callback/logout URL."
+  value       = module.cdn.cloudfront_domain_name
+}
+
+output "frontend_cloudfront_distribution_id" {
+  description = "CloudFront distribution ID; use for cache invalidations after deployments."
+  value       = module.cdn.cloudfront_distribution_id
+}

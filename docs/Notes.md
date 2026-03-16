@@ -1,6 +1,7 @@
 # Notes
 
 ## Next Steps
+- Logout locally does not yet work
 - Add CloudFront to get a HTTPS Endpoint for the FE (required by cognito)
 - Authenticate Frontend using Cognito User Pool -> make it work  
 - Remove /health endpoint from Gateway

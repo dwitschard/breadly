@@ -146,8 +146,9 @@ locals {
   cognito_issuer_url  = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.this.id}"
 
   # Parse the comma-separated frontend_urls string into a list, dropping any
-  # blank entries that result from an empty variable value.
-  frontend_callback_urls = compact(split(",", var.frontend_urls))
+  # blank entries that result from an empty variable value, and trimming
+  # whitespace from each entry to avoid Cognito validation errors.
+  frontend_callback_urls = [for url in compact(split(",", var.frontend_urls)) : trimspace(url)]
 }
 
 resource "aws_apigatewayv2_authorizer" "cognito" {
