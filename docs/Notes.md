@@ -1,10 +1,13 @@
 # Notes
 
 ## Next Steps
-- First Api Call to Lambda
-- Re-enable Testµ
+- Create backend using Lambda Web Adapter
+  - https://github.com/awslabs/aws-lambda-web-adapter?tab=readme-ov-file
+- Switch back to imports without .js suffix -> Tests run smoothly again
+- Re-Enable Tests in Pipeline
+
+
 - Logout locally does not yet work 
-- Secure lambda invocation using IAM Role
 - Extract Role in Backend and use it for Business Logic
 - Check Connectivity to MongoDB Atlas from Lambda
 - Check Connectivity to DynamoDB from Lambda
