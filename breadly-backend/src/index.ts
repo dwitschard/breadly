@@ -1,4 +1,4 @@
-export const handler = async(event) => {
+export const handler = async(event: unknown) => {
 
     return {
         msg: 'Hello World',
