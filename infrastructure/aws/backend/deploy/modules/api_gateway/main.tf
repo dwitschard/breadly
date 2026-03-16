@@ -2,8 +2,7 @@
 # authorizer in front of the Lambda Express backend.
 #
 # Routing:
-#   GET  /health      → Lambda, no authorizer (public health check)
-#   ANY  /{proxy+}    → Lambda, JWT authorizer (all other routes require a valid Cognito token)
+#   ANY  /{proxy+}    → Lambda, JWT authorizer (all routes require a valid Cognito token)
 #
 # Auth:
 #   The JWT authorizer validates Bearer tokens issued by the Cognito User Pool.
@@ -167,17 +166,7 @@ resource "aws_apigatewayv2_authorizer" "cognito" {
 # Routes
 # ---------------------------------------------------------------------------
 
-# Public route — no authorizer. GET /health is used by load balancers and
-# monitoring tools; it must not require authentication.
-resource "aws_apigatewayv2_route" "health" {
-  api_id    = aws_apigatewayv2_api.this.id
-  route_key = "GET /health"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-
-  authorization_type = "NONE"
-}
-
-# Protected catch-all route — all other requests require a valid Cognito JWT.
+# Protected catch-all route — all requests require a valid Cognito JWT.
 resource "aws_apigatewayv2_route" "default" {
   api_id    = aws_apigatewayv2_api.this.id
   route_key = "ANY /{proxy+}"

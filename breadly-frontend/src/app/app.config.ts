@@ -9,14 +9,14 @@ import { provideApi } from './generated/api/provide-api';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideApi('/api'),
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     provideOAuthClient({
       resourceServer: {
-        allowedUrls: [`${window.location.origin}/api`],
         sendAccessToken: true,
+        allowedUrls: ['/api'],
       },
     }),
-    provideApi('/api'),
   ],
 };

@@ -25,6 +25,6 @@ export class AuthService {
   }
 
   logout(): void {
-    this.oauthService.revokeTokenAndLogout();
+    this.oauthService.logOut();
   }
 }

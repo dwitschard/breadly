@@ -31,6 +31,17 @@ export class ApplicationDatabase {
     };
   }
 
+  static async ping(): Promise<boolean> {
+    try {
+      const db = ApplicationDatabase.db;
+      if (!db) return false;
+      await db.command({ ping: 1 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   static async close(): Promise<void> {
     if (ApplicationDatabase.client) {
       await ApplicationDatabase.client.close();

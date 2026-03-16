@@ -1,10 +1,9 @@
 # Notes
 
 ## Next Steps
-- Logout locally does not yet work
-- Add CloudFront to get a HTTPS Endpoint for the FE (required by cognito)
-- Authenticate Frontend using Cognito User Pool -> make it work  
-- Remove /health endpoint from Gateway
+- First Api Call to Lambda
+- Logout locally does not yet work 
+  - Remove /health endpoint from Gateway
 - Secure lambda invocation using IAM Role
 - Extract Role in Backend and use it for Business Logic
 - Check Connectivity to MongoDB Atlas from Lambda
