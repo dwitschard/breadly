@@ -18,13 +18,13 @@ variable "aws_region" {
 variable "handler" {
   description = "Lambda handler in module/file notation (no .js extension — Lambda splits on the last dot to derive the module path and exported function name)."
   type        = string
-  default     = "server"
+  default     = "index.handler"
 }
 
 variable "runtime" {
   description = "Lambda runtime identifier."
   type        = string
-  default     = "nodejs22.x"
+  default     = "nodejs24.x"
 }
 
 variable "timeout" {
