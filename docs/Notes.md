@@ -5,11 +5,11 @@
   - https://github.com/awslabs/aws-lambda-web-adapter?tab=readme-ov-file
 - Switch back to imports without .js suffix -> Tests run smoothly again
 - Re-Enable Tests in Pipeline
+- Implement Database Connectivity from Lambda
 
 
 - Logout locally does not yet work 
 - Extract Role in Backend and use it for Business Logic
-- Check Connectivity to MongoDB Atlas from Lambda
 - Check Connectivity to DynamoDB from Lambda
 - Think about a public lambda API that does not require authentication (how to separate on code level?)
 
