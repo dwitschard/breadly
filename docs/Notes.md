@@ -2,7 +2,6 @@
 
 ## Next Steps
 - Switch back to imports without .js suffix -> Tests run smoothly again
-- Re-Enable Tests in Pipeline
 - Fix Test Errors when importing `supertest`
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
 - Implement Database Connectivity from Lambda
