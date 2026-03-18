@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
-import { ApplicationError } from '../../domain/error.types.js';
-import { ApplicationDatabase } from '../../database/application-database.js';
+import { ApplicationError } from '../../domain/error.types';
+import { ApplicationDatabase } from '../../database/application-database';
 
 const operationController = Router();
 

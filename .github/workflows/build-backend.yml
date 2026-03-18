@@ -63,9 +63,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-#      TODO: Enable again once Lambda is working
-#      - name: Test
-#        run: npm run test:ci
+      - name: Test
+        run: npm run test:ci
 
       - name: Build
         run: npm run build

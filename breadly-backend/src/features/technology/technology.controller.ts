@@ -3,8 +3,8 @@ import {
   getAllTechnologies,
   getTechnologyById,
   postTechnology,
-} from './technology.service.js';
-import { Technology } from './technology.types.js';
+} from './technology.service';
+import { Technology } from './technology.types';
 
 const technologyController = Router();
 
