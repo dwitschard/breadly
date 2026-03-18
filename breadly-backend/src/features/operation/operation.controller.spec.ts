@@ -8,8 +8,15 @@ describe('Operation Controller', () => {
   it('should respond with message in json format for application error', async () => {
     const response = await request.get('/application-error');
 
-    expect(response.status).toEqual(799);
-    expect(response.body).toEqual({ error: 'Custom Error!' });
+    expect(response.status).toEqual(450);
+    expect(response.body).toEqual({ error: 'Custom Error - 450!' });
+  });
+
+  it('should respond with message in json format for client error', async () => {
+    const response = await request.get('/client-error');
+
+    expect(response.status).toEqual(400);
+    expect(response.body).toEqual({ error: 'Custom Error- 400!' });
   });
 
   it('should respond with message in json format for generic error', async () => {
