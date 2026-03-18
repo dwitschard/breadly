@@ -5,16 +5,25 @@
 [x] Backend serves only Requests via API Gateway
 [x] User need to authenticate via Cognito to access API Gateway
 [x] Backend is connected to a Database
+[x] User has a fluid Login / Logout Experience
 
-- User has a fluid Login / Logout Experience
-- Local Setup is developer friendly
 - Backend is connected to DynamoDB
+- Local Setup is developer friendly
 
 Optional:
 - Custom UI for Login / Registration
 
+## Next Week
+- Create Skills / Agents for Coding itself
+- Agent should: Create API Spec, implement BE & FE, write tests + E2E
+- Think about E2E-Setup -> Spawn a Lambda for Testing
+
 ## Next Steps
-- Add DynamoDB Connection + Terraform Setup
+- Add Button to FE to jump to Health
+- Add DynamoDB Connection
+    - Terraform Setup
+    - Implement DB Connection in Backend
+    - Add it to /health Endpoint
 - Make ApplicationDatabase more generic or duplicate it -> multiple datasources
 - Check if DB-Connectivity can/should be implemented outside of Express (Lambda Performance)
 - Fix Test Errors when importing `supertest`
@@ -26,9 +35,11 @@ Optional:
 - Think about a public lambda API that does not require authentication (how to separate on code level?)
 
 ## Bugs
-1. Build Open API Spec for FE and BE differently (if needed)
-   2. Development on BE and FE should be possible at the same time
-   3. Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
+- Login automatically in case Session is still valid 
+- Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
+- Build Open API Spec for FE and BE differently (if needed)
+  - Development on BE and FE should be possible at the same time 
+  - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
 ## Ideas
 1. Implement a custom ui for login / registration
