@@ -1,11 +1,6 @@
 # Notes
 
 ## Next Steps
-- Create backend using Lambda Web Adapter
-  - https://github.com/awslabs/aws-lambda-web-adapter?tab=readme-ov-file
-  - Start it by calling `server.ts` -> ignore the `index.ts` for this change
-- Cleanup `/dist` folder when creating new build
-- Check if `node_modules` can be excluded from the build
 - Switch back to imports without .js suffix -> Tests run smoothly again
 - Re-Enable Tests in Pipeline
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)

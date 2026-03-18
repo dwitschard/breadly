@@ -74,7 +74,7 @@ jobs:
         run: npm ci --omit=dev
 
       - name: Create deployment zip
-        run: zip -r ../backend.zip dist/ package.json run.sh
+        run: zip -r ../backend.zip dist/ node_modules/ package.json run.sh
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v6
