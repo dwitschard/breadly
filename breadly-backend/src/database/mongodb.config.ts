@@ -1,6 +1,6 @@
 export const MONGODB_CONFIG = {
     CONNECTION_STRING() {
-        return `${process.env.DB_CONNECTION_STRING}/?retryWrites=true&w=majority&appName=breadly-api`;
+        return process.env.DB_CONNECTION_STRING;
     },
     DB_NAME: 'breadly',
     COLLECTIONS: {

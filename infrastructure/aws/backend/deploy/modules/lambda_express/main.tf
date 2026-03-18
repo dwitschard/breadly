@@ -122,7 +122,7 @@ resource "aws_lambda_function" "this" {
       READINESS_CHECK_PATH = var.readiness_check_path
 
       # SSM parameter name; the app reads this at startup to fetch the MongoDB URI.
-      MONGODB_CONNECTION_STRING = aws_ssm_parameter.mongodb_uri.name
+      MONGODB_CONNECTION_STRING = aws_ssm_parameter.mongodb_uri.value
     }
   }
 
