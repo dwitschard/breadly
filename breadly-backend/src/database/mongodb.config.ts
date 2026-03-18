@@ -1,6 +1,6 @@
 export const MONGODB_CONFIG = {
     CONNECTION_STRING() {
-        return `${process.env.DB_CONNECTION_STRING} ?? <<unset>>`;
+        return `${process.env.DB_CONNECTION_STRING}`;
     },
     DB_NAME: 'breadly',
     COLLECTIONS: {
