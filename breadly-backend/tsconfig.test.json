@@ -1,9 +1,8 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "rootDir": "."
+    "rootDir": ".",
+    "types": ["jest", "node"]
   },
-  "include": ["src/**/*", "globalSetup.ts", "globalTeardown.ts", "setupFile.ts"]
+  "include": ["src/**/*", "src/**/*.spec.ts", "globalSetup.ts", "globalTeardown.ts", "setupFile.ts"]
 }

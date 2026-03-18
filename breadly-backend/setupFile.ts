@@ -1,4 +1,4 @@
-import { ApplicationDatabase } from './src/database/application-database';
+import { ApplicationDatabase } from './src/database/application-database.js';
 
 beforeAll(async () => {
   const { MONGO_URI, DB_NAME } = process.env;
