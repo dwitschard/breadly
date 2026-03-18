@@ -4,8 +4,12 @@ import { ApplicationDatabase } from '../../database/application-database.js';
 
 const operationController = Router();
 
+operationController.get('/client-error', () => {
+  throw new ApplicationError('Custom Error- 400!', 400);
+});
+
 operationController.get('/application-error', () => {
-  throw new ApplicationError('Custom Error!', 799);
+  throw new ApplicationError('Custom Error - 450!', 450);
 });
 
 operationController.get('/generic-error', () => {

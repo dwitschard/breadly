@@ -9,6 +9,7 @@
 
 - Backend is connected to DynamoDB
 - Local Setup is developer friendly
+  - supertest import in Test
 
 Optional:
 - Custom UI for Login / Registration
@@ -28,11 +29,8 @@ Optional:
 - Check if DB-Connectivity can/should be implemented outside of Express (Lambda Performance)
 - Fix Test Errors when importing `supertest`
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
-
-- Logout locally does not yet work 
-- Extract Role in Backend and use it for Business Logic
-- Check Connectivity to DynamoDB from Lambda
-- Think about a public lambda API that does not require authentication (how to separate on code level?)
+  - if necessary -> implement custom error code in valid range
+- Extract Role in Backend and use it for Business Logic /profile Endpoint
 
 ## Bugs
 - Login automatically in case Session is still valid 
@@ -42,8 +40,9 @@ Optional:
   - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
 ## Ideas
-1. Implement a custom ui for login / registration
-2. decide on ui library / elements
+- Implement a custom ui for login / registration
+- decide on ui library / elements
+- Think about a public lambda API that does not require authentication (how to separate on code level?)
 
 ## Questions
 Deploy setup:
