@@ -113,16 +113,16 @@ resource "aws_lambda_function" "this" {
   environment {
     variables = {
       # Required by Lambda Web Adapter to hook into the Lambda runtime.
-      #AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
+      AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
 
       # Port the Express server listens on; must match server.ts.
-      #PORT = tostring(var.port)
+      PORT = tostring(var.port)
 
       # Path the Lambda Web Adapter polls until the server is ready to accept requests.
-      #READINESS_CHECK_PATH = var.readiness_check_path
+      READINESS_CHECK_PATH = var.readiness_check_path
 
       # SSM parameter name; the app reads this at startup to fetch the MongoDB URI.
-      #MONGODB_SSM_PARAM = aws_ssm_parameter.mongodb_uri.name
+      MONGODB_SSM_PARAM = aws_ssm_parameter.mongodb_uri.name
     }
   }
 
