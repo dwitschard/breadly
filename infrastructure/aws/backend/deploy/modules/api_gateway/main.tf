@@ -73,8 +73,7 @@ resource "aws_cognito_user_pool_client" "this" {
   supported_identity_providers         = ["COGNITO"]
 
   callback_urls = local.frontend_callback_urls
-
-  logout_urls = local.frontend_callback_urls
+  logout_urls = [for url in local.frontend_callback_urls : "${url}/logout"]
 }
 
 # Cognito Hosted UI domain — required to expose the /oauth2/authorize and

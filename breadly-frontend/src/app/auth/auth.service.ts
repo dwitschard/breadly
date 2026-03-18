@@ -25,6 +25,9 @@ export class AuthService {
   }
 
   logout(): void {
-    this.oauthService.logOut();
+    this.oauthService.logOut({
+      client_id: this.oauthService.clientId,
+      logout_uri: `${window.location.origin}/logout`,
+    });
   }
 }

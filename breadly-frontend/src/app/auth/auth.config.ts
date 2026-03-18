@@ -7,6 +7,8 @@ export const authConfig: AuthConfig = {
   redirectUri: window.location.origin,
   scope: 'openid email',
 
+  redirectUriAsPostLogoutRedirectUriFallback: false,
+
   strictDiscoveryDocumentValidation: false,
   showDebugInformation: false,
 };

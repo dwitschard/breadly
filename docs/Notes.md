@@ -1,25 +1,24 @@
 # Notes
 
 ## Week Goals
-- Frontend and Backend are being deployed automatically
-- Backend serves only Requests via API Gateway
-- User need to authenticate via Cognito to access API Gateway
-- Backend is connected to a Database
+[x] Frontend and Backend are being deployed automatically
+[x] Backend serves only Requests via API Gateway
+[x] User need to authenticate via Cognito to access API Gateway
+[x] Backend is connected to a Database
+
 - User has a fluid Login / Logout Experience
 - Local Setup is developer friendly
+- Backend is connected to DynamoDB
 
 Optional:
 - Custom UI for Login / Registration
 
 ## Next Steps
-- Implement MongoAtlas Connection
-  - Fix Connection String passing via SM -> only one string mongodb://...
+- Add DynamoDB Connection + Terraform Setup
 - Make ApplicationDatabase more generic or duplicate it -> multiple datasources
 - Check if DB-Connectivity can/should be implemented outside of Express (Lambda Performance)
-- 
 - Fix Test Errors when importing `supertest`
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
-- Implement Database Connectivity from Lambda
 
 - Logout locally does not yet work 
 - Extract Role in Backend and use it for Business Logic
