@@ -1,8 +1,6 @@
 export const MONGODB_CONFIG = {
-    CONNECTION_STRING: () => {
-        const connectionString = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_URI}/?retryWrites=true&w=majority&appName=breadly-api`;
-        console.log(connectionString);
-        return connectionString;
+    CONNECTION_STRING() {
+        return `${process.env.DB_CONNECTION_STRING}/?retryWrites=true&w=majority&appName=breadly-api`;
     },
     DB_NAME: 'breadly',
     COLLECTIONS: {
