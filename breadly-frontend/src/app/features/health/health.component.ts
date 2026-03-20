@@ -19,12 +19,26 @@ interface HealthResponse {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="max-w-2xl mx-auto p-6">
-      <h1 class="text-2xl font-bold mb-6">System Health</h1>
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">System Health</h1>
+        <button
+          type="button"
+          (click)="load()"
+          [disabled]="loading()"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+          [attr.aria-busy]="loading()"
+        >
+          {{ loading() ? 'Reloading…' : 'Reload' }}
+        </button>
+      </div>
 
       @if (loading()) {
         <p aria-live="polite" aria-busy="true">Checking system status…</p>
       } @else if (fetchError()) {
         <p role="alert" class="text-red-600">{{ fetchError() }}</p>
+        @if (duration() !== null) {
+          <p class="mt-2 text-xs text-gray-400">Checked in {{ duration() }} ms</p>
+        }
       } @else if (health()) {
         <ul class="space-y-3" aria-label="System status checks">
           <li class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
@@ -58,6 +72,10 @@ interface HealthResponse {
             [class]="health()!.status === 'ok' ? 'text-green-600' : 'text-red-600'"
           >{{ health()!.status === 'ok' ? 'All systems operational' : 'Degraded' }}</span>
         </p>
+
+        @if (duration() !== null) {
+          <p class="mt-2 text-xs text-gray-400">Checked in {{ duration() }} ms</p>
+        }
       }
     </main>
   `,
@@ -68,15 +86,29 @@ export class HealthComponent implements OnInit {
   readonly health = signal<HealthResponse | null>(null);
   readonly loading = signal(true);
   readonly fetchError = signal<string | null>(null);
+  readonly duration = signal<number | null>(null);
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  protected load(): void {
+    this.loading.set(true);
+    this.health.set(null);
+    this.fetchError.set(null);
+    this.duration.set(null);
+
+    const startTime = Date.now();
+
     this.http.get<HealthResponse>('/api/health').subscribe({
       next: (data) => {
         this.health.set(data);
+        this.duration.set(Date.now() - startTime);
         this.loading.set(false);
       },
       error: () => {
         this.fetchError.set('Failed to reach the health endpoint.');
+        this.duration.set(Date.now() - startTime);
         this.loading.set(false);
       },
     });

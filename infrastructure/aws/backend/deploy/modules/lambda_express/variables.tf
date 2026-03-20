@@ -30,7 +30,7 @@ variable "runtime" {
 variable "timeout" {
   description = "Maximum Lambda execution time in seconds."
   type        = number
-  default     = 30
+  default     = 10
 }
 
 variable "memory_size" {

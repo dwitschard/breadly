@@ -20,11 +20,11 @@ Optional:
 - Think about E2E-Setup -> Spawn a Lambda for Testing
 
 ## Next Steps
-- Add Button to FE to jump to Health
 - Add DynamoDB Connection
     - Terraform Setup
     - Implement DB Connection in Backend
     - Add it to /health Endpoint
+- Remove MongoDB Connection -> Use AWS DocumentDB if really needed
 - Make ApplicationDatabase more generic or duplicate it -> multiple datasources
 - Check if DB-Connectivity can/should be implemented outside of Express (Lambda Performance)
 - Fix Test Errors when importing `supertest`
@@ -33,8 +33,7 @@ Optional:
 - Extract Role in Backend and use it for Business Logic /profile Endpoint
 
 ## Bugs
-- Login automatically in case Session is still valid 
-- Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
+- Environment Specific Configuration of Cognito (clientId, issuer?)
 - Build Open API Spec for FE and BE differently (if needed)
   - Development on BE and FE should be possible at the same time 
   - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
@@ -44,6 +43,10 @@ Optional:
 - Implement a custom ui for login / registration
 - decide on ui library / elements
 - Think about a public lambda API that does not require authentication (how to separate on code level?)
+
+- Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
+    - Not easily possible, requires loop through BFF
+    - Probably not relevant for now
 
 ## Questions
 Deploy setup:

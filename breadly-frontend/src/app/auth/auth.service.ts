@@ -2,7 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
-import { filter, tap } from 'rxjs';
+import { filter } from 'rxjs';
 import { authConfig } from './auth.config';
 
 @Injectable({ providedIn: 'root' })
@@ -27,7 +27,6 @@ export class AuthService {
   private listenForLogin(): void {
     this.oauthService.events
       .pipe(
-        tap(console.log),
         filter((e) => e.type === 'token_received'),
         takeUntilDestroyed(),
       )

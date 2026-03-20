@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { NavLink } from '../../config/nav.config';
 
 @Component({
@@ -51,7 +53,15 @@ export class NavbarComponent {
   readonly isLoggedIn = input.required<boolean>();
   readonly authClick = output();
 
+  private readonly currentUrl = toSignal(
+    inject(Router).events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map((e) => (e as NavigationEnd).urlAfterRedirects),
+    ),
+    { initialValue: inject(Router).url },
+  );
+
   isActivePath(path: string): boolean {
-    return typeof window !== 'undefined' && window.location.pathname.startsWith(path);
+    return this.currentUrl().startsWith(path);
   }
 }
