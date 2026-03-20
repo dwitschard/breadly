@@ -33,6 +33,7 @@ Optional:
   - if necessary -> implement custom error code in valid range
 
 ## Bugs
+- Keep URL when automatically reloading/relogin
 - Environment Specific Configuration of Cognito (clientId, issuer?)
 - Build Open API Spec for FE and BE differently (if needed)
   - Development on BE and FE should be possible at the same time 
