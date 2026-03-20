@@ -93,6 +93,14 @@ jobs:
           extra_tf_vars: >-
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"
 
+      - name: Invalidate CloudFront cache
+        working-directory: infrastructure/aws/frontend/deploy
+        run: |
+          DIST_ID=$(terraform output -raw frontend_cloudfront_distribution_id)
+          aws cloudfront create-invalidation \
+            --distribution-id "$DIST_ID" \
+            --paths "/*"
+
       - name: Print website URL
         working-directory: infrastructure/aws/frontend/deploy
         run: terraform output -raw frontend_website_url
