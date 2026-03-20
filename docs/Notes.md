@@ -20,17 +20,16 @@ Optional:
 - Think about E2E-Setup -> Spawn a Lambda for Testing
 
 ## Next Steps
+- Extract Role in Backend and use it for Business Logic /profile Endpoint
 - Add DynamoDB Connection
     - Terraform Setup
     - Implement DB Connection in Backend
     - Add it to /health Endpoint
 - Remove MongoDB Connection -> Use AWS DocumentDB if really needed
 - Make ApplicationDatabase more generic or duplicate it -> multiple datasources
-- Check if DB-Connectivity can/should be implemented outside of Express (Lambda Performance)
 - Fix Test Errors when importing `supertest`
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
   - if necessary -> implement custom error code in valid range
-- Extract Role in Backend and use it for Business Logic /profile Endpoint
 
 ## Bugs
 - Environment Specific Configuration of Cognito (clientId, issuer?)

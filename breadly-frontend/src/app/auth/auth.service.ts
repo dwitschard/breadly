@@ -4,11 +4,13 @@ import { Router } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { filter } from 'rxjs';
 import { authConfig } from './auth.config';
+import { ProfileService } from '../features/profile/profile.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly oauthService = inject(OAuthService);
   private readonly router = inject(Router);
+  private readonly profileService = inject(ProfileService);
 
   private readonly _isLoggedIn = signal(this.oauthService.hasValidAccessToken());
   readonly isLoggedIn = this._isLoggedIn.asReadonly();
@@ -32,6 +34,7 @@ export class AuthService {
       )
       .subscribe(() => {
         this._isLoggedIn.set(true);
+        this.profileService.load();
         this.router.navigate(['/recipe']);
       });
   }
@@ -54,6 +57,7 @@ export class AuthService {
 
   logout(): void {
     this._isLoggedIn.set(false);
+    this.profileService.clear();
     this.oauthService.logOut({
       client_id: this.oauthService.clientId,
       logout_uri: `${window.location.origin}`,
@@ -63,5 +67,6 @@ export class AuthService {
   clearLocalSession(): void {
     this.oauthService.logOut(true);
     this._isLoggedIn.set(false);
+    this.profileService.clear();
   }
 }

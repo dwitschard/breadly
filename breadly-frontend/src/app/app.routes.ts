@@ -29,6 +29,12 @@ export const routes: Routes = [
       import('./auth/logout.component').then((m) => m.LogoutComponent),
   },
   {
+    path: 'profile',
+    canActivate: [withAuth()],
+    loadComponent: () =>
+      import('./features/profile/profile.container').then((m) => m.ProfileContainerComponent),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./features/home/home.container').then((m) => m.HomeContainerComponent),

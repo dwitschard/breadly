@@ -3,6 +3,7 @@ import {operationController} from './features/operation/operation.controller.js'
 import {globalErrorHandler} from "./middleware/error.middleware.js";
 import {technologyController} from "./features/technology/technology.controller.js";
 import {recipeController} from "./features/recipe/recipe.controller.js";
+import {profileController} from "./features/profile/profile.controller.js";
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use('/', operationController);
 app.use('/technologies', technologyController);
 app.use('/recipe', recipeController);
+app.use('/profile', profileController);
 
 app.use(globalErrorHandler);
 

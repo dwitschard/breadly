@@ -3,11 +3,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { NavLink } from '../../config/nav.config';
+import { UserProfile } from '../../features/profile/profile.types';
+import { ProfileMenuComponent } from './profile-menu.component';
 
 @Component({
   selector: 'app-navbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, ProfileMenuComponent],
   template: `
     <header class="flex items-center justify-between px-6 py-3 border-b border-gray-200">
       <div class="flex items-center gap-4">
@@ -38,20 +40,24 @@ import { NavLink } from '../../config/nav.config';
         </nav>
       </div>
 
-      <button
-        type="button"
-        (click)="authClick.emit()"
-        class="px-3 py-2 rounded text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        {{ isLoggedIn() ? 'Logout' : 'Login' }}
-      </button>
+      <app-profile-menu
+        [profile]="profile()"
+        [isLoggedIn]="isLoggedIn()"
+        (profileClick)="profileClick.emit()"
+        (logoutClick)="logoutClick.emit()"
+        (loginClick)="loginClick.emit()"
+      />
     </header>
   `,
 })
 export class NavbarComponent {
   readonly contentLinks = input.required<NavLink[]>();
   readonly isLoggedIn = input.required<boolean>();
-  readonly authClick = output();
+  readonly profile = input.required<UserProfile | null>();
+
+  readonly profileClick = output<void>();
+  readonly logoutClick = output<void>();
+  readonly loginClick = output<void>();
 
   private readonly currentUrl = toSignal(
     inject(Router).events.pipe(
