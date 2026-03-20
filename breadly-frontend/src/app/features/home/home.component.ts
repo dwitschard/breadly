@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-home',
@@ -10,16 +10,19 @@ import { ChangeDetectionStrategy, Component, output } from '@angular/core';
         Your personal recipe manager. Log in to manage your recipes and check the
         application health.
       </p>
-      <button
-        type="button"
-        (click)="loginClick.emit()"
-        class="px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        Login to get started
-      </button>
+      @if (!isLoggedIn()) {
+        <button
+          type="button"
+          (click)="loginClick.emit()"
+          class="px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Login to get started
+        </button>
+      }
     </main>
   `,
 })
 export class HomeComponent {
+  readonly isLoggedIn = input.required<boolean>();
   readonly loginClick = output();
 }

@@ -14,8 +14,12 @@ export class AuthService {
   readonly isLoggedIn = this._isLoggedIn.asReadonly();
 
   constructor() {
+    this.oauthService.setStorage(localStorage);
     this.oauthService.configure(authConfig);
-    this.oauthService.loadDiscoveryDocumentAndTryLogin();
+    this.oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
+      this._isLoggedIn.set(this.oauthService.hasValidAccessToken());
+      this.oauthService.setupAutomaticSilentRefresh();
+    });
     this.listenForLogin();
     this.listenForLogout();
   }
@@ -41,7 +45,7 @@ export class AuthService {
       )
       .subscribe(() => {
         this._isLoggedIn.set(false);
-        this.router.navigate(['/home']);
+        this.router.navigate(['/logout']);
       });
   }
 

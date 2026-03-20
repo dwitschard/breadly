@@ -12,7 +12,7 @@ export function withAuth(options: AuthGuardOptions = {}): CanActivateFn {
     const router = inject(Router);
 
     if (!authService.isLoggedIn()) {
-      return router.createUrlTree(['/']);
+      return router.createUrlTree(['/login']);
     }
 
     return true;

@@ -6,6 +6,7 @@ export const authConfig: AuthConfig = {
   responseType: 'code',
   redirectUri: `${window.location.origin}/oidc-callback`,
   scope: 'openid email',
+  timeoutFactor: 0.75,
 
   strictDiscoveryDocumentValidation: false,
   showDebugInformation: false,

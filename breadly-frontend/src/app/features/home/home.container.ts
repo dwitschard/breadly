@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from '../../auth/auth.service';
 import { HomeComponent } from './home.component';
 
 @Component({
@@ -7,10 +8,11 @@ import { HomeComponent } from './home.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [HomeComponent],
   template: `
-    <app-home (loginClick)="login()" />
+    <app-home [isLoggedIn]="authService.isLoggedIn()" (loginClick)="login()" />
   `,
 })
 export class HomeContainerComponent {
+  protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
   login(): void {
