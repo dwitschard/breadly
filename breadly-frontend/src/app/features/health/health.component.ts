@@ -58,7 +58,9 @@ interface HealthResponse {
               <span
                 class="inline-block h-2.5 w-2.5 rounded-full"
                 [class]="health()!.checks.database.status === 'ok' ? 'bg-green-500' : 'bg-red-500'"
-                [attr.aria-label]="health()!.checks.database.status === 'ok' ? 'Operational' : 'Error'"
+                [attr.aria-label]="
+                  health()!.checks.database.status === 'ok' ? 'Operational' : 'Error'
+                "
               ></span>
               <span class="text-sm text-gray-600">{{ health()!.checks.database.message }}</span>
             </span>
@@ -70,7 +72,8 @@ interface HealthResponse {
           <span
             class="font-semibold"
             [class]="health()!.status === 'ok' ? 'text-green-600' : 'text-red-600'"
-          >{{ health()!.status === 'ok' ? 'All systems operational' : 'Degraded' }}</span>
+            >{{ health()!.status === 'ok' ? 'All systems operational' : 'Degraded' }}</span
+          >
         </p>
 
         @if (duration() !== null) {

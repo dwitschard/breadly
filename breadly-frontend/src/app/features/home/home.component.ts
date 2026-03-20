@@ -7,8 +7,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     <main class="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4 text-center">
       <h1 class="text-4xl font-bold text-gray-900">Welcome to breadly</h1>
       <p class="text-lg text-gray-500 max-w-md">
-        Your personal recipe manager. Log in to manage your recipes and check the
-        application health.
+        Your personal recipe manager. Log in to manage your recipes and check the application
+        health.
       </p>
       @if (!isLoggedIn()) {
         <button

@@ -12,7 +12,6 @@ import { UserProfile } from './profile.types';
         <p aria-live="polite">Loading profile&hellip;</p>
       } @else if (profile()) {
         <div class="flex flex-col gap-6">
-
           <!-- Avatar + name -->
           <div class="flex items-center gap-4">
             @if (profile()!.picture) {
@@ -60,12 +59,14 @@ import { UserProfile } from './profile.types';
                   <span
                     class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700"
                     aria-label="Email verified"
-                  >Verified</span>
+                    >Verified</span
+                  >
                 } @else {
                   <span
                     class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700"
                     aria-label="Email not verified"
-                  >Unverified</span>
+                    >Unverified</span
+                  >
                 }
               </dd>
             </div>
@@ -78,7 +79,9 @@ import { UserProfile } from './profile.types';
                 <dt class="text-sm font-medium text-gray-500">Roles</dt>
                 <dd class="flex flex-wrap gap-1 justify-end">
                   @for (role of profile()!.roles; track role) {
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700"
+                    >
                       {{ role }}
                     </span>
                   }
@@ -86,7 +89,6 @@ import { UserProfile } from './profile.types';
               </div>
             }
           </dl>
-
         </div>
       } @else {
         <p class="text-gray-500">Profile information is unavailable.</p>
@@ -102,8 +104,5 @@ export class ProfileComponent {
     const p = this.profile();
     if (!p) return '';
     return p.name ?? p.givenName ?? p.email;
-  }
-    if (p.name) return p.name[0].toUpperCase();
-    return p.email[0].toUpperCase();
   }
 }

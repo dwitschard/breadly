@@ -20,13 +20,11 @@ export const routes: Routes = [
   },
   {
     path: 'oidc-callback',
-    loadComponent: () =>
-      import('./auth/callback.component').then((m) => m.CallbackComponent),
+    loadComponent: () => import('./auth/callback.component').then((m) => m.CallbackComponent),
   },
   {
     path: 'logout',
-    loadComponent: () =>
-      import('./auth/logout.component').then((m) => m.LogoutComponent),
+    loadComponent: () => import('./auth/logout.component').then((m) => m.LogoutComponent),
   },
   {
     path: 'profile',

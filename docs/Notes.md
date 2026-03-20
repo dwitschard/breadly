@@ -27,6 +27,7 @@ Optional:
     - Add it to /health Endpoint
 - Remove MongoDB Connection -> Use AWS DocumentDB if really needed
 - Make ApplicationDatabase more generic or duplicate it -> multiple datasources
+  - If even needed after migrating to DynamoDB
 - Fix Test Errors when importing `supertest`
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
   - if necessary -> implement custom error code in valid range

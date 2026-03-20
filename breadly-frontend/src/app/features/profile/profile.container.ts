@@ -7,10 +7,7 @@ import { ProfileComponent } from './profile.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ProfileComponent],
   template: `
-    <app-profile
-      [profile]="profileService.profile()"
-      [loading]="profileService.loading()"
-    />
+    <app-profile [profile]="profileService.profile()" [loading]="profileService.loading()" />
   `,
 })
 export class ProfileContainerComponent implements OnInit {

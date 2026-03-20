@@ -12,11 +12,9 @@ export interface CognitoClaims {
   [key: string]: unknown;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: CognitoClaims;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: CognitoClaims;
   }
 }
 

@@ -22,7 +22,9 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
             formControlName="name"
             placeholder="Recipe name"
             class="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            [attr.aria-invalid]="form.controls.name.invalid && form.controls.name.touched ? 'true' : null"
+            [attr.aria-invalid]="
+              form.controls.name.invalid && form.controls.name.touched ? 'true' : null
+            "
           />
           <button
             type="submit"
@@ -46,7 +48,9 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
         } @else {
           <ul class="space-y-2">
             @for (recipe of recipes(); track recipe._id) {
-              <li class="flex items-center justify-between border border-gray-200 rounded px-4 py-3">
+              <li
+                class="flex items-center justify-between border border-gray-200 rounded px-4 py-3"
+              >
                 <span>{{ recipe.name }}</span>
                 <button
                   type="button"

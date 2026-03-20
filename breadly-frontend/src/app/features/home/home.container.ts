@@ -7,9 +7,7 @@ import { HomeComponent } from './home.component';
   selector: 'app-home-container',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [HomeComponent],
-  template: `
-    <app-home [isLoggedIn]="authService.isLoggedIn()" (loginClick)="login()" />
-  `,
+  template: ` <app-home [isLoggedIn]="authService.isLoggedIn()" (loginClick)="login()" /> `,
 })
 export class HomeContainerComponent {
   protected readonly authService = inject(AuthService);
