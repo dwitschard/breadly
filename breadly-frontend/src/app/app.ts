@@ -1,25 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { AuthService } from './auth/auth.service';
-import { LoginButtonComponent } from './auth/login-button.component';
+import { NavbarContainerComponent } from './shared/navbar/navbar.container';
 
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, LoginButtonComponent],
+  imports: [RouterOutlet, NavbarContainerComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
-  private readonly authService = inject(AuthService);
-
-  readonly isLoggedIn = this.authService.isLoggedIn;
-
-  login(): void {
-    this.authService.login();
-  }
-
-  logout(): void {
-    this.authService.logout();
-  }
-}
+export class App {}

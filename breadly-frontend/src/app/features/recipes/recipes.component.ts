@@ -27,7 +27,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
           <button
             type="submit"
             [disabled]="form.invalid"
-            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add
           </button>
@@ -51,7 +51,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
                 <button
                   type="button"
                   (click)="onDelete(recipe)"
-                  class="text-red-600 hover:text-red-800 text-sm"
+                  class="text-red-600 hover:text-red-800 text-sm cursor-pointer"
                   [attr.aria-label]="'Delete recipe ' + recipe.name"
                 >
                   Delete

@@ -43,6 +43,7 @@ Optional:
 - Implement a custom ui for login / registration
 - decide on ui library / elements
 - Think about a public lambda API that does not require authentication (how to separate on code level?)
+- no TTL for `index.html` in CloudFront / invalidate Files after Deployment
 
 ## Questions
 Deploy setup:
