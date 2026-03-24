@@ -53,5 +53,5 @@ export class ApplicationDatabase {
 }
 
 // Ensure DbCollections covers every key in DbCollectionType (compile-time check)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type _AssertAllCollectionsCovered = DbCollections extends Record<DbCollectionType, Collection> ? true : never;
+ 
+export type AssertAllCollectionsCovered = DbCollections extends Record<DbCollectionType, Collection> ? true : never;

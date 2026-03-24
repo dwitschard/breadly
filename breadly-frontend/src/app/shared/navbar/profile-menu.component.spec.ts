@@ -61,7 +61,11 @@ describe('ProfileMenuComponent', () => {
   function createHost(
     profile: UserProfile | null,
     isLoggedIn: boolean,
-  ): { hostFixture: ComponentFixture<TestHostComponent>; host: TestHostComponent; menu: ProfileMenuComponent } {
+  ): {
+    hostFixture: ComponentFixture<TestHostComponent>;
+    host: TestHostComponent;
+    menu: ProfileMenuComponent;
+  } {
     const hostFixture = TestBed.createComponent(TestHostComponent);
     const host = hostFixture.componentInstance;
     host.profile.set(profile);

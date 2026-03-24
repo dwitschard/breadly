@@ -81,7 +81,9 @@ describe('GET /profile', () => {
   });
 
   it('defaults emailVerified to false when claim is absent', async () => {
-    const { email_verified: _, ...withoutVerified } = minimalClaims;
+    const withoutVerified = Object.fromEntries(
+      Object.entries(minimalClaims).filter(([k]) => k !== 'email_verified'),
+    );
     const token = makeToken(withoutVerified);
     const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -89,7 +91,9 @@ describe('GET /profile', () => {
   });
 
   it('defaults roles to [] when cognito:groups is absent', async () => {
-    const { 'cognito:groups': _, ...withoutGroups } = minimalClaims;
+    const withoutGroups = Object.fromEntries(
+      Object.entries(minimalClaims).filter(([k]) => k !== 'cognito:groups'),
+    );
     const token = makeToken(withoutGroups);
     const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);

@@ -1,8 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ProfileContainerComponent } from './profile.container';
 import { ProfileService } from './profile.service';
 import { UserProfile } from './profile.types';
@@ -21,7 +19,8 @@ describe('ProfileContainerComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProfileContainerComponent, HttpClientTestingModule],
+      imports: [ProfileContainerComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     service = TestBed.inject(ProfileService);
