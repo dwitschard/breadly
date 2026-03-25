@@ -1,9 +1,6 @@
-import { Request, Response, Router } from 'express';
-import { requireAuth } from '../../middleware/auth.middleware.js';
+import {Request, Response, Router} from 'express';
 
 const profileController = Router();
-
-profileController.use(requireAuth);
 
 profileController.get('/', (req: Request, res: Response) => {
   const claims = req.user!;

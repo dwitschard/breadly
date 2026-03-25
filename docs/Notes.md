@@ -34,6 +34,7 @@ Optional:
 ## Bugs
 - Keep URL when automatically reloading/relogin
 - Environment Specific Configuration of Cognito (clientId, issuer?)
+- 
 - Build Open API Spec for FE and BE differently (if needed)
   - Development on BE and FE should be possible at the same time 
   - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
