@@ -34,7 +34,13 @@ variable "dist_zip_path" {
 }
 
 variable "frontend_urls" {
-  description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). Set via the FRONTEND_URLS GitHub Actions variable."
+  description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). Set via the OIDC_CALLBACK_URL GitHub Actions variable."
   type        = string
   default     = ""
+}
+
+variable "mongodb_uri" {
+  description = "MongoDB connection string for the private Lambda. Passed as the MONGODB_CONNECTION_STRING environment variable. Set via the MONGODB_URI GitHub Actions secret."
+  type        = string
+  sensitive   = true
 }

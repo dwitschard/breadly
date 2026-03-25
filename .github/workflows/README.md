@@ -1,6 +1,51 @@
 # GitHub Actions — Workflows
 
-## `build-frontend.yml`
+## `build-backend.yml`
+
+Lints, tests, packages and produces a release artifact for the Express backend.
+On push to `main`, automatically triggers `deploy-backend.yml` to deploy to `dev`.
+
+---
+
+## `deploy-backend.yml`
+
+Deploys the Express API as an AWS Lambda function via Terraform.
+
+### Triggers
+
+| Trigger | Target environment |
+|---|---|
+| Called by `build-backend.yml` on push to `main` | `dev` (automatic) |
+| `workflow_dispatch` → select release tag + environment | chosen environment (manual) |
+
+Production is **never deployed automatically**.
+
+### Required GitHub Secrets and Variables
+
+Navigate to **Settings → Secrets and variables → Actions → Environments** and configure each environment (`dev`, `prod`) with the following:
+
+#### Secrets (encrypted — not visible in logs)
+
+| Secret | Scope | Description | Example |
+|---|---|---|---|
+| `AWS_OIDC_ROLE_ARN` | Repository | ARN of the IAM role the runner assumes via OIDC. | `arn:aws:iam::123456789012:role/breadly-github-deploy` |
+| `AWS_ACCOUNT_ID` | Repository | 12-digit AWS account ID. Used by the Terraform provider as a deployment guard. | `123456789012` |
+| `MONGODB_URI` | Environment | MongoDB connection string for this stage. Injected as `MONGODB_CONNECTION_STRING` env var on the private Lambda. | `mongodb+srv://user:pass@cluster.mongodb.net/breadly` |
+
+#### Variables (plaintext — visible in logs)
+
+| Variable | Scope | Description | Example |
+|---|---|---|---|
+| `AWS_REGION` | Repository | AWS region for all resources and the Terraform state bucket. | `eu-central-1` |
+| `OIDC_CALLBACK_URL` | Environment | Comma-separated frontend URL(s) registered as Cognito callback/logout URLs. | `https://app.example.com` |
+
+> `MONGODB_URI` must be set **per environment** (dev and prod each have their own value).
+> `OIDC_CALLBACK_URL` is already environment-scoped. `AWS_OIDC_ROLE_ARN` and `AWS_ACCOUNT_ID`
+> can be repository-level secrets if dev and prod share the same AWS account.
+
+---
+
+
 
 Lints, tests, and produces a production build artifact for the Angular frontend.
 No AWS credentials or infrastructure involvement.

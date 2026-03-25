@@ -56,3 +56,16 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "mongodb_uri" {
+  description = "MongoDB connection string injected as MONGODB_CONNECTION_STRING. Pass an empty string for Lambdas that do not need database access (e.g. the public Lambda)."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "extra_env_vars" {
+  description = "Additional environment variables merged into the Lambda function's environment block. Use this to pass runtime config that differs per Lambda deployment (e.g. COGNITO_ISSUER for the public Lambda)."
+  type        = map(string)
+  default     = {}
+}

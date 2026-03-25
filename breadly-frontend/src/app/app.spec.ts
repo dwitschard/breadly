@@ -3,6 +3,7 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { provideRouter } from '@angular/router';
 import { provideOAuthClient } from 'angular-oauth2-oidc';
 import { App } from './app';
+import { ConfigService } from './config/config.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -14,6 +15,12 @@ describe('App', () => {
         provideOAuthClient(),
       ],
     }).compileComponents();
+
+    // Seed ConfigService so AuthService can initialise without throwing.
+    TestBed.inject(ConfigService).setConfig({
+      issuer: 'https://example.com',
+      clientId: 'test-client-id',
+    });
   });
 
   it('should create the app', () => {

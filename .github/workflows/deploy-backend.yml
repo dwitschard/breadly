@@ -15,8 +15,8 @@
 #   Run setup-deployment-infrastructure.yml once per environment before the first deploy.
 #
 # Required secrets/variables — see .github/workflows/README.md.
-#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
-#   Variables: AWS_REGION
+#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID   MONGODB_URI
+#   Variables: AWS_REGION          OIDC_CALLBACK_URL
 
 name: Deploy Backend
 
@@ -87,7 +87,8 @@ jobs:
           extra_tf_vars: >-
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
             -var="frontend_urls=${{ vars.OIDC_CALLBACK_URL }}"
+            -var="mongodb_uri=${{ secrets.MONGODB_URI }}"
 
-      - name: Print backend URL
+      - name: Print API Gateway endpoint
         working-directory: infrastructure/aws/backend/deploy
-        run: terraform output -raw backend_function_url
+        run: terraform output -raw api_gateway_endpoint

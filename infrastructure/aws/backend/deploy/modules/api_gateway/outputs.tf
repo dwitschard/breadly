@@ -12,15 +12,15 @@ output "api_id" {
 
 output "cognito_user_pool_id" {
   description = "ID of the Cognito User Pool."
-  value       = aws_cognito_user_pool.this.id
+  value       = var.cognito_user_pool_id
 }
 
 output "cognito_user_pool_client_id" {
-  description = "ID of the Cognito App Client (used by the frontend to authenticate)."
-  value       = aws_cognito_user_pool_client.this.id
+  description = "ID of the Cognito App Client."
+  value       = var.cognito_user_pool_client_id
 }
 
 output "cognito_hosted_ui_domain" {
-  description = "Base URL of the Cognito Hosted UI (needed for auth.config.ts logoutUrl)."
-  value       = "https://${aws_cognito_user_pool_domain.this.domain}.auth.${var.aws_region}.amazoncognito.com"
+  description = "Passed through from the cognito module for operator convenience."
+  value       = "https://${var.name}.auth.${var.aws_region}.amazoncognito.com"
 }

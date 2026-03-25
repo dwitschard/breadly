@@ -20,21 +20,23 @@ Optional:
 - Think about E2E-Setup -> Spawn a Lambda for Testing
 
 ## Next Steps
+- DynamoDB Table Design for User
 - Add DynamoDB Connection
     - Terraform Setup
     - Implement DB Connection in Backend
     - Add it to /health Endpoint
 - Remove MongoDB Connection -> Use AWS DocumentDB if really needed
-- Make ApplicationDatabase more generic or duplicate it -> multiple datasources
-  - If even needed after migrating to DynamoDB
-- Fix Test Errors when importing `supertest`
+  - Also remove ApplicationDatabase
+
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
   - if necessary -> implement custom error code in valid range
 
 ## Bugs
 - Keep URL when automatically reloading/relogin
 - Environment Specific Configuration of Cognito (clientId, issuer?)
-- 
+  - SSM Params should be available via Env-Variable in Backend -> No call to SSM needed in Backend
+- Fix Test Errors when importing `supertest`
+
 - Build Open API Spec for FE and BE differently (if needed)
   - Development on BE and FE should be possible at the same time 
   - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE

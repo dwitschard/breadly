@@ -2,87 +2,18 @@
 # authorizer in front of the Lambda Express backend.
 #
 # Routing:
-#   ANY  /{proxy+}    → Lambda, JWT authorizer (all routes require a valid Cognito token)
+#   ANY  /public/{proxy+}  → public Lambda, no auth (config and other public endpoints)
+#   ANY  /{proxy+}         → private Lambda, JWT authorizer (all other routes require a valid Cognito token)
 #
 # Auth:
 #   The JWT authorizer validates Bearer tokens issued by the Cognito User Pool.
-#   It fetches the JWKS from the Cognito well-known endpoint, verifies the RS256
-#   signature, and checks iss/aud/exp claims — no Lambda authorizer needed.
+#   Cognito is provisioned by the separate cognito module and passed in as inputs —
+#   this keeps the dependency graph clean and avoids circular references.
 #
 # Lambda invocation:
-#   API Gateway invokes the Lambda via the standard Lambda Invoke API (not the
+#   API Gateway invokes each Lambda via the standard Lambda Invoke API (not the
 #   Function URL). The Function URL uses auth_type = AWS_IAM, so it cannot be
 #   called directly from the internet.
-
-# ---------------------------------------------------------------------------
-# Cognito User Pool
-# ---------------------------------------------------------------------------
-
-resource "aws_cognito_user_pool" "this" {
-  name = var.name
-
-  # Require email as the sign-in attribute.
-  username_attributes      = ["email"]
-  auto_verified_attributes = ["email"]
-
-  password_policy {
-    minimum_length                   = 8
-    require_lowercase                = true
-    require_uppercase                = true
-    require_numbers                  = true
-    require_symbols                  = false
-    temporary_password_validity_days = 7
-  }
-
-  # Send verification codes and invitations via Cognito's built-in email (free tier).
-  email_configuration {
-    email_sending_account = "COGNITO_DEFAULT"
-  }
-
-  tags = var.tags
-}
-
-resource "aws_cognito_user_pool_client" "this" {
-  name         = "${var.name}-client"
-  user_pool_id = aws_cognito_user_pool.this.id
-
-  # SPA / mobile client — no client secret (public client).
-  generate_secret = false
-
-  # Allow the standard auth flows used by Amplify / hosted UI.
-  explicit_auth_flows = [
-    "ALLOW_USER_SRP_AUTH",
-    "ALLOW_REFRESH_TOKEN_AUTH",
-  ]
-
-  # Token validity.
-  access_token_validity  = 1   # hours
-  id_token_validity      = 1   # hours
-  refresh_token_validity = 30  # days
-
-  token_validity_units {
-    access_token  = "hours"
-    id_token      = "hours"
-    refresh_token = "days"
-  }
-
-  # Enable OAuth2 / OIDC authorization code flow (required for PKCE).
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                 = ["openid", "email"]
-  supported_identity_providers         = ["COGNITO"]
-
-  callback_urls = [for url in local.frontend_callback_urls : "${url}/oidc-callback"]
-  logout_urls = local.frontend_callback_urls
-}
-
-# Cognito Hosted UI domain — required to expose the /oauth2/authorize and
-# /oauth2/token endpoints used by the PKCE authorization code flow.
-# Resulting domain: <var.name>.auth.<region>.amazoncognito.com
-resource "aws_cognito_user_pool_domain" "this" {
-  domain       = var.name
-  user_pool_id = aws_cognito_user_pool.this.id
-}
 
 # ---------------------------------------------------------------------------
 # HTTP API
@@ -92,8 +23,6 @@ resource "aws_apigatewayv2_api" "this" {
   name          = var.name
   protocol_type = "HTTP"
 
-  # CORS is handled by the Express app; disable API Gateway managed CORS to
-  # avoid double headers.
   cors_configuration {
     allow_origins = ["*"]
     allow_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
@@ -113,7 +42,7 @@ resource "aws_apigatewayv2_stage" "default" {
 }
 
 # ---------------------------------------------------------------------------
-# Lambda Integration
+# Private Lambda Integration (authenticated routes)
 # ---------------------------------------------------------------------------
 
 resource "aws_apigatewayv2_integration" "lambda" {
@@ -127,7 +56,7 @@ resource "aws_apigatewayv2_integration" "lambda" {
   payload_format_version = "2.0"
 }
 
-# Grant API Gateway permission to invoke the Lambda function.
+# Grant API Gateway permission to invoke the private Lambda function.
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
@@ -140,15 +69,6 @@ resource "aws_lambda_permission" "apigw" {
 # JWT Authorizer (Cognito)
 # ---------------------------------------------------------------------------
 
-locals {
-  cognito_issuer_url  = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.this.id}"
-
-  # Parse the comma-separated frontend_urls string into a list, dropping any
-  # blank entries that result from an empty variable value, and trimming
-  # whitespace from each entry to avoid Cognito validation errors.
-  frontend_callback_urls = [for url in compact(split(",", var.frontend_urls)) : trimspace(url)]
-}
-
 resource "aws_apigatewayv2_authorizer" "cognito" {
   api_id           = aws_apigatewayv2_api.this.id
   authorizer_type  = "JWT"
@@ -156,8 +76,8 @@ resource "aws_apigatewayv2_authorizer" "cognito" {
   name             = "${var.name}-cognito-jwt"
 
   jwt_configuration {
-    issuer   = local.cognito_issuer_url
-    audience = [aws_cognito_user_pool_client.this.id]
+    issuer   = var.cognito_issuer_url
+    audience = [var.cognito_user_pool_client_id]
   }
 }
 
@@ -173,4 +93,36 @@ resource "aws_apigatewayv2_route" "default" {
 
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+# ---------------------------------------------------------------------------
+# Public Lambda Integration — unauthenticated /public/* routes
+# ---------------------------------------------------------------------------
+
+resource "aws_apigatewayv2_integration" "lambda_public" {
+  api_id             = aws_apigatewayv2_api.this.id
+  integration_type   = "AWS_PROXY"
+  integration_uri    = var.public_lambda_function_arn
+  integration_method = "POST"
+
+  payload_format_version = "2.0"
+}
+
+# Grant API Gateway permission to invoke the public Lambda function.
+resource "aws_lambda_permission" "apigw_public" {
+  statement_id  = "AllowAPIGatewayInvokePublic"
+  action        = "lambda:InvokeFunction"
+  function_name = var.public_lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
+}
+
+# Unauthenticated catch-all for /public/* — no JWT required.
+# More specific than ANY /{proxy+} so API Gateway matches this route first.
+resource "aws_apigatewayv2_route" "public" {
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = "ANY /public/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_public.id}"
+
+  # No authorization_type — unauthenticated by design.
 }

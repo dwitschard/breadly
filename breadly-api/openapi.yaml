@@ -9,6 +9,27 @@ servers:
     description: Local development server
 
 paths:
+  /public/config:
+    get:
+      operationId: getPublicConfig
+      summary: Get environment-specific configuration
+      description: Returns public runtime configuration values (e.g. OIDC issuer and client ID). No authentication required.
+      tags:
+        - Public
+      responses:
+        '200':
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicConfig'
+        '404':
+          description: Configuration not available (environment variables not set)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /recipe:
     get:
       operationId: getRecipes
@@ -210,3 +231,21 @@ components:
         statusCode:
           type: integer
           description: HTTP status code
+
+    PublicConfig:
+      type: object
+      required:
+        - idp
+      properties:
+        idp:
+          type: object
+          required:
+            - issuer
+            - clientId
+          properties:
+            issuer:
+              type: string
+              description: OIDC issuer URL
+            clientId:
+              type: string
+              description: OIDC client ID

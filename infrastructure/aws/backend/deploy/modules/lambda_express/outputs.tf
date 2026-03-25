@@ -1,10 +1,5 @@
 # modules/lambda_express/outputs.tf — module outputs.
 
-output "function_url" {
-  description = "Public HTTPS URL of the Lambda function."
-  value       = aws_lambda_function_url.this.function_url
-}
-
 output "function_arn" {
   description = "ARN of the Lambda function."
   value       = aws_lambda_function.this.arn

@@ -1,10 +1,5 @@
 # outputs.tf — root module outputs.
 
-output "backend_function_url" {
-  description = "Private Lambda Function URL (AWS_IAM auth — not directly accessible from the internet)."
-  value       = module.backend.function_url
-}
-
 output "api_gateway_endpoint" {
   description = "Public HTTPS endpoint of the API Gateway HTTP API."
   value       = module.api_gateway.api_endpoint

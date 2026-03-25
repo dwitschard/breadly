@@ -3,21 +3,24 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { filter } from 'rxjs';
-import { authConfig } from './auth.config';
+import { buildAuthConfig } from './auth.config';
 import { ProfileService } from '../features/profile/profile.service';
+import { ConfigService } from '../config/config.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly oauthService = inject(OAuthService);
   private readonly router = inject(Router);
   private readonly profileService = inject(ProfileService);
+  private readonly configService = inject(ConfigService);
 
   private readonly _isLoggedIn = signal(this.oauthService.hasValidAccessToken());
   readonly isLoggedIn = this._isLoggedIn.asReadonly();
 
   constructor() {
+    const { issuer, clientId } = this.configService.getConfig();
     this.oauthService.setStorage(localStorage);
-    this.oauthService.configure(authConfig);
+    this.oauthService.configure(buildAuthConfig(issuer, clientId));
     this.oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
       this._isLoggedIn.set(this.oauthService.hasValidAccessToken());
       this.oauthService.setupAutomaticSilentRefresh();
