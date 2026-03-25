@@ -33,7 +33,7 @@ inputs:
       Project name used to derive the Terraform state bucket and lock table names.
       Bucket: <project_name>-<environment>-tfstate
       Table:  <project_name>-<environment>-tfstate-lock
-    required: false
+    required: true
 
 runs:
   using: composite
