@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from './auth.service';
 
 @Component({
@@ -8,8 +9,10 @@ import { AuthService } from './auth.service';
 })
 export class LoginComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
-    this.authService.login();
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+    this.authService.login({ returnUrl });
   }
 }

@@ -7,6 +7,10 @@ import { buildAuthConfig } from './auth.config';
 import { ProfileService } from '../features/profile/profile.service';
 import { ConfigService } from '../config/config.service';
 
+export interface LoginOptions {
+  returnUrl?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly oauthService = inject(OAuthService);
@@ -38,8 +42,17 @@ export class AuthService {
       .subscribe(() => {
         this._isLoggedIn.set(true);
         this.profileService.load();
-        this.router.navigate(['/recipe']);
+        const returnUrl = decodeURIComponent(this.oauthService.state ?? '');
+        this.router.navigateByUrl(this.isSameOrigin(returnUrl) ? returnUrl : '/recipe');
       });
+  }
+
+  private isSameOrigin(url: string): boolean {
+    try {
+      return new URL(url, window.location.origin).origin === window.location.origin;
+    } catch {
+      return false;
+    }
   }
 
   private listenForLogout(): void {
@@ -54,8 +67,8 @@ export class AuthService {
       });
   }
 
-  login(): void {
-    this.oauthService.initCodeFlow();
+  login(options: LoginOptions = {}): void {
+    this.oauthService.initCodeFlow(options.returnUrl ?? '');
   }
 
   logout(): void {
