@@ -35,6 +35,10 @@ import {
   AdminGetUserCommand,
   AdminCreateUserCommand,
   AdminSetUserPasswordCommand,
+  AdminAddUserToGroupCommand,
+  AdminListGroupsForUserCommand,
+  CreateGroupCommand,
+  GetGroupCommand,
   MessageActionType,
   UserStatusType,
 } from '@aws-sdk/client-cognito-identity-provider';
@@ -50,24 +54,48 @@ const PROJECT_NAME = 'breadly';
 const AWS_REGION = 'eu-central-1';
 
 /**
- * Admin users managed by this script.
- * Add or remove entries here to adapt to your team.
- * Only these emails will ever be created or updated — all other users in the
- * pool are left completely untouched.
+ * Central setup configuration.
+ *
+ * - Add a new group: append an entry to `groups`.
+ * - Add a new user: append an entry to `users` and reference group names from
+ *   the `groups` array in the `groups` field.
+ *
+ * This is the only object you need to touch for day-to-day user/group management.
  */
-const ADMIN_USERS: AdminUser[] = [
-  { email: 'admin@breadly.app', description: 'Application admin' },
-];
+const SETUP_CONFIG: SetupConfig = {
+  groups: [
+    { name: 'ADMIN',        description: 'Full administrative access' },
+    { name: 'USER',         description: 'Standard user access' },
+    { name: 'PREMIUM_USER', description: 'Premium tier user access' },
+  ],
+  users: [
+    { email: 'admin@breadly.app', description: 'Application admin', groups: ['ADMIN'] },
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface AdminUser {
+interface GroupDefinition {
+  /** Cognito group name. Used as the unique identifier — keep it uppercase and stable. */
+  name: string;
+  /** Human-readable description stored in Cognito and shown during setup. */
+  description: string;
+}
+
+interface UserDefinition {
   /** Cognito username — must match the email used in Terraform var.admin_email. */
   email: string;
   /** Human-readable label shown during the setup prompts. */
   description: string;
+  /** Names of groups (from SetupConfig.groups) this user must belong to. */
+  groups: string[];
+}
+
+interface SetupConfig {
+  groups: GroupDefinition[];
+  users: UserDefinition[];
 }
 
 type Environment = 'dev' | 'prod';
@@ -165,13 +193,83 @@ async function findUserPoolId(
 }
 
 // ---------------------------------------------------------------------------
+// Per-group logic
+// ---------------------------------------------------------------------------
+
+/**
+ * Ensure a Cognito group exists. If it already exists the call is a no-op.
+ * Groups are never deleted or modified by this script.
+ */
+async function setupGroup(
+  client: CognitoIdentityProviderClient,
+  userPoolId: string,
+  group: GroupDefinition,
+): Promise<void> {
+  console.log(`\n--- Group: ${group.name} ---`);
+
+  try {
+    await client.send(new GetGroupCommand({ UserPoolId: userPoolId, GroupName: group.name }));
+    console.log(`  Already exists — skipped.`);
+  } catch (err: unknown) {
+    if (!isResourceNotFound(err)) throw err;
+
+    await client.send(
+      new CreateGroupCommand({
+        UserPoolId: userPoolId,
+        GroupName: group.name,
+        Description: group.description,
+      }),
+    );
+    console.log(`  Created.`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-user group-membership sync
+// ---------------------------------------------------------------------------
+
+/**
+ * Ensure the user belongs to every group listed in their definition.
+ * This is non-destructive — existing memberships that are not in the list are
+ * left untouched.  Re-running the script is always safe.
+ */
+async function syncUserGroups(
+  client: CognitoIdentityProviderClient,
+  userPoolId: string,
+  user: UserDefinition,
+): Promise<void> {
+  if (user.groups.length === 0) return;
+
+  // Fetch the current group memberships for this user.
+  const response = await client.send(
+    new AdminListGroupsForUserCommand({ UserPoolId: userPoolId, Username: user.email }),
+  );
+  const currentGroups = new Set((response.Groups ?? []).map((g) => g.GroupName));
+
+  for (const groupName of user.groups) {
+    if (currentGroups.has(groupName)) {
+      console.log(`  Group ${groupName}: already a member.`);
+    } else {
+      await client.send(
+        new AdminAddUserToGroupCommand({
+          UserPoolId: userPoolId,
+          Username: user.email,
+          GroupName: groupName,
+        }),
+      );
+      console.log(`  Group ${groupName}: added.`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Per-user logic
 // ---------------------------------------------------------------------------
 
 async function setupUser(
   client: CognitoIdentityProviderClient,
   userPoolId: string,
-  user: AdminUser,
+  user: UserDefinition,
 ): Promise<void> {
   console.log(`\n--- ${user.description} (${user.email}) ---`);
 
@@ -195,7 +293,9 @@ async function setupUser(
     console.log(`  Status: CONFIRMED (account is already active)`);
     const answer = await prompt('  Reset password for this user? [y/N] ');
     if (answer.toLowerCase() !== 'y') {
-      console.log('  Skipped.');
+      console.log('  Password unchanged.');
+      // Still sync group memberships even if password is skipped.
+      await syncUserGroups(client, userPoolId, user);
       return;
     }
   } else if (existingStatus === undefined) {
@@ -232,6 +332,9 @@ async function setupUser(
   );
 
   console.log(`  Done — account is now active and can log in.`);
+
+  // Always sync group memberships after password setup.
+  await syncUserGroups(client, userPoolId, user);
 }
 
 // ---------------------------------------------------------------------------
@@ -247,8 +350,22 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Validate that every group name referenced in users exists in the groups list.
+  const definedGroupNames = new Set(SETUP_CONFIG.groups.map((g) => g.name));
+  for (const user of SETUP_CONFIG.users) {
+    for (const groupName of user.groups) {
+      if (!definedGroupNames.has(groupName)) {
+        console.error(
+          `Configuration error: user "${user.email}" references unknown group "${groupName}".`,
+        );
+        console.error(`Defined groups: ${[...definedGroupNames].join(', ')}`);
+        process.exit(1);
+      }
+    }
+  }
+
   const poolName = userPoolName(env);
-  console.log(`\nSetting up admin users for environment: ${env}`);
+  console.log(`\nSetting up groups and users for environment: ${env}`);
   console.log(`Target User Pool: ${poolName} (${AWS_REGION})`);
   console.log('AWS credentials are taken from the default credential chain');
   console.log('(~/.aws/credentials, AWS_PROFILE, or environment variables).\n');
@@ -265,8 +382,15 @@ async function main(): Promise<void> {
   }
   console.log(`Resolved User Pool ID: ${userPoolId}`);
 
-  // Process each admin user in sequence so prompts don't interleave.
-  for (const user of ADMIN_USERS) {
+  // 1. Ensure all groups exist before touching any user.
+  console.log('\n== Groups ==');
+  for (const group of SETUP_CONFIG.groups) {
+    await setupGroup(client, userPoolId, group);
+  }
+
+  // 2. Process each user (password setup + group membership sync).
+  console.log('\n== Users ==');
+  for (const user of SETUP_CONFIG.users) {
     await setupUser(client, userPoolId, user);
   }
 
@@ -283,6 +407,15 @@ function isNotFound(err: unknown): boolean {
     err !== null &&
     'name' in err &&
     (err as { name: string }).name === 'UserNotFoundException'
+  );
+}
+
+function isResourceNotFound(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'name' in err &&
+    (err as { name: string }).name === 'ResourceNotFoundException'
   );
 }
 

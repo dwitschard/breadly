@@ -20,7 +20,6 @@ Optional:
 - Think about E2E-Setup -> Spawn a Lambda for Testing
 
 ## Next Steps
-- Extract Role in Backend and use it for Business Logic /profile Endpoint
 - Add DynamoDB Connection
     - Terraform Setup
     - Implement DB Connection in Backend
@@ -40,6 +39,7 @@ Optional:
   - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
 ## Ideas
+- Switch Testing in Frontend to use TestingLibrary
 - Implement a custom ui for login / registration
 - decide on ui library / elements
 - Think about a public lambda API that does not require authentication (how to separate on code level?)
