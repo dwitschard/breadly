@@ -17,7 +17,6 @@ variable "aws_region" {
 variable "project_name" {
   description = "Short lowercase identifier used as a prefix in all resource names."
   type        = string
-  default     = "breadly"
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}$", var.project_name))
@@ -28,5 +27,4 @@ variable "project_name" {
 variable "frontend_dist_path" {
   description = "Path to the compiled Angular output directory. Every file found recursively will be uploaded to S3."
   type        = string
-  default     = "../../../../breadly-frontend/dist/breadly-frontend/browser"
 }
