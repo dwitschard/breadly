@@ -19,7 +19,6 @@ variable "aws_region" {
 variable "project_name" {
   description = "Short lowercase project identifier; used as a prefix in resource names."
   type        = string
-  default     = "breadly"
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}$", var.project_name))

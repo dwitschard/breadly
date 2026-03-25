@@ -32,8 +32,11 @@ Optional:
   - if necessary -> implement custom error code in valid range
 
 ## Bugs
-- Keep URL when automatically reloading/relogin
 - Fix Test Errors when importing `supertest`
+- Add Auth Middleware in Backend 
+  - Public Endpoint without Auth
+  - Others require Auth
+  - Add Check for Role in Middleware (if needed)
 
 - Build Open API Spec for FE and BE differently (if needed)
   - Development on BE and FE should be possible at the same time 
@@ -48,7 +51,6 @@ Optional:
 - Switch Testing in Frontend to use TestingLibrary
 - Implement a custom ui for login / registration
 - decide on ui library / elements
-- Think about a public lambda API that does not require authentication (how to separate on code level?)
 
 - Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
     - Not easily possible, requires loop through BFF

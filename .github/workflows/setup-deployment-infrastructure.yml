@@ -38,6 +38,9 @@ on:
           - create
           - destroy
 
+env:
+  PROJECT_NAME: breadly
+
 jobs:
   setup:
     name: Setup (${{ inputs.environment }})
@@ -61,6 +64,7 @@ jobs:
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
           local_backend: "true"
+          project_name: ${{ env.PROJECT_NAME }}
 
       - name: Frontend Deployment State
         uses: ./.github/actions/terraform-action
@@ -93,13 +97,14 @@ jobs:
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
           local_backend: "true"
+          project_name: ${{ env.PROJECT_NAME }}
 
       - name: Import State Resources
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
         run: |
-          terraform import aws_s3_bucket.tfstate breadly-${{ inputs.environment }}-tfstate
-          terraform import aws_dynamodb_table.tfstate_lock breadly-${{ inputs.environment }}-tfstate-lock
+          terraform import aws_s3_bucket.tfstate ${{ env.PROJECT_NAME }}-${{ inputs.environment }}-tfstate
+          terraform import aws_dynamodb_table.tfstate_lock ${{ env.PROJECT_NAME }}-${{ inputs.environment }}-tfstate-lock
 
       - name: Terraform destroy
         working-directory: ${{ env.WORKING_DIR }}

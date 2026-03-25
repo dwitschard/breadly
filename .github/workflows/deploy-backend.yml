@@ -51,6 +51,7 @@ concurrency:
 
 env:
   TARGET_ENV: ${{ inputs.environment }}
+  PROJECT_NAME: breadly
 
 jobs:
   deploy:
@@ -78,6 +79,7 @@ jobs:
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
 
       - name: Export Terraform secrets
         run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"

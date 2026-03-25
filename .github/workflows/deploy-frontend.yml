@@ -52,6 +52,7 @@ concurrency:
 
 env:
   TARGET_ENV: ${{ inputs.environment }}
+  PROJECT_NAME: breadly
 
 jobs:
   deploy:
@@ -84,6 +85,7 @@ jobs:
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
 
       - name: Deploy stack
         uses: ./.github/actions/terraform-action

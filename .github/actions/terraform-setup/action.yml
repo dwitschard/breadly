@@ -28,6 +28,12 @@ inputs:
       When true, skips -backend-config flags during terraform init.
     required: false
     default: "false"
+  project_name:
+    description: >
+      Project name used to derive the Terraform state bucket and lock table names.
+      Bucket: <project_name>-<environment>-tfstate
+      Table:  <project_name>-<environment>-tfstate-lock
+    required: false
 
 runs:
   using: composite
@@ -62,7 +68,7 @@ runs:
 
     # Local backend for setup roots (no remote state bucket exists yet).
     # Remote backend for all other roots — bucket and table are derived from
-    # the fixed convention: breadly-<env>-tfstate / breadly-<env>-tfstate-lock.
+    # the convention: <project_name>-<env>-tfstate / <project_name>-<env>-tfstate-lock.
     - name: Terraform init
       shell: bash
       working-directory: ${{ inputs.working_dir }}
@@ -71,7 +77,7 @@ runs:
           terraform init
         else
           terraform init \
-            -backend-config="bucket=breadly-${{ inputs.environment }}-tfstate" \
-            -backend-config="dynamodb_table=breadly-${{ inputs.environment }}-tfstate-lock" \
+            -backend-config="bucket=${{ inputs.project_name }}-${{ inputs.environment }}-tfstate" \
+            -backend-config="dynamodb_table=${{ inputs.project_name }}-${{ inputs.environment }}-tfstate-lock" \
             -backend-config="region=${{ inputs.aws_region }}"
         fi
