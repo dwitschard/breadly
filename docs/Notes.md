@@ -41,6 +41,11 @@ Optional:
   - Development on BE and FE should be possible at the same time 
   - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
+## Simplifications
+- Remove TF_LOCK_TABLE and TF_STATE_BUCKET from Github Environment Variables -> Use Fixed Names constructed from project and Suffix
+  - breadly-dev-tfstate-lock -> project-name + stage + -tfstate-lock
+  - breadly-dev-tfstate -> project-name + stage + -tfstate
+
 ## Ideas
 - Switch Testing in Frontend to use TestingLibrary
 - Implement a custom ui for login / registration
