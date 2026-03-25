@@ -41,6 +41,7 @@ module "backend_public" {
   name          = "${var.project_name}-${terraform.workspace}-backend-public"
   dist_zip_path = var.dist_zip_path
   aws_region    = var.aws_region
+  mongodb_uri   = var.mongodb_uri
 
   # Cognito values are injected as plain env vars — identical to how local dev
   # reads them from .env. No SSM calls, no AWS SDK needed in the application.
