@@ -79,6 +79,9 @@ jobs:
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
 
+      - name: Export Terraform secrets
+        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
+
       - name: Deploy stack
         uses: ./.github/actions/terraform-action
         with:
@@ -87,7 +90,6 @@ jobs:
           extra_tf_vars: >-
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
             -var="frontend_urls=${{ vars.OIDC_CALLBACK_URL }}"
-            -var="mongodb_uri=${{ secrets.MONGODB_URI }}"
 
       - name: Print API Gateway endpoint
         working-directory: infrastructure/aws/backend/deploy
