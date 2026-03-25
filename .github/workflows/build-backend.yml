@@ -21,6 +21,8 @@ on:
       - "breadly-backend/**"
       - "infrastructure/aws/backend/**"
       - ".github/workflows/build-backend.yml"
+      - ".github/workflows/deploy-backend.yml"
+      - ".github/actions/**"
 
   workflow_dispatch:
 

@@ -32,9 +32,9 @@ Optional:
   - if necessary -> implement custom error code in valid range
 
 ## Bugs
-- Keep URL when automatically reloading/relogin
 - Environment Specific Configuration of Cognito (clientId, issuer?)
   - SSM Params should be available via Env-Variable in Backend -> No call to SSM needed in Backend
+- Keep URL when automatically reloading/relogin
 - Fix Test Errors when importing `supertest`
 
 - Build Open API Spec for FE and BE differently (if needed)

@@ -21,6 +21,8 @@ on:
       - "breadly-frontend/**"
       - "infrastructure/aws/frontend/**"
       - ".github/workflows/build-frontend.yml"
+      - ".github/workflows/deploy-frontend.yml"
+      - ".github/actions/**"
 
   workflow_dispatch:
 
