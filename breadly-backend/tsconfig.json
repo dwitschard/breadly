@@ -1,16 +1,10 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "rootDir": "src",
-    "outDir": "./dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
     "esModuleInterop": true,
     "isolatedModules": true
-  },
-  "include": ["src/**/*"],
-  "exclude": [
-    "src/**/*.spec.ts",
-  ]
+  }
 }

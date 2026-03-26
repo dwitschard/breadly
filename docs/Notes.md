@@ -17,7 +17,6 @@ Optional:
 ## Next Week
 - Create Skills / Agents for Coding itself
 - Agent should: Create API Spec, implement BE & FE, write tests + E2E
-- Think about E2E-Setup -> Spawn a Lambda for Testing
 
 ## Next Steps
 - DynamoDB Table Design for User
@@ -27,9 +26,18 @@ Optional:
     - Add it to /health Endpoint
 - Remove MongoDB Connection -> Use AWS DocumentDB if really needed
   - Also remove ApplicationDatabase
+- Think about E2E-Setup -> Spawn a Lambda for Testing
+    - Playwright Test
+    - Deployment to a "CI" Environment
+    - Add Mock Data to it (Login, Recipe, etc.)
+    - Create Video to verify it
 
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
   - if necessary -> implement custom error code in valid range
+
+- Build Open API Spec for FE and BE differently (if needed)
+    - Development on BE and FE should be possible at the same time
+    - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
 ## Bugs
 - Fix Test Errors when importing `supertest`
@@ -37,10 +45,6 @@ Optional:
   - Public Endpoint without Auth
   - Others require Auth
   - Add Check for Role in Middleware (if needed)
-
-- Build Open API Spec for FE and BE differently (if needed)
-  - Development on BE and FE should be possible at the same time 
-  - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
 ## Ideas
 - Switch Testing in Frontend to use TestingLibrary
