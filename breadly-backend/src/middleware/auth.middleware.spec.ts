@@ -57,21 +57,21 @@ function makeReqRes(authHeader?: string): {
 describe('requireAuth middleware', () => {
   it('returns 401 when Authorization header is absent', () => {
     const { req, res, next } = makeReqRes();
-    requireAuth(req as Request, res as unknown as Response, next as unknown as NextFunction);
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
     expect(res.statusCode).toBe(401);
     expect(next.called).toBe(false);
   });
 
   it('returns 401 when Authorization header does not start with "Bearer "', () => {
     const { req, res, next } = makeReqRes('Basic abc');
-    requireAuth(req as Request, res as unknown as Response, next as unknown as NextFunction);
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
     expect(res.statusCode).toBe(401);
     expect(next.called).toBe(false);
   });
 
   it('returns 401 for a token with fewer than 3 segments', () => {
     const { req, res, next } = makeReqRes('Bearer header.payload');
-    requireAuth(req as Request, res as unknown as Response, next as unknown as NextFunction);
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
     expect(res.statusCode).toBe(401);
     expect(next.called).toBe(false);
   });
@@ -79,7 +79,7 @@ describe('requireAuth middleware', () => {
   it('returns 401 when the payload segment is not valid JSON', () => {
     const badPayload = Buffer.from('not-json').toString('base64url');
     const { req, res, next } = makeReqRes(`Bearer header.${badPayload}.sig`);
-    requireAuth(req as Request, res as unknown as Response, next as unknown as NextFunction);
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
     expect(res.statusCode).toBe(401);
     expect(next.called).toBe(false);
   });
@@ -89,19 +89,19 @@ describe('requireAuth middleware', () => {
       sub: 'user-123',
       email: 'alice@example.com',
       email_verified: true,
-      'cognito:groups': ['admin'],
+      'cognito:groups': ['ADMIN'],
     };
     const token = makeToken(claims);
     const { req, res, next } = makeReqRes(`Bearer ${token}`);
 
-    requireAuth(req as Request, res as unknown as Response, next as unknown as NextFunction);
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
 
     expect(next.called).toBe(true);
     expect((req as Request).user).toMatchObject({
       sub: 'user-123',
       email: 'alice@example.com',
       email_verified: true,
-      'cognito:groups': ['admin'],
+      'cognito:groups': ['ADMIN'],
     });
   });
 
@@ -111,9 +111,53 @@ describe('requireAuth middleware', () => {
     const token = makeToken(claims);
     const { req, res, next } = makeReqRes(`Bearer ${token}`);
 
-    requireAuth(req as Request, res as unknown as Response, next as unknown as NextFunction);
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
 
     expect(next.called).toBe(true);
     expect((req as Request).user?.sub).toBe('u1');
+  });
+
+  it('calls next() when no roles are required and token is valid', () => {
+    const claims: CognitoClaims = { sub: 'user-1', 'cognito:groups': ['USER'] };
+    const token = makeToken(claims);
+    const { req, res, next } = makeReqRes(`Bearer ${token}`);
+
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
+
+    expect(next.called).toBe(true);
+    expect(res.statusCode).toBeNull();
+  });
+
+  it('calls next() when user has one of the required roles', () => {
+    const claims: CognitoClaims = { sub: 'user-2', 'cognito:groups': ['ADMIN', 'USER'] };
+    const token = makeToken(claims);
+    const { req, res, next } = makeReqRes(`Bearer ${token}`);
+
+    requireAuth(['ADMIN'])(req as Request, res as unknown as Response, next as unknown as NextFunction);
+
+    expect(next.called).toBe(true);
+    expect(res.statusCode).toBeNull();
+  });
+
+  it('returns 403 when user lacks all required roles', () => {
+    const claims: CognitoClaims = { sub: 'user-3', 'cognito:groups': ['USER'] };
+    const token = makeToken(claims);
+    const { req, res, next } = makeReqRes(`Bearer ${token}`);
+
+    requireAuth(['ADMIN'])(req as Request, res as unknown as Response, next as unknown as NextFunction);
+
+    expect(next.called).toBe(false);
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('returns 403 when user has no groups at all', () => {
+    const claims: CognitoClaims = { sub: 'user-4' };
+    const token = makeToken(claims);
+    const { req, res, next } = makeReqRes(`Bearer ${token}`);
+
+    requireAuth(['ADMIN'])(req as Request, res as unknown as Response, next as unknown as NextFunction);
+
+    expect(next.called).toBe(false);
+    expect(res.statusCode).toBe(403);
   });
 });

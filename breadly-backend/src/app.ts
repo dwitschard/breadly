@@ -14,9 +14,9 @@ app.use(express.json());
 
 app.use('/', operationController);
 app.use('/public', publicController);
-app.use('/technologies', technologyController);
-app.use('/recipe', recipeController);
-app.use('/profile', requireAuth, profileController);
+app.use('/technologies', requireAuth(), technologyController);
+app.use('/recipe', requireAuth(), recipeController);
+app.use('/profile', requireAuth(), profileController);
 
 app.use(globalErrorHandler);
 

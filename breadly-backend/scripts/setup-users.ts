@@ -29,6 +29,7 @@
  */
 
 import readline from 'node:readline';
+import { Roles } from '../src/auth/roles.config.js';
 import {
   CognitoIdentityProviderClient,
   ListUserPoolsCommand,
@@ -63,13 +64,12 @@ const AWS_REGION = 'eu-central-1';
  * This is the only object you need to touch for day-to-day user/group management.
  */
 const SETUP_CONFIG: SetupConfig = {
-  groups: [
-    { name: 'ADMIN',        description: 'Full administrative access' },
-    { name: 'USER',         description: 'Standard user access' },
-    { name: 'PREMIUM_USER', description: 'Premium tier user access' },
-  ],
+  groups: Object.values(Roles).map((role) => ({
+    name: role.name,
+    description: role.description,
+  })),
   users: [
-    { email: 'admin@breadly.app', description: 'Application admin', groups: ['ADMIN'] },
+    { email: 'admin@breadly.app', description: 'Application admin', groups: [Roles.ADMIN.name] },
   ],
 };
 

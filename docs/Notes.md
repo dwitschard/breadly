@@ -19,6 +19,11 @@ Optional:
 - Agent should: Create API Spec, implement BE & FE, write tests + E2E
 
 ## Next Steps
+- Think about E2E-Setup -> Spawn a Lambda for Testing
+    - Playwright Test
+    - Deployment to a "CI" Environment
+    - Add Mock Data to it (Login, Recipe, etc.)
+    - Create Video to verify it
 - DynamoDB Table Design for User
 - Add DynamoDB Connection
     - Terraform Setup
@@ -26,11 +31,6 @@ Optional:
     - Add it to /health Endpoint
 - Remove MongoDB Connection -> Use AWS DocumentDB if really needed
   - Also remove ApplicationDatabase
-- Think about E2E-Setup -> Spawn a Lambda for Testing
-    - Playwright Test
-    - Deployment to a "CI" Environment
-    - Add Mock Data to it (Login, Recipe, etc.)
-    - Create Video to verify it
 
 - Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
   - if necessary -> implement custom error code in valid range
@@ -40,11 +40,11 @@ Optional:
     - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
 ## Bugs
-- Fix Test Errors when importing `supertest`
 - Add Auth Middleware in Backend 
-  - Public Endpoint without Auth
-  - Others require Auth
-  - Add Check for Role in Middleware (if needed)
+    - Public Endpoint without Auth
+    - Others require Auth
+    - Add Check for Role in Middleware (if needed)
+- Keep the Navigation Header when `app is trying to log you in` screen is shown to user -> Reduce commulative layout shift
 
 ## Ideas
 - Switch Testing in Frontend to use TestingLibrary
