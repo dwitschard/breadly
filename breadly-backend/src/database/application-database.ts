@@ -1,6 +1,6 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { DbCollectionType, MONGODB_CONFIG } from './mongodb.config.js';
-import { RecipeModel } from '../features/recipe/recipe.model';
+import { RecipeModel } from '../features/recipe/recipe.model.js';
 import { TechnologyDocument } from '../features/technology/technology.document.js';
 
 export type DbCollections = {

@@ -5,6 +5,16 @@ output "api_gateway_endpoint" {
   value       = module.api_gateway.api_endpoint
 }
 
+output "api_gateway_id" {
+  description = "ID of the shared API Gateway HTTP API. Used by the preview module to add per-branch routes."
+  value       = module.api_gateway.api_id
+}
+
+output "cognito_issuer_url" {
+  description = "OIDC issuer URL of the dev Cognito User Pool. Used by the preview module to reference the shared backend state."
+  value       = module.cognito.issuer_url
+}
+
 output "cognito_user_pool_id" {
   description = "ID of the Cognito User Pool."
   value       = module.api_gateway.cognito_user_pool_id

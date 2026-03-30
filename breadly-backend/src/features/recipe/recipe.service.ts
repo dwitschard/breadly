@@ -1,6 +1,6 @@
 import {ObjectId, UpdateFilter, WithId} from 'mongodb';
 import {ApplicationDatabase} from '../../database/application-database.js';
-import {RecipeModel} from './recipe.model';
+import {RecipeModel} from './recipe.model.js';
 import { CreateRecipeDto, PatchRecipeDto, Recipe, UpdateRecipeDto } from "../../app/generated/api/index.js";
 
 const toRecipe = (doc: WithId<RecipeModel>): Recipe => ({

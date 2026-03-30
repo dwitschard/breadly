@@ -36,16 +36,9 @@ resource "aws_cloudfront_function" "strip_api_prefix" {
   runtime = "cloudfront-js-2.0"
   publish = true
 
-  # Removes the leading /api segment so API Gateway receives the correct path.
-  # e.g. /api/recipe  →  /recipe
-  #      /api          →  /
-  code = <<-EOF
-    function handler(event) {
-      var request = event.request;
-      request.uri = request.uri.replace(/^\/api/, '') || '/';
-      return request;
-    }
-  EOF
+  # Handles routing for both the root SPA and preview environments.
+  # See strip-api-prefix.js for full documentation.
+  code = file("${path.module}/strip-api-prefix.js")
 }
 
 # ---------------------------------------------------------------------------
@@ -112,13 +105,21 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
-  # Default behavior → S3 (Angular SPA).
+  # Default behavior → S3 (Angular SPA and preview environments).
+  # The CloudFront Function is also attached here to handle /preview/<slug>/*
+  # SPA routing rewrites before S3 serves the request, so that deep-linked
+  # preview paths resolve to /preview/<slug>/index.html (not root index.html).
   default_cache_behavior {
     target_origin_id       = "s3-${var.bucket_id}"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
     compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.strip_api_prefix.arn
+    }
 
     forwarded_values {
       query_string = false

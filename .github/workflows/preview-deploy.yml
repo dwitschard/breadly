@@ -1,0 +1,340 @@
+# preview-deploy.yml
+#
+# Deploys a full-stack preview environment for every non-main branch push.
+# Each preview environment runs under /preview/<branch-slug>/ on the shared
+# dev CloudFront distribution.
+#
+# Jobs (parallelised where possible):
+#   slugify          Computes the branch slug and enforces the 5-preview limit.
+#   build-backend    Lint → test → build → zip the backend.
+#   build-frontend   Lint → test → build (with --base-href) the frontend.
+#   deploy           terraform apply → S3 sync → create demo users → seed data → PR comment.
+#
+# Triggers
+#   push to any branch except main.
+#
+# Required GitHub environment: preview
+#   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID, MONGODB_URI,
+#            PREVIEW_DEMO_PASSWORD, PREVIEW_ADMIN_PASSWORD
+#   Variables: AWS_REGION
+
+name: Preview Deploy
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+concurrency:
+  group: preview-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_NAME: breadly
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Slugify branch name and enforce preview limit
+  # ---------------------------------------------------------------------------
+  slugify:
+    name: Slugify & Check Limit
+    runs-on: ubuntu-latest
+    environment: preview
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      slug: ${{ steps.slug.outputs.slug }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compute branch slug
+        id: slug
+        run: |
+          RAW="${{ github.ref_name }}"
+          # lowercase, replace /, _, ., + with -, strip leading/trailing -, truncate to 40
+          SLUG=$(echo "$RAW" | tr '[:upper:]' '[:lower:]' | sed 's|[/_.+]|-|g' | sed 's/^-\+//;s/-\+$//' | cut -c1-40 | sed 's/-*$//')
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          echo "Branch slug: $SLUG"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: github-preview-limit-check
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "~1.6"
+          terraform_wrapper: false
+
+      - name: Terraform init (preview module)
+        working-directory: infrastructure/aws/preview/deploy
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
+            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
+            -backend-config="region=${{ vars.AWS_REGION }}"
+
+      - name: Enforce 5-preview limit
+        working-directory: infrastructure/aws/preview/deploy
+        run: |
+          SLUG="${{ steps.slug.outputs.slug }}"
+          # Count workspaces with prefix 'preview-', excluding the current branch's own workspace
+          COUNT=$(terraform workspace list | grep -E '^\s+preview-' | grep -v "preview-${SLUG}" | wc -l | tr -d ' ')
+          echo "Active preview workspaces (excluding this branch): $COUNT"
+          if [ "$COUNT" -ge 5 ]; then
+            echo "ERROR: Maximum of 5 concurrent preview environments reached."
+            echo "Delete a branch to free up a slot before deploying this preview."
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Build backend
+  # ---------------------------------------------------------------------------
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: breadly-backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: breadly-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install production dependencies only
+        run: npm ci --omit=dev
+
+      - name: Create deployment zip
+        run: zip -r ../backend.zip dist/ node_modules/ package.json run.sh
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-backend-dist
+          path: backend.zip
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # Build frontend
+  # ---------------------------------------------------------------------------
+  build-frontend:
+    name: Build Frontend
+    needs: slugify
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: breadly-frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: breadly-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate API types
+        run: npm run generate-api
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Build with preview base-href
+        run: npx ng build --base-href /preview/${{ needs.slugify.outputs.slug }}/
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-frontend-dist
+          path: breadly-frontend/dist/breadly-frontend/browser/
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # Deploy preview environment
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy
+    needs: [slugify, build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    environment: preview
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: preview-backend-dist
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: preview-frontend-dist
+          path: frontend-dist/
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/deploy
+          environment: dev
+          session_name: github-preview-deploy-${{ needs.slugify.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Select or create Terraform workspace
+        working-directory: infrastructure/aws/preview/deploy
+        run: terraform workspace select -or-create preview-${{ needs.slugify.outputs.slug }}
+
+      - name: Get CloudFront URL from dev frontend state
+        id: cf
+        working-directory: infrastructure/aws/frontend/deploy
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
+            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
+            -backend-config="region=${{ vars.AWS_REGION }}"
+          terraform workspace select dev
+          CF_URL="https://$(terraform output -raw frontend_cloudfront_url)"
+          echo "cloudfront_url=$CF_URL" >> "$GITHUB_OUTPUT"
+          DIST_ID=$(terraform output -raw frontend_cloudfront_distribution_id)
+          BUCKET_ID=$(terraform output -raw frontend_bucket_id)
+          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+          echo "bucket_id=$BUCKET_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Export Terraform secrets
+        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
+
+      - name: Deploy preview stack
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/preview/deploy
+          environment: dev
+          extra_tf_vars: >-
+            -var="branch_slug=${{ needs.slugify.outputs.slug }}"
+            -var="dist_zip_path=${{ github.workspace }}/backend.zip"
+            -var="cloudfront_url=${{ steps.cf.outputs.cloudfront_url }}"
+
+      - name: Get Cognito User Pool ID
+        id: cognito
+        working-directory: infrastructure/aws/preview/deploy
+        run: echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
+
+      - name: Create demo users
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
+
+          # Create demo user (ignores error if already exists)
+          aws cognito-idp admin-create-user \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "demo@breadly.dev" \
+            --message-action SUPPRESS || true
+
+          aws cognito-idp admin-set-user-password \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "demo@breadly.dev" \
+            --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" \
+            --permanent
+
+          # Create admin user (ignores error if already exists)
+          aws cognito-idp admin-create-user \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "admin@breadly.dev" \
+            --message-action SUPPRESS || true
+
+          aws cognito-idp admin-set-user-password \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "admin@breadly.dev" \
+            --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" \
+            --permanent
+
+      - name: Sync frontend to S3
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          aws s3 sync frontend-dist/ \
+            "s3://${{ steps.cf.outputs.bucket_id }}/preview/${{ needs.slugify.outputs.slug }}/" \
+            --delete
+
+      - name: Invalidate CloudFront cache for preview path
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.cf.outputs.distribution_id }}" \
+            --paths "/preview/${{ needs.slugify.outputs.slug }}/*"
+
+      - name: Seed data (placeholder)
+        run: |
+          echo "Seed data step — logic to be implemented."
+          echo "When implemented, this step will POST seed data to the preview API."
+
+      - name: Post PR comment
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PREVIEW_URL="${{ steps.cf.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
+          BODY="## Preview Environment
+
+          Branch \`${{ github.ref_name }}\` has been deployed to a preview environment.
+
+          **URL:** $PREVIEW_URL
+
+          **Demo credentials:**
+          | User | Email | Password |
+          |------|-------|----------|
+          | Demo | \`demo@breadly.dev\` | See \`PREVIEW_DEMO_PASSWORD\` secret |
+          | Admin | \`admin@breadly.dev\` | See \`PREVIEW_ADMIN_PASSWORD\` secret |
+
+          _Updated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
+
+          # Find the open PR for this branch (if any) and post/update a comment
+          PR_NUMBER=$(gh pr list --head "${{ github.ref_name }}" --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            # Update existing preview comment or create a new one
+            EXISTING=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("## Preview Environment")) | .databaseId' | head -1)
+            if [ -n "$EXISTING" ]; then
+              gh api "repos/${{ github.repository }}/issues/comments/$EXISTING" -X PATCH -f body="$BODY"
+            else
+              gh pr comment "$PR_NUMBER" --body "$BODY"
+            fi
+          fi

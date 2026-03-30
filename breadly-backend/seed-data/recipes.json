@@ -1,0 +1,35 @@
+[
+  {
+    "title": "Klassisches Bananenbrot",
+    "description": "Ein feuchtes, aromatisches Bananenbrot – perfekt für überreife Bananen.",
+    "ingredients": [
+      "3 reife Bananen",
+      "80 g Butter, geschmolzen",
+      "150 g Zucker",
+      "1 Ei",
+      "1 TL Vanilleextrakt",
+      "1 TL Backpulver",
+      "1 Prise Salz",
+      "190 g Mehl"
+    ],
+    "instructions": "Backofen auf 175 °C vorheizen. Bananen zerdrücken, Butter einrühren. Zucker, Ei und Vanille zugeben. Backpulver und Salz unterrühren. Mehl einfalten. In eine gefettete Kastenform geben und 60 Minuten backen.",
+    "prepTimeMinutes": 15,
+    "cookTimeMinutes": 60,
+    "servings": 8
+  },
+  {
+    "title": "Einfaches Sauerteigbrot",
+    "description": "Knuspriges Sauerteigbrot mit offener Porung und kräftigem Geschmack.",
+    "ingredients": [
+      "450 g Weizenmehl Type 550",
+      "50 g Roggenmehl",
+      "100 g aktiver Sauerteigansatz",
+      "350 ml lauwarmes Wasser",
+      "10 g Salz"
+    ],
+    "instructions": "Mehl und Wasser mischen, 30 Minuten ruhen lassen (Autolyse). Sauerteig und Salz einarbeiten. Alle 30 Minuten 4-mal falten. Über Nacht im Kühlschrank gehen lassen. Am nächsten Tag formen und 1 Stunde bei Raumtemperatur akklimatisieren. Im vorgeheizten Topf bei 250 °C 20 Minuten mit Deckel, dann 25 Minuten ohne Deckel backen.",
+    "prepTimeMinutes": 60,
+    "cookTimeMinutes": 45,
+    "servings": 10
+  }
+]

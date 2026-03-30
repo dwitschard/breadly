@@ -7,18 +7,21 @@ import { PublicConfig, PublicConfigIdp } from '../generated/api';
 export class ConfigService {
   private readonly http = inject(HttpClient);
 
-  readonly isLoaded = signal(false);
-  readonly hasError = signal(false);
+  private readonly _isLoaded = signal(false);
+  private readonly _hasError = signal(false);
+
+  readonly isLoaded = this._isLoaded.asReadonly();
+  readonly hasError = this._hasError.asReadonly();
 
   private config: PublicConfigIdp | null = null;
 
   constructor() {
-    firstValueFrom(this.http.get<PublicConfig>('/api/public/config'))
+    firstValueFrom(this.http.get<PublicConfig>('api/public/config'))
       .then(({ idp }) => {
         this.config = idp;
-        this.isLoaded.set(true);
+        this._isLoaded.set(true);
       })
-      .catch(() => this.hasError.set(true));
+      .catch(() => this._hasError.set(true));
   }
 
   getConfig(): PublicConfigIdp {
@@ -26,5 +29,10 @@ export class ConfigService {
       throw new Error('ConfigService: config has not been initialised yet');
     }
     return this.config;
+  }
+
+  setConfig(config: PublicConfigIdp): void {
+    this.config = config;
+    this._isLoaded.set(true);
   }
 }

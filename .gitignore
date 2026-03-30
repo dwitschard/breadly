@@ -3,6 +3,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 **/generated/**
+**/node_modules/**
 
 # ── Terraform ─────────────────────────────────────────────────────────────────
 
@@ -37,3 +38,4 @@ infrastructure/aws/frontend/bootstrap/terraform.tfstate.backup
 .vscode/
 *.swp
 *.swo
+/infrastructure/aws/frontend/deploy/modules/cloudfront/node_modules/
