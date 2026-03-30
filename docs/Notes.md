@@ -2,7 +2,7 @@
 
 ## Week Goals
 [ ] Create Skills / Agents for Coding itself
-    [ ] Architecture Description Backend
+    [x] Architecture Description Backend
     [ ] Architecture Description Frontend
     [ ] Architecture Description API Module
     [ ] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
@@ -16,6 +16,8 @@
     [ ] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
     [ ] Setup Dummy Data
     [ ] Delete Env once Branch is deleted
+[ ] Move Variables / Secrets that are not env specific to repo level on Github
+    [ ] Make sure everything still work the same
 
 
 - Backend is connected to DynamoDB
