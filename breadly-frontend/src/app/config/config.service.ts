@@ -1,15 +1,24 @@
-import { Injectable } from '@angular/core';
-import { PublicConfigIdp } from '../generated/api';
+import { inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { PublicConfig, PublicConfigIdp } from '../generated/api';
 
 @Injectable({ providedIn: 'root' })
 export class ConfigService {
+  private readonly http = inject(HttpClient);
+
+  readonly isLoaded = signal(false);
+  readonly hasError = signal(false);
+
   private config: PublicConfigIdp | null = null;
 
-  setConfig(idp: PublicConfigIdp): void {
-    if (this.config !== null) {
-      return;
-    }
-    this.config = idp;
+  constructor() {
+    firstValueFrom(this.http.get<PublicConfig>('/api/public/config'))
+      .then(({ idp }) => {
+        this.config = idp;
+        this.isLoaded.set(true);
+      })
+      .catch(() => this.hasError.set(true));
   }
 
   getConfig(): PublicConfigIdp {

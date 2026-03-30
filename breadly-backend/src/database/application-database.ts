@@ -1,10 +1,10 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { DbCollectionType, MONGODB_CONFIG } from './mongodb.config.js';
-import { RecipeDocument } from '../features/recipe/recipe.document.js';
+import { RecipeModel } from '../features/recipe/recipe.model';
 import { TechnologyDocument } from '../features/technology/technology.document.js';
 
 export type DbCollections = {
-  RecipeCollection: Collection<RecipeDocument>;
+  RecipeCollection: Collection<RecipeModel>;
   TechnologyCollection: Collection<TechnologyDocument>;
 };
 
@@ -26,7 +26,7 @@ export class ApplicationDatabase {
     }
 
     return {
-      RecipeCollection: db.collection<RecipeDocument>(MONGODB_CONFIG.COLLECTIONS.RecipeCollection),
+      RecipeCollection: db.collection<RecipeModel>(MONGODB_CONFIG.COLLECTIONS.RecipeCollection),
       TechnologyCollection: db.collection<TechnologyDocument>(MONGODB_CONFIG.COLLECTIONS.TechnologyCollection),
     };
   }

@@ -1,9 +1,9 @@
 import {ObjectId, UpdateFilter, WithId} from 'mongodb';
 import {ApplicationDatabase} from '../../database/application-database.js';
-import {RecipeDocument} from './recipe.document.js';
+import {RecipeModel} from './recipe.model';
 import { CreateRecipeDto, PatchRecipeDto, Recipe, UpdateRecipeDto } from "../../app/generated/api/index.js";
 
-const toRecipe = (doc: WithId<RecipeDocument>): Recipe => ({
+const toRecipe = (doc: WithId<RecipeModel>): Recipe => ({
     id: doc._id.toHexString(),
     name: doc.name,
 });
@@ -33,7 +33,7 @@ export const replaceRecipe = async (id: string, dto: UpdateRecipeDto): Promise<R
 };
 
 export const patchRecipe = async (id: string, dto: PatchRecipeDto): Promise<Recipe | null> => {
-    const update: UpdateFilter<RecipeDocument> = {$set: {}};
+    const update: UpdateFilter<RecipeModel> = {$set: {}};
 
     if (dto.name !== undefined) {
         update.$set = {name: dto.name};
