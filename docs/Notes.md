@@ -1,29 +1,29 @@
 # Notes
 
 ## Week Goals
-[x] Frontend and Backend are being deployed automatically
-[x] Backend serves only Requests via API Gateway
-[x] User need to authenticate via Cognito to access API Gateway
-[x] Backend is connected to a Database
-[x] User has a fluid Login / Logout Experience
+[ ] Create Skills / Agents for Coding itself
+    [ ] Architecture Description Backend
+    [ ] Architecture Description Frontend
+    [ ] Architecture Description API Module
+    [ ] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
+[ ] E2E Setup
+    [ ] Spawn a Lambda for Testing
+    [ ] Playwright Test
+    [ ] Deployment to a "CI" Environment
+    [ ] Add Mock Data to it (Login, Recipe, etc.)
+    [ ] Create Video to verify it
+[ ] Deploy Application from Feature Branch
+    [ ] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
+    [ ] Setup Dummy Data
+    [ ] Delete Env once Branch is deleted
+
 
 - Backend is connected to DynamoDB
-- Local Setup is developer friendly
-  - supertest import in Test
 
 Optional:
 - Custom UI for Login / Registration
 
-## Next Week
-- Create Skills / Agents for Coding itself
-- Agent should: Create API Spec, implement BE & FE, write tests + E2E
-
 ## Next Steps
-- Think about E2E-Setup -> Spawn a Lambda for Testing
-    - Playwright Test
-    - Deployment to a "CI" Environment
-    - Add Mock Data to it (Login, Recipe, etc.)
-    - Create Video to verify it
 - DynamoDB Table Design for User
 - Add DynamoDB Connection
     - Terraform Setup
@@ -40,10 +40,6 @@ Optional:
     - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
 
 ## Bugs
-- Add Auth Middleware in Backend 
-    - Public Endpoint without Auth
-    - Others require Auth
-    - Add Check for Role in Middleware (if needed)
 - Keep the Navigation Header when `app is trying to log you in` screen is shown to user -> Reduce commulative layout shift
 
 ## Ideas
