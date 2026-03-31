@@ -1,4 +1,6 @@
-# variables.tf — root module input variables for the preview deploy module.
+# variables.tf — merged root module input variables.
+# Union of frontend, backend, and CDN variables. The frontend_urls variable is
+# eliminated — it is now computed internally from the CloudFront domain.
 
 variable "aws_account_id" {
   description = "12-digit AWS account ID. Used by the provider's allowed_account_ids guard and in resource naming."
@@ -26,28 +28,18 @@ variable "project_name" {
   }
 }
 
-variable "branch_slug" {
-  description = "Slugified branch name (lowercase, special chars replaced with hyphens, max 40 chars). Used as the URL path prefix and resource name suffix."
-  type        = string
-
-  validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$", var.branch_slug))
-    error_message = "branch_slug must be lowercase alphanumeric with hyphens, 2-40 chars, not starting or ending with a hyphen."
-  }
-}
-
 variable "dist_zip_path" {
   description = "Absolute path to the backend.zip artifact produced by the build pipeline."
   type        = string
 }
 
-variable "mongodb_uri" {
-  description = "MongoDB connection string for the private Lambda. Passed as the MONGODB_CONNECTION_STRING environment variable."
+variable "frontend_dist_path" {
+  description = "Path to the compiled Angular output directory. Every file found recursively will be uploaded to S3."
   type        = string
-  sensitive   = true
 }
 
-variable "cloudfront_url" {
-  description = "Base HTTPS URL of the shared CloudFront distribution (e.g. https://<id>.cloudfront.net). Used as the Cognito callback URL."
+variable "mongodb_uri" {
+  description = "MongoDB connection string for the private Lambda. Passed as the MONGODB_CONNECTION_STRING environment variable. Set via the MONGODB_URI GitHub Actions secret."
   type        = string
+  sensitive   = true
 }

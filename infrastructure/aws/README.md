@@ -10,21 +10,30 @@ All resources are managed via [Terraform](https://www.terraform.io/) and organis
 Breadly runs on AWS with the following high-level architecture:
 
 - **Frontend** — Angular SPA hosted in S3, served through CloudFront
-- **Backend** — Express API running on Lambda, exposed through API Gateway
+- **Backend** — Express API running on Lambda (dual: private + public), exposed through API Gateway
 - **CDN** — CloudFront distribution that routes traffic to S3 (static assets) and API Gateway (API requests)
-- **Preview environments** — per-branch full-stack deployments under `/preview/<slug>/` on the shared dev CloudFront distribution, each with a dedicated S3 bucket
+- **Preview environments** — per-branch full-stack deployments under `/preview/<slug>/` on a dedicated preview CloudFront distribution, with a single shared S3 bucket using key prefixes for isolation
 
 ### Request routing (CloudFront)
 
+**Dev/Prod distribution:**
+
 ```
 CloudFront Distribution
-├── /api/*                     → API Gateway (main backend)
-├── /preview/*/api/*           → API Gateway (preview backends)
-├── /preview/<slug>/*          → Per-preview S3 bucket (CF Function strips prefix)
-└── /* (default)               → Main S3 bucket (Angular SPA)
+├── /api/*           → API Gateway (main backend)
+└── /* (default)     → Main S3 bucket (Angular SPA)
 ```
 
-Each preview environment gets its own S3 bucket. A CloudFront Function strips the `/preview/<slug>` prefix from the URI before forwarding to S3, and rewrites SPA deep links to `/index.html`.
+**Preview distribution:**
+
+```
+CloudFront Distribution
+├── /preview/*/api/* → API Gateway (preview backends, per-branch routes)
+├── /preview/*       → Shared S3 bucket (CF Function prepends /<slug>/ key prefix)
+└── /* (default)     → Fallback
+```
+
+Each preview environment stores frontend assets under a `/<slug>/` key prefix in the shared S3 bucket. A CloudFront Function strips the `/preview/<slug>` prefix and prepends the slug as an S3 key prefix, rewriting SPA deep links to `/<slug>/index.html`.
 
 ---
 
@@ -32,58 +41,63 @@ Each preview environment gets its own S3 bucket. A CloudFront Function strips th
 
 ```
 aws/
+├── deploy/                              # Merged root module — dev/prod (frontend + backend + CDN)
+│   ├── providers.tf
+│   ├── backend.tf                       # S3 remote state (key: deploy/terraform.tfstate)
+│   ├── variables.tf
+│   ├── main.tf                          # Orchestrates: S3, Cognito, Lambda x2, API GW, CloudFront
+│   └── outputs.tf
 ├── frontend/
-│   ├── setup/                       # Run once per environment to create state bucket + lock table
+│   ├── setup/                           # Run once per environment to create state bucket + lock table
 │   │   ├── providers.tf
-│   │   ├── backend.tf               # Local backend (state stored on disk, gitignored)
+│   │   ├── backend.tf                   # Local backend (state stored on disk, gitignored)
 │   │   ├── variables.tf
-│   │   ├── main.tf                  # S3 state bucket, DynamoDB lock table
+│   │   ├── main.tf
 │   │   └── outputs.tf
-│   └── deploy/                      # Root module — frontend S3 bucket + file upload
-│       ├── providers.tf
-│       ├── backend.tf               # S3 remote state + DynamoDB locking
-│       ├── variables.tf
-│       ├── main.tf
-│       ├── outputs.tf
+│   └── deploy/
 │       └── modules/
-│           └── s3_static_site/      # Reusable module: S3 bucket + file upload via aws_s3_object
+│           └── s3_static_site/          # Reusable module: S3 bucket + file upload
 │               ├── variables.tf
 │               ├── main.tf
 │               └── outputs.tf
 ├── backend/
-│   └── deploy/                      # Root module — Lambda + API Gateway
-│       ├── providers.tf
-│       ├── backend.tf
-│       ├── variables.tf
-│       ├── main.tf
-│       ├── outputs.tf
+│   └── deploy/
 │       └── modules/
-│           └── ...
-├── cdn/
-│   └── deploy/                      # Root module — CloudFront distribution
-│       ├── providers.tf
-│       ├── backend.tf
-│       ├── variables.tf             # Includes preview_buckets map variable
-│       ├── main.tf                  # Reads frontend + backend remote state, calls cloudfront module
-│       ├── outputs.tf
-│       └── modules/
-│           └── cloudfront/          # CloudFront distribution, OAC, bucket policies
+│           └── api_gateway/             # API Gateway HTTP API + routes + authorizer
 │               ├── variables.tf
-│               ├── main.tf          # Dynamic preview origins, CF Function, per-preview cache behaviors
+│               ├── main.tf
+│               └── outputs.tf
+├── cdn/
+│   └── deploy/                          # Root module — CloudFront distribution (also used standalone for preview CDN)
+│       ├── providers.tf
+│       ├── backend.tf
+│       ├── variables.tf                 # preview_only flag for preview-only mode
+│       ├── main.tf                      # Reads remote state (deploy or gateway), calls cloudfront module
+│       ├── outputs.tf
+│       └── modules/
+│           └── cloudfront/              # CloudFront distribution, OAC, bucket policies, CF Function
+│               ├── variables.tf
+│               ├── main.tf
 │               └── outputs.tf
 ├── preview/
-│   └── deploy/                      # Root module — per-branch preview environment
+│   ├── gateway/                         # Shared preview infrastructure (API Gateway + S3 bucket)
+│   │   ├── providers.tf
+│   │   ├── backend.tf
+│   │   ├── variables.tf
+│   │   ├── main.tf                      # Shared API Gateway + shared S3 bucket for all previews
+│   │   └── outputs.tf
+│   └── deploy/                          # Per-branch preview environment
 │       ├── providers.tf
 │       ├── backend.tf
-│       ├── variables.tf             # Includes branch_slug, frontend_dist_path
-│       ├── main.tf                  # Per-preview: S3 bucket, Cognito, Lambda x2, API GW routes
-│       ├── outputs.tf               # Exposes frontend_bucket_id/arn/regional_domain_name
+│       ├── variables.tf                 # branch_slug, dist_zip_path, cloudfront_url
+│       ├── main.tf                      # Per-preview: Cognito, Lambda x2, API GW routes
+│       ├── outputs.tf
 │       └── modules/
-│           └── api_gateway_routes/  # Adds preview routes to the shared API Gateway
+│           └── api_gateway_routes/      # Adds preview routes to the shared API Gateway
 │               └── ...
-├── modules/                         # Shared modules used across root modules
-│   ├── cognito/                     # Cognito User Pool + App Client + Hosted UI
-│   └── lambda_express/              # Lambda function with Express handler
+├── modules/                             # Shared modules used across root modules
+│   ├── cognito/                         # Cognito User Pool + App Client + Hosted UI
+│   └── lambda_express/                  # Lambda function with Express handler
 └── README.md
 ```
 
@@ -172,29 +186,43 @@ can manage bootstrap resources later (e.g. adding a new environment).
 
 ## Terraform root modules
 
-### `frontend/deploy/` — Main frontend
+### `deploy/` — Merged dev/prod root
 
-Creates the S3 bucket and uploads the compiled Angular SPA. The bucket is private (no public access); CloudFront serves files via OAC.
+The unified root module for dev and prod environments. Orchestrates all resources in a single `terraform apply`:
 
-### `backend/deploy/` — Main backend
+- **S3 static site** — Angular SPA bucket + file upload (via `frontend/deploy/modules/s3_static_site`)
+- **Cognito** — User Pool + App Client + Hosted UI (via `modules/cognito`)
+- **Lambda x2** — private (authenticated) + public (unauthenticated) Express backends (via `modules/lambda_express`)
+- **API Gateway** — HTTP API with routes and JWT authorizer (via `backend/deploy/modules/api_gateway`)
+- **CloudFront** — CDN distribution fronting S3 + API Gateway (via `cdn/deploy/modules/cloudfront`)
 
-Creates Lambda functions (private + public) and an API Gateway HTTP API.
+Cognito callback URLs are computed internally from the CloudFront domain — no external `frontend_urls` variable needed. Uses Terraform workspaces (`dev`, `prod`) for environment isolation.
 
-### `cdn/deploy/` — CloudFront distribution
+### `cdn/deploy/` — CloudFront distribution (standalone for preview)
 
-Creates the CloudFront distribution that fronts both the S3 bucket and API Gateway. Accepts a `preview_buckets` variable (map of objects) to dynamically create per-preview S3 origins, OACs, bucket policies, and ordered cache behaviors.
+In dev/prod, the CloudFront module is called directly from `deploy/`. The `cdn/deploy/` root module is used standalone only for the **preview CDN**, where it reads remote state from `preview/gateway/` to get the API Gateway endpoint and shared S3 bucket details.
 
-Reads remote state from `frontend/deploy/` and `backend/deploy/` to get the S3 bucket details and API Gateway endpoint.
+Set `preview_only = true` when deploying for preview environments.
 
-### `preview/deploy/` — Preview environments
+### `preview/gateway/` — Shared preview infrastructure
 
-Creates all per-branch resources for a single preview environment. Uses Terraform workspaces (`preview-<slug>`) to isolate state per branch.
+Creates resources shared across all preview branches:
+
+- **API Gateway HTTP API** — single shared gateway; each preview branch adds routes
+- **S3 bucket** — single shared bucket for all preview frontend assets (key prefix per branch)
+
+Deployed once and updated infrequently.
+
+### `preview/deploy/` — Per-branch preview environment
+
+Creates all per-branch resources for a single preview. Uses Terraform workspaces (`preview-<slug>`) to isolate state per branch.
 
 Each preview creates:
-- **S3 bucket** — dedicated per-preview bucket for frontend assets (via the `s3_static_site` module)
 - **Cognito User Pool** — per-preview with demo users and groups
 - **Lambda x2** — private (authenticated) + public (unauthenticated) Express backends
-- **API Gateway routes** — added to the shared dev API Gateway under `/preview/<slug>/api/*`
+- **API Gateway routes** — added to the shared preview API Gateway under `/preview/<slug>/api/*`
+
+Frontend files are uploaded to the shared S3 bucket by the workflow via `aws s3 sync`, not by Terraform.
 
 ---
 
@@ -205,21 +233,15 @@ Each preview creates:
 1. **Deploy** (`preview-deploy.yml`) — triggered on push to any non-main branch:
    - Builds frontend with `--base-href=/preview/<slug>/`
    - Builds backend as a Lambda zip
-   - Creates/updates preview workspace (`preview-<slug>`) with its own S3 bucket, Cognito, Lambda, and API Gateway routes
-   - Collects all active preview bucket outputs from all `preview-*` workspaces
-   - Updates the CDN module with the full `preview_buckets` map to add/update CloudFront origins
+   - Ensures shared gateway (API Gateway + S3 bucket) and CDN are deployed
+   - Creates/updates preview workspace (`preview-<slug>`) with Cognito, Lambda, and API Gateway routes
+   - Uploads frontend assets to the shared S3 bucket under `/<slug>/` key prefix via `aws s3 sync`
    - Invalidates the CloudFront cache for the preview path
 
 2. **Cleanup** (`preview-cleanup.yml`) — triggered when a branch is deleted:
-   - Runs `terraform destroy` in the preview workspace (destroys S3 bucket, Cognito, Lambda, API GW routes)
-   - Collects remaining preview bucket outputs from surviving workspaces
-   - Updates the CDN module to remove the deleted preview's origin and cache behavior
+   - Runs `terraform destroy` in the preview workspace (destroys Cognito, Lambda, API GW routes)
+   - Deletes frontend assets from the shared S3 bucket (`aws s3 rm s3://<bucket>/<slug>/ --recursive`)
    - Deletes the Terraform workspace
-
-### Limits
-
-- Maximum **5 concurrent preview environments** (enforced at deploy time)
-- CloudFront has a 25 cache behavior limit; with 3 static behaviors + 1 per preview, 5 previews uses 8 total
 
 ### Preview URLs
 
@@ -227,6 +249,8 @@ Each preview creates:
 https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/        # Frontend SPA
 https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/api/*   # Backend API
 ```
+
+There is no hard limit on the number of concurrent preview environments. The CDN has a single static `/preview/*` cache behavior for the shared S3 bucket, so adding previews does not consume additional CloudFront behaviors.
 
 ---
 
@@ -266,11 +290,12 @@ Deployments are driven by GitHub Actions workflows.
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `deploy-frontend.yml` | Push to `main` (frontend/infra paths) or manual dispatch | Deploys frontend to dev or prod |
+| `deploy.yml` | Called by `build-backend.yml` or `build-frontend.yml` on push to `main` | Deploys backend + frontend + CDN to dev via merged root |
 | `preview-deploy.yml` | Push to any non-main branch | Deploys full-stack preview environment |
 | `preview-cleanup.yml` | Branch deletion | Tears down preview environment |
+| `teardown-application.yml` | Manual dispatch | Destroys all resources for a chosen environment |
 
-**Production is never deployed automatically.** Use manual workflow dispatch.
+**Production is never deployed automatically.** Use manual workflow dispatch on `deploy.yml`.
 
 ### GitHub secrets and variables
 
@@ -279,9 +304,9 @@ Deployments are driven by GitHub Actions workflows.
 | `AWS_OIDC_ROLE_ARN` | Secret | OIDC role the runner assumes |
 | `AWS_ACCOUNT_ID` | Secret | Provider account guard |
 | `AWS_REGION` | Variable | AWS region for all resources |
-| `MONGODB_URI` | Secret | MongoDB connection string for Lambda |
-| `PREVIEW_DEMO_PASSWORD` | Secret | Password for preview demo user |
-| `PREVIEW_ADMIN_PASSWORD` | Secret | Password for preview admin user |
+| `MONGODB_URI` | Secret (per-env) | MongoDB connection string for Lambda |
+| `PREVIEW_DEMO_PASSWORD` | Secret (preview) | Password for preview demo user |
+| `PREVIEW_ADMIN_PASSWORD` | Secret (preview) | Password for preview admin user |
 
 > State bucket and lock table names are derived automatically from `AWS_ACCOUNT_ID`
 > and the environment using the convention: `breadly-<env>-tfstate` / `breadly-<env>-tfstate-lock`.

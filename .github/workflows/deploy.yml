@@ -1,0 +1,170 @@
+# deploy.yml
+#
+# Unified deployment pipeline for the Breadly application (dev/prod).
+# Deploys the Angular SPA (S3), Express API (Lambda), Cognito, API Gateway,
+# and CDN (CloudFront) via a single Terraform root module.
+#
+# Jobs
+#   deploy    Downloads both release assets and deploys via Terraform.
+#
+# Triggers
+#   workflow_call     Called by build-backend.yml or build-frontend.yml on main.
+#   workflow_dispatch Manually deploy a specific environment.
+#
+# Prerequisites
+#   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
+#   Run setup-deployment-infrastructure.yml once per environment before the first deploy.
+#
+# Artifacts
+#   The workflow always needs both backend.zip and dist.zip. The caller passes
+#   its own release_tag; the workflow downloads backend.zip from the latest
+#   backend-* release and dist.zip from the latest frontend-* release, then
+#   overrides whichever one the caller's release_tag provides.
+#
+# Required secrets/variables — see .github/workflows/README.md.
+#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID   MONGODB_URI
+#   Variables: AWS_REGION
+
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: "Release tag being deployed (e.g. backend-a1b2c3d or frontend-a1b2c3d)"
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+
+  workflow_dispatch:
+    inputs:
+      backend_release_tag:
+        description: "Backend release tag (leave empty for latest)"
+        required: false
+        type: string
+        default: ""
+      frontend_release_tag:
+        description: "Frontend release tag (leave empty for latest)"
+        required: false
+        type: string
+        default: ""
+      environment:
+        description: "Target environment"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - prod
+
+concurrency:
+  group: deploy-${{ inputs.environment || github.event.inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  TARGET_ENV: ${{ inputs.environment || github.event.inputs.environment }}
+  PROJECT_NAME: breadly
+
+jobs:
+  deploy:
+    name: ${{ inputs.environment || github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Download the latest backend release asset. If the caller provided a
+      # backend-* release_tag, use that; otherwise fetch the latest.
+      - name: Download backend artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=""
+          # workflow_call: release_tag is set
+          if [[ -n "${{ inputs.release_tag }}" && "${{ inputs.release_tag }}" == backend-* ]]; then
+            TAG="${{ inputs.release_tag }}"
+          # workflow_dispatch: explicit backend tag
+          elif [[ -n "${{ github.event.inputs.backend_release_tag }}" ]]; then
+            TAG="${{ github.event.inputs.backend_release_tag }}"
+          fi
+
+          if [[ -n "$TAG" ]]; then
+            echo "Downloading backend.zip from release $TAG"
+            gh release download "$TAG" --pattern backend.zip
+          else
+            echo "Downloading backend.zip from latest backend release"
+            gh release download --pattern backend.zip \
+              $(gh release list --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("backend-"))][0].tagName')
+          fi
+
+      # Download the latest frontend release asset. If the caller provided a
+      # frontend-* release_tag, use that; otherwise fetch the latest.
+      - name: Download frontend artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=""
+          # workflow_call: release_tag is set
+          if [[ -n "${{ inputs.release_tag }}" && "${{ inputs.release_tag }}" == frontend-* ]]; then
+            TAG="${{ inputs.release_tag }}"
+          # workflow_dispatch: explicit frontend tag
+          elif [[ -n "${{ github.event.inputs.frontend_release_tag }}" ]]; then
+            TAG="${{ github.event.inputs.frontend_release_tag }}"
+          fi
+
+          if [[ -n "$TAG" ]]; then
+            echo "Downloading dist.zip from release $TAG"
+            gh release download "$TAG" --pattern dist.zip
+          else
+            echo "Downloading dist.zip from latest frontend release"
+            gh release download --pattern dist.zip \
+              $(gh release list --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("frontend-"))][0].tagName')
+          fi
+
+      - name: Unzip frontend dist
+        run: |
+          mkdir -p breadly-frontend/dist/browser/
+          unzip dist.zip -d breadly-frontend/dist/browser/
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-deploy-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Export Terraform secrets
+        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
+
+      - name: Deploy stack
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/deploy
+          environment: ${{ env.TARGET_ENV }}
+          extra_tf_vars: >-
+            -var="dist_zip_path=${{ github.workspace }}/backend.zip"
+            -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"
+
+      - name: Invalidate CloudFront cache
+        working-directory: infrastructure/aws/deploy
+        run: |
+          DIST_ID=$(terraform output -raw cloudfront_distribution_id)
+          aws cloudfront create-invalidation \
+            --distribution-id "$DIST_ID" \
+            --paths "/*"
+
+      - name: Print outputs
+        working-directory: infrastructure/aws/deploy
+        run: |
+          echo "CloudFront URL: $(terraform output -raw cloudfront_url)"
+          echo "API Gateway:    $(terraform output -raw api_gateway_endpoint)"

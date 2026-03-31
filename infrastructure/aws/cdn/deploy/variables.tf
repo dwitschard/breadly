@@ -26,24 +26,8 @@ variable "project_name" {
   }
 }
 
-variable "preview_buckets" {
-  description = "Map of active preview environments. Key = branch slug, value = object with S3 bucket details. Passed by the deploy/cleanup workflows after collecting outputs from all active preview workspaces."
-  type = map(object({
-    bucket_id                   = string
-    bucket_arn                  = string
-    bucket_regional_domain_name = string
-  }))
-  default = {}
-}
-
 variable "preview_only" {
-  description = "When true, the distribution serves only preview environments (no main S3 origin). The API Gateway URL must be provided via api_gateway_url."
+  description = "When true, the distribution serves only preview environments (no main S3 origin). Gateway remote state provides the API Gateway URL and shared S3 bucket details."
   type        = bool
   default     = false
-}
-
-variable "api_gateway_url" {
-  description = "HTTPS URL of the API Gateway endpoint. When set, overrides the URL from backend remote state. Required when preview_only = true."
-  type        = string
-  default     = ""
 }

@@ -57,8 +57,6 @@ jobs:
           echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
           echo "TF_VAR_mongodb_uri=placeholder" >> "$GITHUB_ENV"
           echo "TF_VAR_cloudfront_url=https://placeholder.cloudfront.net" >> "$GITHUB_ENV"
-          mkdir -p /tmp/empty-dist
-          echo "TF_VAR_frontend_dist_path=/tmp/empty-dist" >> "$GITHUB_ENV"
 
       - name: Destroy all preview workspaces
         working-directory: infrastructure/aws/preview/deploy
@@ -74,14 +72,54 @@ jobs:
           done
 
   # ---------------------------------------------------------------------------
-  # Teardown CDN
+  # Teardown Deploy — merged root module (dev/prod only)
   # ---------------------------------------------------------------------------
-  teardown-cdn:
-    name: Teardown CDN (${{ inputs.environment }})
-    needs: [teardown-preview-branches]
-    if: always() && (needs.teardown-preview-branches.result == 'success' || needs.teardown-preview-branches.result == 'skipped')
+  teardown-deploy:
+    name: Teardown Deploy (${{ inputs.environment }})
+    if: inputs.environment != 'preview'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-teardown-deploy-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Set dummy Terraform variables
+        run: |
+          echo "TF_VAR_mongodb_uri=placeholder" >> "$GITHUB_ENV"
+          echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
+          mkdir -p /tmp/empty-dist
+          echo "TF_VAR_frontend_dist_path=/tmp/empty-dist" >> "$GITHUB_ENV"
+
+      - name: Terraform destroy
+        working-directory: infrastructure/aws/deploy
+        shell: bash
+        run: |
+          terraform workspace select ${{ env.TARGET_ENV }}
+          terraform destroy -auto-approve
+
+  # ---------------------------------------------------------------------------
+  # Teardown CDN (preview only, after preview branches)
+  # ---------------------------------------------------------------------------
+  teardown-cdn:
+    name: Teardown CDN (preview)
+    needs: [teardown-preview-branches]
+    if: inputs.environment == 'preview' && (needs.teardown-preview-branches.result == 'success')
+    runs-on: ubuntu-latest
+    environment: preview
     permissions:
       id-token: write
       contents: read
@@ -93,8 +131,8 @@ jobs:
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/cdn/deploy
-          environment: ${{ env.TARGET_ENV }}
-          session_name: github-teardown-cdn-${{ env.TARGET_ENV }}
+          environment: preview
+          session_name: github-teardown-cdn-preview
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
@@ -104,77 +142,9 @@ jobs:
         working-directory: infrastructure/aws/cdn/deploy
         shell: bash
         run: |
-          terraform workspace select ${{ env.TARGET_ENV }}
+          terraform workspace select preview
           terraform destroy -auto-approve \
-            ${{ inputs.environment == 'preview' && '-var="preview_only=true" -var="api_gateway_url=https://placeholder"' || '' }}
-
-  # ---------------------------------------------------------------------------
-  # Teardown Frontend (dev/prod only)
-  # ---------------------------------------------------------------------------
-  teardown-frontend:
-    name: Teardown Frontend (${{ inputs.environment }})
-    if: inputs.environment != 'preview'
-    needs: [teardown-cdn]
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Terraform
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/frontend/deploy
-          environment: ${{ env.TARGET_ENV }}
-          session_name: github-teardown-frontend-${{ env.TARGET_ENV }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Terraform destroy
-        working-directory: infrastructure/aws/frontend/deploy
-        shell: bash
-        run: |
-          terraform workspace select ${{ env.TARGET_ENV }}
-          terraform destroy -auto-approve
-
-  # ---------------------------------------------------------------------------
-  # Teardown Backend (dev/prod only)
-  # ---------------------------------------------------------------------------
-  teardown-backend:
-    name: Teardown Backend (${{ inputs.environment }})
-    if: inputs.environment != 'preview'
-    needs: [teardown-cdn]
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Terraform
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/backend/deploy
-          environment: ${{ env.TARGET_ENV }}
-          session_name: github-teardown-backend-${{ env.TARGET_ENV }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Terraform destroy
-        working-directory: infrastructure/aws/backend/deploy
-        shell: bash
-        run: |
-          terraform workspace select ${{ env.TARGET_ENV }}
-          terraform destroy -auto-approve
+            -var="preview_only=true"
 
   # ---------------------------------------------------------------------------
   # Teardown Preview Gateway (preview only, after CDN)

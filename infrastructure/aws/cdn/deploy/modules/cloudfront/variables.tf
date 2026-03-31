@@ -6,7 +6,7 @@ variable "name" {
 }
 
 variable "preview_only" {
-  description = "When true, no main S3 origin is created. The distribution only serves preview environments via per-preview S3 origins and API Gateway."
+  description = "When true, no main S3 origin is created. The distribution only serves preview environments via a shared preview S3 bucket and API Gateway."
   type        = bool
   default     = false
 }
@@ -40,12 +40,20 @@ variable "tags" {
   default     = {}
 }
 
-variable "preview_buckets" {
-  description = "Map of active preview environments. Key = branch slug, value = object with S3 bucket details."
-  type = map(object({
-    bucket_id                   = string
-    bucket_arn                  = string
-    bucket_regional_domain_name = string
-  }))
-  default = {}
+variable "preview_bucket_id" {
+  description = "Name of the shared preview S3 bucket. Required when preview_only = true."
+  type        = string
+  default     = ""
+}
+
+variable "preview_bucket_arn" {
+  description = "ARN of the shared preview S3 bucket. Required when preview_only = true."
+  type        = string
+  default     = ""
+}
+
+variable "preview_bucket_regional_domain_name" {
+  description = "Regional S3 domain name of the shared preview bucket. Required when preview_only = true."
+  type        = string
+  default     = ""
 }

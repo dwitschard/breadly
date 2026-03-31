@@ -7,7 +7,7 @@
 # Jobs
 #   build    Lint → test → build → upload dist artifact
 #   release  (main only) Create GitHub Release with dist.zip asset
-#   deploy   (main only) Call deploy-frontend.yml to deploy to dev
+#   deploy   (main only) Call deploy.yml to deploy to dev
 #
 # Triggers
 #   push              Runs on main when frontend source files change.
@@ -24,8 +24,9 @@ on:
       - "breadly-frontend/**"
       - "infrastructure/aws/frontend/**"
       - "infrastructure/aws/cdn/**"
+      - "infrastructure/aws/deploy/**"
       - ".github/workflows/build-frontend.yml"
-      - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/deploy.yml"
       - ".github/actions/**"
 
   workflow_call:
@@ -120,7 +121,7 @@ jobs:
     name: Deploy Dev
     needs: [ build, release ]
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/deploy-frontend.yml
+    uses: ./.github/workflows/deploy.yml
     with:
       release_tag: frontend-${{ needs.build.outputs.short_sha }}
       environment: dev

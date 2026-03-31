@@ -7,7 +7,7 @@
 # Jobs
 #   build    Lint → test → build → upload dist artifact
 #   release  (main only) Create GitHub Release with backend.zip asset
-#   deploy   (main only) Call deploy-backend.yml to deploy to dev
+#   deploy   (main only) Call deploy.yml to deploy to dev
 #
 # Triggers
 #   push              Runs on main when backend source files change.
@@ -23,8 +23,9 @@ on:
     paths:
       - "breadly-backend/**"
       - "infrastructure/aws/backend/**"
+      - "infrastructure/aws/deploy/**"
       - ".github/workflows/build-backend.yml"
-      - ".github/workflows/deploy-backend.yml"
+      - ".github/workflows/deploy.yml"
       - ".github/actions/**"
 
   workflow_call:
@@ -114,7 +115,7 @@ jobs:
     name: Deploy Dev
     needs: [ build, release ]
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/deploy-backend.yml
+    uses: ./.github/workflows/deploy.yml
     with:
       release_tag: backend-${{ needs.build.outputs.short_sha }}
       environment: dev

@@ -2,16 +2,17 @@
 #
 # Deploys a full-stack preview environment for every non-main branch push.
 # Each preview environment runs under /preview/<branch-slug>/ on the dedicated
-# preview CloudFront distribution, with its own S3 bucket for frontend assets.
+# preview CloudFront distribution, with frontend assets in the shared S3 bucket
+# under a /<branch-slug>/ key prefix.
 #
-# Shared preview infrastructure (API Gateway + CloudFront) is fully isolated
-# from dev. State lives in breadly-preview-tfstate.
+# Shared preview infrastructure (API Gateway + S3 bucket + CloudFront) is fully
+# isolated from dev. State lives in breadly-preview-tfstate.
 #
 # Jobs:
-#   slugify          Computes the branch slug and enforces the 5-preview limit.
+#   slugify          Computes the branch slug.
 #   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses build-frontend.yml with preview base-href.
-#   deploy           terraform apply (gateway + CDN + preview + CDN update) -> users -> PR comment.
+#   deploy           terraform apply (gateway + CDN + preview) -> s3 sync -> users -> PR comment.
 #
 # Triggers
 #   push to any branch except main.
@@ -37,15 +38,11 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Slugify branch name and enforce preview limit
+  # Slugify branch name
   # ---------------------------------------------------------------------------
   slugify:
-    name: Slugify & Check Limit
+    name: Slugify
     runs-on: ubuntu-latest
-    environment: preview
-    permissions:
-      id-token: write
-      contents: read
     outputs:
       slug: ${{ steps.slug.outputs.slug }}
     steps:
@@ -57,30 +54,6 @@ jobs:
         uses: ./.github/actions/slugify-branch
         with:
           branch: ${{ github.ref_name }}
-
-      - name: Setup Terraform (preview module)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/deploy
-          environment: preview
-          session_name: github-preview-limit-check
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Enforce 5-preview limit
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          SLUG="${{ steps.slug.outputs.slug }}"
-          # Count workspaces with prefix 'preview-', excluding the current branch's own workspace
-          COUNT=$(terraform workspace list | grep -E '^\s+preview-' | grep -v "preview-${SLUG}" | wc -l | tr -d ' ')
-          echo "Active preview workspaces (excluding this branch): $COUNT"
-          if [ "$COUNT" -ge 5 ]; then
-            echo "ERROR: Maximum of 5 concurrent preview environments reached."
-            echo "Delete a branch to free up a slot before deploying this preview."
-            exit 1
-          fi
 
   # ---------------------------------------------------------------------------
   # Build backend (reuses CI workflow)
@@ -135,7 +108,7 @@ jobs:
           name: frontend-dist
           path: frontend-dist/
 
-      # --- Step 1: Deploy shared preview API Gateway ---
+      # --- Step 1: Deploy shared preview API Gateway + S3 bucket ---
 
       - name: Setup Terraform (gateway)
         uses: ./.github/actions/terraform-setup
@@ -154,11 +127,12 @@ jobs:
           working_dir: infrastructure/aws/preview/gateway
           environment: preview
 
-      - name: Get API Gateway endpoint
+      - name: Get gateway outputs
         id: gw
         working-directory: infrastructure/aws/preview/gateway
         run: |
           echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
 
       # --- Step 2: Deploy preview CDN (ensures CloudFront URL exists for Cognito) ---
 
@@ -173,14 +147,13 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Deploy preview CDN (initial)
+      - name: Deploy preview CDN
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/cdn/deploy
           environment: preview
           extra_tf_vars: >-
             -var="preview_only=true"
-            -var="api_gateway_url=${{ steps.gw.outputs.api_gateway_url }}"
 
       - name: Get CloudFront URL
         id: cf
@@ -217,7 +190,26 @@ jobs:
             -var="branch_slug=${{ needs.slugify.outputs.slug }}"
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
             -var="cloudfront_url=${{ steps.cf.outputs.cloudfront_url }}"
-            -var="frontend_dist_path=${{ github.workspace }}/frontend-dist"
+
+      # --- Step 4: Upload frontend assets to shared S3 bucket ---
+
+      - name: Upload frontend to shared S3 bucket
+        run: |
+          aws s3 sync frontend-dist/ \
+            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ needs.slugify.outputs.slug }}/" \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          # Upload HTML and JSON with no-cache headers
+          aws s3 sync frontend-dist/ \
+            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ needs.slugify.outputs.slug }}/" \
+            --exclude "*" \
+            --include "*.html" \
+            --include "*.json" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      # --- Step 5: Create Cognito users ---
 
       - name: Get Cognito User Pool ID
         id: cognito
@@ -286,37 +278,7 @@ jobs:
             --username "admin@breadly.dev" \
             --group-name "ADMIN"
 
-      # --- Step 4: Update CDN with all active preview bucket origins ---
-
-      - name: Collect active preview buckets
-        id: previews
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          PREVIEW_BUCKETS='{}'
-          WORKSPACES=$(terraform workspace list | grep -E '^\s+preview-' | sed 's/^[[:space:]]*//' | sed 's/^preview-//' || true)
-          for SLUG in $WORKSPACES; do
-            terraform workspace select "preview-${SLUG}"
-            BUCKET_ID=$(terraform output -raw frontend_bucket_id 2>/dev/null || echo "")
-            if [ -n "$BUCKET_ID" ]; then
-              BUCKET_ARN=$(terraform output -raw frontend_bucket_arn)
-              BUCKET_DOMAIN=$(terraform output -raw frontend_bucket_regional_domain_name)
-              PREVIEW_BUCKETS=$(echo "$PREVIEW_BUCKETS" | jq --arg slug "$SLUG" \
-                --arg id "$BUCKET_ID" --arg arn "$BUCKET_ARN" --arg domain "$BUCKET_DOMAIN" \
-                '. + {($slug): {bucket_id: $id, bucket_arn: $arn, bucket_regional_domain_name: $domain}}')
-            fi
-          done
-          echo "preview_buckets=$PREVIEW_BUCKETS" >> "$GITHUB_OUTPUT"
-          echo "Collected preview buckets: $PREVIEW_BUCKETS"
-
-      - name: Update CDN with preview origins
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: preview
-          extra_tf_vars: >-
-            -var="preview_only=true"
-            -var="api_gateway_url=${{ steps.gw.outputs.api_gateway_url }}"
-            -var='preview_buckets=${{ steps.previews.outputs.preview_buckets }}'
+      # --- Step 6: Invalidate, seed, and comment ---
 
       - name: Invalidate CloudFront cache for preview path
         env:

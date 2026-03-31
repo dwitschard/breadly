@@ -2,21 +2,23 @@
 #
 # Two modes:
 #   Standard (preview_only = false):
-#     Main S3 origin for the Angular SPA + API Gateway origin + optional preview origins.
+#     Main S3 origin for the Angular SPA + API Gateway origin.
 #     Custom error responses rewrite 403/404 to /index.html for SPA routing.
+#     A single static /preview/* behavior routes to the shared preview S3 bucket.
 #
 #   Preview-only (preview_only = true):
-#     No main S3 origin. Only API Gateway origin + per-preview S3 origins.
+#     No main S3 origin. Only API Gateway origin + shared preview S3 bucket.
 #     Default behavior falls through to API Gateway (returns 404 for unknown paths).
-#     SPA routing for previews is handled by the preview_spa_fallback CloudFront Function.
+#     SPA routing for previews is handled by the preview_spa_rewrite CloudFront Function.
 #
-# Preview origins:
-#   Each active preview environment gets its own S3 origin, OAC, bucket policy,
-#   and /preview/<slug>/* cache behavior. These are created dynamically from the
-#   preview_buckets variable.
+# Preview frontend assets:
+#   All preview environments share a single S3 bucket. Each branch stores files
+#   under a /<branch-slug>/ key prefix. The CloudFront Function rewrites the URI
+#   to include the slug as the S3 key prefix.
 
 locals {
-  api_gateway_host = regex("^https://([^/]+)", var.api_gateway_url)[0]
+  api_gateway_host  = regex("^https://([^/]+)", var.api_gateway_url)[0]
+  has_preview_bucket = var.preview_bucket_id != ""
 }
 
 # ---------------------------------------------------------------------------
@@ -33,40 +35,44 @@ resource "aws_cloudfront_origin_access_control" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# Origin Access Control — per-preview S3 buckets
+# Origin Access Control — shared preview S3 bucket
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudfront_origin_access_control" "preview" {
-  for_each = var.preview_buckets
+  count = local.has_preview_bucket ? 1 : 0
 
-  name                              = substr("${var.name}-preview-${each.key}", 0, 64)
+  name                              = "${var.name}-preview"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
 }
 
 # ---------------------------------------------------------------------------
-# CloudFront Function — Preview SPA Fallback & URI Rewrite
+# CloudFront Function — Preview SPA Rewrite
+#
+# Rewrites /preview/<slug>/... URIs to include the slug as S3 key prefix.
+# For SPA deep links (no file extension), rewrites to /<slug>/index.html.
+# For static assets (with file extension), rewrites to /<slug>/path/to/file.
 # ---------------------------------------------------------------------------
 
-resource "aws_cloudfront_function" "preview_spa_fallback" {
+resource "aws_cloudfront_function" "preview_spa_rewrite" {
+  count   = local.has_preview_bucket ? 1 : 0
   name    = "${var.name}-preview-spa"
   runtime = "cloudfront-js-2.0"
-  comment = "Strip /preview/<slug> prefix and rewrite SPA deep links to /index.html"
+  comment = "Rewrite /preview/<slug>/... to /<slug>/... key prefix, SPA fallback to /<slug>/index.html"
   publish = true
   code    = <<-JS
     function handler(event) {
       var request = event.request;
       var uri = request.uri;
-      var match = uri.match(/^\/preview\/[^\/]+(\/.*)?$/);
+      var match = uri.match(/^\/preview\/([^\/]+)(\/.*)?$/);
       if (match) {
-        var subPath = match[1] || '/';
-        if (subPath === '/') {
-          request.uri = '/index.html';
-        } else if (!subPath.match(/\.[a-zA-Z0-9]+$/)) {
-          request.uri = '/index.html';
+        var slug = match[1];
+        var subPath = match[2] || '/';
+        if (subPath === '/' || !subPath.match(/\.[a-zA-Z0-9]+$/)) {
+          request.uri = '/' + slug + '/index.html';
         } else {
-          request.uri = subPath;
+          request.uri = '/' + slug + subPath;
         }
       }
       return request;
@@ -108,37 +114,40 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
-  # Per-preview S3 origins.
+  # Shared preview S3 bucket origin.
   dynamic "origin" {
-    for_each = var.preview_buckets
+    for_each = local.has_preview_bucket ? [1] : []
     content {
-      domain_name              = origin.value.bucket_regional_domain_name
-      origin_id                = "s3-preview-${origin.key}"
-      origin_access_control_id = aws_cloudfront_origin_access_control.preview[origin.key].id
+      domain_name              = var.preview_bucket_regional_domain_name
+      origin_id                = "s3-preview"
+      origin_access_control_id = aws_cloudfront_origin_access_control.preview[0].id
     }
   }
 
-  # /preview/*/api/* -> API Gateway (evaluated before per-preview S3 behaviors).
-  ordered_cache_behavior {
-    path_pattern           = "/preview/*/api/*"
-    target_origin_id       = "apigw"
-    viewer_protocol_policy = "https-only"
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    compress               = true
+  # /preview/*/api/* -> API Gateway (evaluated before the /preview/* S3 behavior).
+  dynamic "ordered_cache_behavior" {
+    for_each = local.has_preview_bucket ? [1] : []
+    content {
+      path_pattern           = "/preview/*/api/*"
+      target_origin_id       = "apigw"
+      viewer_protocol_policy = "https-only"
+      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = true
 
-    # Managed-CachingDisabled: forward all requests to API Gateway, no caching.
-    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-    # Managed-AllViewerExceptHostHeader: forward all viewer headers except Host.
-    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+      # Managed-CachingDisabled: forward all requests to API Gateway, no caching.
+      cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+      # Managed-AllViewerExceptHostHeader: forward all viewer headers except Host.
+      origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+    }
   }
 
-  # Per-preview /preview/<slug>/* -> per-preview S3 bucket.
+  # /preview/* -> shared preview S3 bucket (static behavior, no per-branch config).
   dynamic "ordered_cache_behavior" {
-    for_each = var.preview_buckets
+    for_each = local.has_preview_bucket ? [1] : []
     content {
-      path_pattern           = "/preview/${ordered_cache_behavior.key}/*"
-      target_origin_id       = "s3-preview-${ordered_cache_behavior.key}"
+      path_pattern           = "/preview/*"
+      target_origin_id       = "s3-preview"
       viewer_protocol_policy = "redirect-to-https"
       allowed_methods        = ["GET", "HEAD", "OPTIONS"]
       cached_methods         = ["GET", "HEAD"]
@@ -153,7 +162,7 @@ resource "aws_cloudfront_distribution" "this" {
 
       function_association {
         event_type   = "viewer-request"
-        function_arn = aws_cloudfront_function.preview_spa_fallback.arn
+        function_arn = aws_cloudfront_function.preview_spa_rewrite[0].arn
       }
 
       min_ttl     = 0
@@ -232,8 +241,6 @@ resource "aws_cloudfront_distribution" "this" {
 # S3 Bucket Policy — main bucket (standard mode only)
 # ---------------------------------------------------------------------------
 
-data "aws_caller_identity" "current" {}
-
 resource "aws_s3_bucket_policy" "cloudfront_oac" {
   count  = var.preview_only ? 0 : 1
   bucket = var.bucket_id
@@ -258,13 +265,12 @@ resource "aws_s3_bucket_policy" "cloudfront_oac" {
 }
 
 # ---------------------------------------------------------------------------
-# S3 Bucket Policies — per-preview buckets
+# S3 Bucket Policy — shared preview bucket
 # ---------------------------------------------------------------------------
 
 resource "aws_s3_bucket_policy" "preview_oac" {
-  for_each = var.preview_buckets
-
-  bucket = each.value.bucket_id
+  count  = local.has_preview_bucket ? 1 : 0
+  bucket = var.preview_bucket_id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -275,7 +281,7 @@ resource "aws_s3_bucket_policy" "preview_oac" {
         Service = "cloudfront.amazonaws.com"
       }
       Action   = "s3:GetObject"
-      Resource = "${each.value.bucket_arn}/*"
+      Resource = "${var.preview_bucket_arn}/*"
       Condition = {
         StringEquals = {
           "AWS:SourceArn" = aws_cloudfront_distribution.this.arn

@@ -2,16 +2,16 @@
 #
 # Creates all per-branch resources for a single preview environment.
 # Uses the shared preview API Gateway and preview CloudFront distribution.
-# Each preview gets its own S3 bucket for frontend assets.
+# Frontend assets are uploaded by the workflow via `aws s3 sync` to the shared
+# preview S3 bucket (managed by preview/gateway), not by Terraform.
 #
 # Reads the preview gateway remote state to get the shared API Gateway ID.
 #
 # Dependency order (no circular dependencies):
-#   1. module.frontend       — per-branch S3 bucket for frontend assets.
-#   2. module.cognito        — per-branch Cognito User Pool + App Client + Hosted UI.
-#   3. module.backend        — per-branch private Lambda (authenticated routes).
-#   4. module.backend_public — per-branch public Lambda (unauthenticated /public/* routes).
-#   5. module.api_gateway_routes — adds 2 routes to the shared API Gateway for this branch.
+#   1. module.cognito        — per-branch Cognito User Pool + App Client + Hosted UI.
+#   2. module.backend        — per-branch private Lambda (authenticated routes).
+#   3. module.backend_public — per-branch public Lambda (unauthenticated /public/* routes).
+#   4. module.api_gateway_routes — adds 2 routes to the shared API Gateway for this branch.
 
 locals {
   # Full resource name prefix before any truncation.
@@ -34,23 +34,6 @@ locals {
 
   # Frontend URL for the preview environment under the shared CloudFront distribution.
   frontend_url = "${var.cloudfront_url}/preview/${var.branch_slug}"
-}
-
-# ---------------------------------------------------------------------------
-# Per-branch S3 bucket for frontend assets
-# ---------------------------------------------------------------------------
-
-module "frontend" {
-  source = "../../frontend/deploy/modules/s3_static_site"
-
-  bucket_name   = "${local.name_prefix}-frontend"
-  dist_path     = var.frontend_dist_path
-  force_destroy = true
-
-  tags = {
-    Component  = "preview"
-    BranchSlug = var.branch_slug
-  }
 }
 
 # ---------------------------------------------------------------------------

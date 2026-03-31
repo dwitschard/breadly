@@ -4,7 +4,7 @@
 # Triggered automatically when a branch is deleted.
 #
 # Jobs:
-#   cleanup  terraform destroy -> collect remaining previews -> update CDN -> workspace deletion.
+#   cleanup  terraform destroy -> s3 cleanup -> workspace deletion.
 #
 # Required GitHub environment: preview
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID
@@ -73,16 +73,13 @@ jobs:
           echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
           echo "TF_VAR_mongodb_uri=placeholder" >> "$GITHUB_ENV"
           echo "TF_VAR_cloudfront_url=https://placeholder.cloudfront.net" >> "$GITHUB_ENV"
-          # Create an empty directory for frontend_dist_path (fileset requires a valid directory)
-          mkdir -p /tmp/empty-dist
-          echo "TF_VAR_frontend_dist_path=/tmp/empty-dist" >> "$GITHUB_ENV"
 
       - name: Terraform destroy
         if: steps.workspace.outputs.exists == 'true'
         working-directory: infrastructure/aws/preview/deploy
         run: terraform destroy -auto-approve
 
-      # --- Update CDN to remove destroyed preview's origin ---
+      # --- Remove frontend assets from shared S3 bucket ---
 
       - name: Setup Terraform (gateway)
         if: steps.workspace.outputs.exists == 'true'
@@ -96,57 +93,20 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Get API Gateway endpoint
+      - name: Get shared preview bucket
         if: steps.workspace.outputs.exists == 'true'
         id: gw
         working-directory: infrastructure/aws/preview/gateway
         run: |
           terraform workspace select preview
-          echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Terraform (CDN)
+      - name: Delete frontend assets from shared S3 bucket
         if: steps.workspace.outputs.exists == 'true'
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: preview
-          session_name: github-preview-cleanup-cdn-${{ steps.slug.outputs.slug }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Collect remaining preview buckets
-        if: steps.workspace.outputs.exists == 'true'
-        id: previews
-        working-directory: infrastructure/aws/preview/deploy
         run: |
-          PREVIEW_BUCKETS='{}'
-          WORKSPACES=$(terraform workspace list | grep -E '^\s+preview-' | sed 's/^[[:space:]]*//' | sed 's/^preview-//' || true)
-          for SLUG in $WORKSPACES; do
-            terraform workspace select "preview-${SLUG}"
-            BUCKET_ID=$(terraform output -raw frontend_bucket_id 2>/dev/null || echo "")
-            if [ -n "$BUCKET_ID" ]; then
-              BUCKET_ARN=$(terraform output -raw frontend_bucket_arn)
-              BUCKET_DOMAIN=$(terraform output -raw frontend_bucket_regional_domain_name)
-              PREVIEW_BUCKETS=$(echo "$PREVIEW_BUCKETS" | jq --arg slug "$SLUG" \
-                --arg id "$BUCKET_ID" --arg arn "$BUCKET_ARN" --arg domain "$BUCKET_DOMAIN" \
-                '. + {($slug): {bucket_id: $id, bucket_arn: $arn, bucket_regional_domain_name: $domain}}')
-            fi
-          done
-          echo "preview_buckets=$PREVIEW_BUCKETS" >> "$GITHUB_OUTPUT"
-          echo "Remaining preview buckets: $PREVIEW_BUCKETS"
+          aws s3 rm "s3://${{ steps.gw.outputs.preview_bucket }}/${{ steps.slug.outputs.slug }}/" --recursive
 
-      - name: Update CDN to remove preview origin
-        if: steps.workspace.outputs.exists == 'true'
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: preview
-          extra_tf_vars: >-
-            -var="preview_only=true"
-            -var="api_gateway_url=${{ steps.gw.outputs.api_gateway_url }}"
-            -var='preview_buckets=${{ steps.previews.outputs.preview_buckets }}'
+      # --- Delete Terraform workspace ---
 
       - name: Delete Terraform workspace
         if: steps.workspace.outputs.exists == 'true'
