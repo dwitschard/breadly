@@ -1,8 +1,8 @@
 # modules/api_gateway_routes/main.tf — adds per-branch routes to the shared API Gateway HTTP API.
 #
 # Each preview branch creates:
-#   ANY /preview/<slug>/public/{proxy+}  → public Lambda (unauthenticated)
-#   ANY /preview/<slug>/{proxy+}         → private Lambda (JWT-protected by branch's authorizer)
+#   ANY /preview/<slug>/api/public/{proxy+}  → public Lambda (unauthenticated)
+#   ANY /preview/<slug>/api/{proxy+}         → private Lambda (JWT-protected by branch's authorizer)
 #
 # The public route is more specific and matched first by API Gateway.
 
@@ -41,13 +41,13 @@ resource "aws_lambda_permission" "apigw" {
   function_name = var.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   # Restrict invocation to this specific API Gateway and preview path only.
-  source_arn = "arn:aws:execute-api:${var.aws_region}:${var.aws_account_id}:${var.api_gateway_id}/*/*/preview/${var.branch_slug}/*"
+  source_arn = "arn:aws:execute-api:${var.aws_region}:${var.aws_account_id}:${var.api_gateway_id}/*/*/preview/${var.branch_slug}/api/*"
 }
 
 # Protected catch-all route for this preview branch.
 resource "aws_apigatewayv2_route" "default" {
   api_id    = var.api_gateway_id
-  route_key = "ANY /preview/${var.branch_slug}/{proxy+}"
+  route_key = "ANY /preview/${var.branch_slug}/api/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 
   authorization_type = "JWT"
@@ -73,12 +73,12 @@ resource "aws_lambda_permission" "apigw_public" {
   function_name = var.public_lambda_function_name
   principal     = "apigateway.amazonaws.com"
   # Restrict invocation to this specific API Gateway and preview public path only.
-  source_arn = "arn:aws:execute-api:${var.aws_region}:${var.aws_account_id}:${var.api_gateway_id}/*/*/preview/${var.branch_slug}/public/*"
+  source_arn = "arn:aws:execute-api:${var.aws_region}:${var.aws_account_id}:${var.api_gateway_id}/*/*/preview/${var.branch_slug}/api/public/*"
 }
 
-# Unauthenticated route for /preview/<slug>/public/* — no JWT required.
+# Unauthenticated route for /preview/<slug>/api/public/* — no JWT required.
 resource "aws_apigatewayv2_route" "public" {
   api_id    = var.api_gateway_id
-  route_key = "ANY /preview/${var.branch_slug}/public/{proxy+}"
+  route_key = "ANY /preview/${var.branch_slug}/api/public/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_public.id}"
 }

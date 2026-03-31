@@ -1,4 +1,5 @@
 # outputs.tf — root module outputs.
+# CloudFront outputs have moved to the cdn/deploy root module.
 
 output "frontend_bucket_id" {
   description = "Name of the S3 bucket hosting the frontend."
@@ -23,14 +24,4 @@ output "frontend_bucket_regional_domain" {
 output "frontend_uploaded_file_count" {
   description = "Number of files synced to S3 in the last apply."
   value       = module.frontend.uploaded_file_count
-}
-
-output "frontend_cloudfront_url" {
-  description = "HTTPS CloudFront URL for the frontend — use this as the Cognito callback/logout URL."
-  value       = module.cdn.cloudfront_domain_name
-}
-
-output "frontend_cloudfront_distribution_id" {
-  description = "CloudFront distribution ID; use for cache invalidations after deployments."
-  value       = module.cdn.cloudfront_distribution_id
 }

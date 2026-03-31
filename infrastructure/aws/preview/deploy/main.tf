@@ -13,7 +13,11 @@
 
 locals {
   # Resource name prefix following the breadly-<env>-* convention.
-  name_prefix = "${var.project_name}-preview-${var.branch_slug}"
+  # Truncated to 36 chars so the longest derived resource name
+  # ("${name_prefix}-backend-public-lambda-role" = 36 + 27 = 63 chars) stays
+  # within AWS IAM's 64-char role name limit. The full branch_slug is still
+  # used in the URL path (frontend_url) and route definitions.
+  name_prefix = substr("${var.project_name}-preview-${var.branch_slug}", 0, 36)
 
   # Frontend URL for the preview environment under the shared CloudFront distribution.
   frontend_url = "${var.cloudfront_url}/preview/${var.branch_slug}"
@@ -37,11 +41,12 @@ data "terraform_remote_state" "backend" {
 # ---------------------------------------------------------------------------
 
 module "cognito" {
-  source = "./modules/cognito"
+  source = "../../modules/cognito"
 
-  name          = local.name_prefix
-  aws_region    = var.aws_region
-  frontend_urls = local.frontend_url
+  name                       = local.name_prefix
+  aws_region                 = var.aws_region
+  frontend_urls              = local.frontend_url
+  enable_admin_password_auth = true
 
   tags = {
     Component   = "preview"
@@ -54,7 +59,7 @@ module "cognito" {
 # ---------------------------------------------------------------------------
 
 module "backend" {
-  source = "./modules/lambda_express"
+  source = "../../modules/lambda_express"
 
   name          = "${local.name_prefix}-backend"
   dist_zip_path = var.dist_zip_path
@@ -76,7 +81,7 @@ module "backend" {
 # ---------------------------------------------------------------------------
 
 module "backend_public" {
-  source = "./modules/lambda_express"
+  source = "../../modules/lambda_express"
 
   name          = "${local.name_prefix}-backend-public"
   dist_zip_path = var.dist_zip_path

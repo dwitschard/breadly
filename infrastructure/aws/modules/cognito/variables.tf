@@ -11,9 +11,15 @@ variable "aws_region" {
 }
 
 variable "frontend_urls" {
-  description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). All URLs are used as-is."
+  description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). A single URL is also valid."
   type        = string
   default     = ""
+}
+
+variable "enable_admin_password_auth" {
+  description = "Enable ALLOW_ADMIN_USER_PASSWORD_AUTH flow. Set to true for preview environments where test users are created programmatically."
+  type        = bool
+  default     = false
 }
 
 variable "tags" {

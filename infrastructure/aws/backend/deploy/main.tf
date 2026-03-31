@@ -11,7 +11,7 @@
 #                              and Cognito values from the modules above.
 
 module "cognito" {
-  source = "./modules/cognito"
+  source = "../../modules/cognito"
 
   name          = "${var.project_name}-${terraform.workspace}-backend"
   aws_region    = var.aws_region
@@ -23,7 +23,7 @@ module "cognito" {
 }
 
 module "backend" {
-  source = "./modules/lambda_express"
+  source = "../../modules/lambda_express"
 
   name          = "${var.project_name}-${terraform.workspace}-backend"
   dist_zip_path = var.dist_zip_path
@@ -36,7 +36,7 @@ module "backend" {
 }
 
 module "backend_public" {
-  source = "./modules/lambda_express"
+  source = "../../modules/lambda_express"
 
   name          = "${var.project_name}-${terraform.workspace}-backend-public"
   dist_zip_path = var.dist_zip_path

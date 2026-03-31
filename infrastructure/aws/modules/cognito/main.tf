@@ -1,9 +1,8 @@
 # modules/cognito/main.tf — provisions a Cognito User Pool, App Client, and Hosted UI
 # domain for the Breadly application.
 #
-# Extracted from the api_gateway module so that Cognito outputs (issuer_url, client_id)
-# are available to other modules (e.g. the public Lambda) without creating a circular
-# dependency through api_gateway.
+# Used by both the main backend and preview environments. Preview environments
+# set enable_admin_password_auth = true to allow programmatic test user creation.
 
 locals {
   # OIDC issuer URL — used by the JWT authorizer and injected into the public Lambda.
@@ -47,10 +46,15 @@ resource "aws_cognito_user_pool_client" "this" {
   generate_secret = false
 
   # Allow the standard auth flows used by Amplify / hosted UI.
-  explicit_auth_flows = [
-    "ALLOW_USER_SRP_AUTH",
-    "ALLOW_REFRESH_TOKEN_AUTH",
-  ]
+  # Preview environments additionally enable ALLOW_ADMIN_USER_PASSWORD_AUTH
+  # so that test users can be created programmatically via admin-set-user-password.
+  explicit_auth_flows = concat(
+    [
+      "ALLOW_USER_SRP_AUTH",
+      "ALLOW_REFRESH_TOKEN_AUTH",
+    ],
+    var.enable_admin_password_auth ? ["ALLOW_ADMIN_USER_PASSWORD_AUTH"] : []
+  )
 
   # Token validity.
   access_token_validity  = 1  # hours

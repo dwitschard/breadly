@@ -22,8 +22,38 @@ env:
   PROJECT_NAME: breadly
 
 jobs:
+  teardown-cdn:
+    name: Teardown CDN (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-teardown-cdn-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Terraform destroy
+        working-directory: infrastructure/aws/cdn/deploy
+        shell: bash
+        run: |
+          terraform workspace select ${{ env.TARGET_ENV }}
+          terraform destroy -auto-approve
+
   teardown-frontend:
     name: Teardown Frontend (${{ inputs.environment }})
+    needs: [teardown-cdn]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -53,6 +83,7 @@ jobs:
 
   teardown-backend:
     name: Teardown Backend (${{ inputs.environment }})
+    needs: [teardown-cdn]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
