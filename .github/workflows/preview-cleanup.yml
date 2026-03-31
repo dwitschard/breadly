@@ -55,8 +55,8 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: |
           terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
+            -backend-config="bucket=${{ env.PROJECT_NAME }}-preview-tfstate" \
+            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-preview-tfstate-lock" \
             -backend-config="region=${{ vars.AWS_REGION }}"
 
       - name: Select workspace (skip if not found)
@@ -92,12 +92,34 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: terraform destroy -auto-approve
 
+      # --- Update CDN to remove destroyed preview's origin ---
+
+      - name: Setup Terraform (gateway)
+        if: steps.workspace.outputs.exists == 'true'
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
+          session_name: github-preview-cleanup-gw-${{ steps.slug.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Get API Gateway endpoint
+        if: steps.workspace.outputs.exists == 'true'
+        id: gw
+        working-directory: infrastructure/aws/preview/gateway
+        run: |
+          terraform workspace select preview
+          echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+
       - name: Setup Terraform (CDN)
         if: steps.workspace.outputs.exists == 'true'
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/cdn/deploy
-          environment: dev
+          environment: preview
           session_name: github-preview-cleanup-cdn-${{ steps.slug.outputs.slug }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -130,8 +152,10 @@ jobs:
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/cdn/deploy
-          environment: dev
+          environment: preview
           extra_tf_vars: >-
+            -var="preview_only=true"
+            -var="api_gateway_url=${{ steps.gw.outputs.api_gateway_url }}"
             -var='preview_buckets=${{ steps.previews.outputs.preview_buckets }}'
 
       - name: Delete Terraform workspace

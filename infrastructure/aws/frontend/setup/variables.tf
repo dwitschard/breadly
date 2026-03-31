@@ -27,11 +27,11 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Deployment environment (\"dev\" or \"prod\"); included in every resource name."
+  description = "Deployment environment; included in every resource name."
   type        = string
 
   validation {
-    condition     = contains(["dev", "prod"], var.environment)
-    error_message = "environment must be \"dev\" or \"prod\"."
+    condition     = contains(["dev", "prod", "preview"], var.environment)
+    error_message = "environment must be \"dev\", \"prod\", or \"preview\"."
   }
 }

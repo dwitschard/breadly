@@ -1,14 +1,17 @@
 # preview-deploy.yml
 #
 # Deploys a full-stack preview environment for every non-main branch push.
-# Each preview environment runs under /preview/<branch-slug>/ on the shared
-# dev CloudFront distribution, with its own dedicated S3 bucket for frontend assets.
+# Each preview environment runs under /preview/<branch-slug>/ on the dedicated
+# preview CloudFront distribution, with its own S3 bucket for frontend assets.
+#
+# Shared preview infrastructure (API Gateway + CloudFront) is fully isolated
+# from dev. State lives in breadly-preview-tfstate.
 #
 # Jobs:
 #   slugify          Computes the branch slug and enforces the 5-preview limit.
 #   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses build-frontend.yml with preview base-href.
-#   deploy           terraform apply (preview + CDN) -> create groups & users -> PR comment -> job summary.
+#   deploy           terraform apply (gateway + CDN + preview + CDN update) -> users -> PR comment.
 #
 # Triggers
 #   push to any branch except main.
@@ -72,8 +75,8 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: |
           terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
+            -backend-config="bucket=${{ env.PROJECT_NAME }}-preview-tfstate" \
+            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-preview-tfstate-lock" \
             -backend-config="region=${{ vars.AWS_REGION }}"
 
       - name: Enforce 5-preview limit
@@ -142,13 +145,69 @@ jobs:
           name: frontend-dist
           path: frontend-dist/
 
-      # --- Deploy ---
+      # --- Step 1: Deploy shared preview API Gateway ---
+
+      - name: Setup Terraform (gateway)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
+          session_name: github-preview-gateway-${{ needs.slugify.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Deploy preview gateway
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
+
+      - name: Get API Gateway endpoint
+        id: gw
+        working-directory: infrastructure/aws/preview/gateway
+        run: |
+          echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+
+      # --- Step 2: Deploy preview CDN (ensures CloudFront URL exists for Cognito) ---
+
+      - name: Setup Terraform (CDN)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: preview
+          session_name: github-preview-cdn-${{ needs.slugify.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Deploy preview CDN (initial)
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: preview
+          extra_tf_vars: >-
+            -var="preview_only=true"
+            -var="api_gateway_url=${{ steps.gw.outputs.api_gateway_url }}"
+
+      - name: Get CloudFront URL
+        id: cf
+        working-directory: infrastructure/aws/cdn/deploy
+        run: |
+          CF_URL=$(terraform output -raw cloudfront_url)
+          echo "cloudfront_url=$CF_URL" >> "$GITHUB_OUTPUT"
+          DIST_ID=$(terraform output -raw cloudfront_distribution_id)
+          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+
+      # --- Step 3: Deploy per-branch preview stack ---
 
       - name: Setup Terraform (preview)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/preview/deploy
-          environment: dev
+          environment: preview
           session_name: github-preview-deploy-${{ needs.slugify.outputs.slug }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -159,40 +218,32 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: terraform workspace select -or-create preview-${{ needs.slugify.outputs.slug }}
 
-      - name: Setup Terraform (CDN)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: dev
-          session_name: github-preview-cdn-${{ needs.slugify.outputs.slug }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Get CloudFront outputs from CDN state
-        id: cf
-        working-directory: infrastructure/aws/cdn/deploy
-        run: |
-          terraform workspace select dev
-          CF_URL=$(terraform output -raw cloudfront_url)
-          echo "cloudfront_url=$CF_URL" >> "$GITHUB_OUTPUT"
-          DIST_ID=$(terraform output -raw cloudfront_distribution_id)
-          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
-
       - name: Export Terraform secrets
         run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
 
-      - name: Deploy preview stack
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/preview/deploy
-          environment: dev
-          extra_tf_vars: >-
-            -var="branch_slug=${{ needs.slugify.outputs.slug }}"
-            -var="dist_zip_path=${{ github.workspace }}/backend.zip"
-            -var="cloudfront_url=${{ steps.cf.outputs.cloudfront_url }}"
+      # NOTE: We do NOT use terraform-action here because it force-selects
+      # the workspace to the environment name ("preview"), overriding our
+      # per-branch workspace ("preview-<slug>").
+      - name: Terraform plan (preview stack)
+        id: plan-preview
+        working-directory: infrastructure/aws/preview/deploy
+        run: |
+          set +e
+          terraform plan \
+            -detailed-exitcode \
+            -out=tf.tfplan \
+            -var="branch_slug=${{ needs.slugify.outputs.slug }}" \
+            -var="dist_zip_path=${{ github.workspace }}/backend.zip" \
+            -var="cloudfront_url=${{ steps.cf.outputs.cloudfront_url }}" \
             -var="frontend_dist_path=${{ github.workspace }}/frontend-dist"
+          TF_EXIT=$?
+          echo "exitcode=$TF_EXIT" >> "$GITHUB_OUTPUT"
+          if [ $TF_EXIT -eq 1 ]; then exit 1; fi
+
+      - name: Terraform apply (preview stack)
+        if: steps.plan-preview.outputs.exitcode == '2'
+        working-directory: infrastructure/aws/preview/deploy
+        run: terraform apply -auto-approve tf.tfplan
 
       - name: Get Cognito User Pool ID
         id: cognito
@@ -261,6 +312,8 @@ jobs:
             --username "admin@breadly.dev" \
             --group-name "ADMIN"
 
+      # --- Step 4: Update CDN with all active preview bucket origins ---
+
       - name: Collect active preview buckets
         id: previews
         working-directory: infrastructure/aws/preview/deploy
@@ -285,8 +338,10 @@ jobs:
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/cdn/deploy
-          environment: dev
+          environment: preview
           extra_tf_vars: >-
+            -var="preview_only=true"
+            -var="api_gateway_url=${{ steps.gw.outputs.api_gateway_url }}"
             -var='preview_buckets=${{ steps.previews.outputs.preview_buckets }}'
 
       - name: Invalidate CloudFront cache for preview path

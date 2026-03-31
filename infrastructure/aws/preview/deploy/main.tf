@@ -1,10 +1,10 @@
 # main.tf — root module entry point for preview environments.
 #
 # Creates all per-branch resources for a single preview environment.
-# Uses the shared dev API Gateway and CloudFront distribution.
+# Uses the shared preview API Gateway and preview CloudFront distribution.
 # Each preview gets its own S3 bucket for frontend assets.
 #
-# Reads the dev backend remote state to get the shared API Gateway ID.
+# Reads the preview gateway remote state to get the shared API Gateway ID.
 #
 # Dependency order (no circular dependencies):
 #   1. module.frontend       — per-branch S3 bucket for frontend assets.
@@ -43,14 +43,14 @@ module "frontend" {
 }
 
 # ---------------------------------------------------------------------------
-# Read dev backend state — retrieves shared API Gateway ID
+# Read preview gateway state — retrieves shared API Gateway ID
 # ---------------------------------------------------------------------------
 
-data "terraform_remote_state" "backend" {
+data "terraform_remote_state" "gateway" {
   backend = "s3"
   config = {
-    bucket = "${var.project_name}-dev-tfstate"
-    key    = "env:/dev/backend/terraform.tfstate"
+    bucket = "${var.project_name}-preview-tfstate"
+    key    = "env:/preview/gateway/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -126,7 +126,7 @@ module "backend_public" {
 module "api_gateway_routes" {
   source = "./modules/api_gateway_routes"
 
-  api_gateway_id              = data.terraform_remote_state.backend.outputs.api_gateway_id
+  api_gateway_id              = data.terraform_remote_state.gateway.outputs.api_gateway_id
   branch_slug                 = var.branch_slug
   lambda_function_arn         = module.backend.function_arn
   lambda_function_name        = module.backend.function_name

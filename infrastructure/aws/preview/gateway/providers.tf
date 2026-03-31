@@ -1,0 +1,25 @@
+# providers.tf — AWS provider configuration for the preview gateway module.
+
+terraform {
+  required_version = ">= 1.6"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region              = var.aws_region
+  allowed_account_ids = [var.aws_account_id]
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = "preview"
+      ManagedBy   = "terraform"
+    }
+  }
+}

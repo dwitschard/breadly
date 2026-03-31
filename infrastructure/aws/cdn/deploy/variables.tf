@@ -35,3 +35,15 @@ variable "preview_buckets" {
   }))
   default = {}
 }
+
+variable "preview_only" {
+  description = "When true, the distribution serves only preview environments (no main S3 origin). The API Gateway URL must be provided via api_gateway_url."
+  type        = bool
+  default     = false
+}
+
+variable "api_gateway_url" {
+  description = "HTTPS URL of the API Gateway endpoint. When set, overrides the URL from backend remote state. Required when preview_only = true."
+  type        = string
+  default     = ""
+}

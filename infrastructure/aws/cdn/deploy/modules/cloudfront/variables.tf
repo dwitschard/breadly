@@ -5,23 +5,32 @@ variable "name" {
   type        = string
 }
 
+variable "preview_only" {
+  description = "When true, no main S3 origin is created. The distribution only serves preview environments via per-preview S3 origins and API Gateway."
+  type        = bool
+  default     = false
+}
+
 variable "bucket_id" {
-  description = "S3 bucket name; used to construct the OAC bucket policy."
+  description = "S3 bucket name; used to construct the OAC bucket policy. Ignored when preview_only = true."
   type        = string
+  default     = ""
 }
 
 variable "bucket_arn" {
-  description = "S3 bucket ARN; used in the OAC bucket policy resource statement."
+  description = "S3 bucket ARN; used in the OAC bucket policy resource statement. Ignored when preview_only = true."
   type        = string
+  default     = ""
 }
 
 variable "bucket_regional_domain_name" {
-  description = "S3 regional domain name used as the CloudFront origin (e.g. breadly-dev-frontend.s3.eu-central-1.amazonaws.com)."
+  description = "S3 regional domain name used as the CloudFront origin. Ignored when preview_only = true."
   type        = string
+  default     = ""
 }
 
 variable "api_gateway_url" {
-  description = "HTTPS URL of the API Gateway endpoint (no trailing slash), e.g. https://xxxxx.execute-api.eu-central-1.amazonaws.com. Used as the CloudFront origin for /api/* requests."
+  description = "HTTPS URL of the API Gateway endpoint (no trailing slash)."
   type        = string
 }
 
@@ -32,7 +41,7 @@ variable "tags" {
 }
 
 variable "preview_buckets" {
-  description = "Map of active preview environments. Key = branch slug, value = object with S3 bucket details. Each entry creates a dedicated CloudFront origin, OAC, bucket policy, and cache behavior."
+  description = "Map of active preview environments. Key = branch slug, value = object with S3 bucket details."
   type = map(object({
     bucket_id                   = string
     bucket_arn                  = string
