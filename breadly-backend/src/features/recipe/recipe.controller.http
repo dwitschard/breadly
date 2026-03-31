@@ -1,8 +1,8 @@
 ### GET Recipes
-GET http://localhost:3000/recipe
+GET http://localhost:3000/api/recipe
 
 ### Persist new recipe
-POST http://localhost:3000/recipe
+POST http://localhost:3000/api/recipe
 Content-Type: application/json
 
 {

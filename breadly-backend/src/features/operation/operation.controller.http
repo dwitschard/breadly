@@ -1,8 +1,8 @@
 ### GET request to example server
-GET localhost:3000/health
+GET localhost:3000/api/health
 
 ### Application Error
-GET localhost:3000/application-error
+GET localhost:3000/api/application-error
 
 ### Generic Error
-GET localhost:3000/generic-error
+GET localhost:3000/api/generic-error

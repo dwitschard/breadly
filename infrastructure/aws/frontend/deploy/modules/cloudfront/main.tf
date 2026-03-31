@@ -11,11 +11,15 @@
 #   • Default root object: index.html
 #   • Custom error responses map 403 and 404 (returned by S3 for missing keys) to
 #     /index.html with HTTP 200, enabling Angular's client-side router to handle the URL.
+#   • For preview environments, S3 returns 404 for deep-linked SPA routes. These also
+#     fall back to /index.html; Angular re-routes client-side using the base href.
 #
 # API routing:
-#   • /api/* requests are forwarded to the API Gateway origin.
-#   • A CloudFront Function strips the /api prefix before forwarding, so
-#     GET /api/recipe → GET https://<apigw>/recipe (as API Gateway expects).
+#   • /api/* requests are forwarded to the API Gateway origin unchanged.
+#   • /preview/*/api/* requests are forwarded to the API Gateway origin unchanged.
+#   • /preview/* requests are forwarded to S3 (static assets and SPA shell).
+#   • No CloudFront Function is needed — paths are forwarded as-is. Express handles
+#     the /api prefix natively; the preview-path middleware strips /preview/<slug>.
 #   • The Authorization header is forwarded via the AllViewerExceptHostHeader
 #     managed origin request policy so the JWT reaches the Cognito authorizer.
 #   • Caching is fully disabled for API responses (CachingDisabled managed policy).
@@ -25,20 +29,6 @@ locals {
   # no scheme and no trailing slash or path (e.g. API Gateway's $default stage invoke
   # URL ends with a trailing slash which CloudFront rejects).
   api_gateway_host = regex("^https://([^/]+)", var.api_gateway_url)[0]
-}
-
-# ---------------------------------------------------------------------------
-# CloudFront Function — strip /api prefix from viewer requests
-# ---------------------------------------------------------------------------
-
-resource "aws_cloudfront_function" "strip_api_prefix" {
-  name    = "${var.name}-strip-api-prefix"
-  runtime = "cloudfront-js-2.0"
-  publish = true
-
-  # Handles routing for both the root SPA and preview environments.
-  # See strip-api-prefix.js for full documentation.
-  code = file("${path.module}/strip-api-prefix.js")
 }
 
 # ---------------------------------------------------------------------------
@@ -70,7 +60,7 @@ resource "aws_cloudfront_distribution" "this" {
     origin_access_control_id = aws_cloudfront_origin_access_control.this.id
   }
 
-  # API Gateway origin — receives /api/* traffic after prefix stripping.
+  # API Gateway origin — receives /api/* and /preview/*/api/* traffic.
   origin {
     domain_name = local.api_gateway_host
     origin_id   = "apigw"
@@ -81,6 +71,47 @@ resource "aws_cloudfront_distribution" "this" {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
+  }
+
+  # /preview/*/api/* → API Gateway.
+  # More specific than /preview/* so CloudFront evaluates this first.
+  ordered_cache_behavior {
+    path_pattern           = "/preview/*/api/*"
+    target_origin_id       = "apigw"
+    viewer_protocol_policy = "https-only"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    # AWS-managed CachingDisabled: no caching, all requests forwarded to origin.
+    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+
+    # AWS-managed AllViewerExceptHostHeader: forwards all viewer headers
+    # (including Authorization) except Host, which API Gateway sets itself.
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+  }
+
+  # /preview/* → S3 (preview environment static assets and SPA shell).
+  # S3 returns 404 for deep-linked SPA routes; the custom_error_response below
+  # maps these to /index.html so Angular's client-side router takes over.
+  ordered_cache_behavior {
+    path_pattern           = "/preview/*"
+    target_origin_id       = "s3-${var.bucket_id}"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 3600
+    max_ttl     = 86400
   }
 
   # /api/* → API Gateway (evaluated before the default S3 behavior).
@@ -98,28 +129,15 @@ resource "aws_cloudfront_distribution" "this" {
     # AWS-managed AllViewerExceptHostHeader: forwards all viewer headers
     # (including Authorization) except Host, which API Gateway sets itself.
     origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
-
-    function_association {
-      event_type   = "viewer-request"
-      function_arn = aws_cloudfront_function.strip_api_prefix.arn
-    }
   }
 
-  # Default behavior → S3 (Angular SPA and preview environments).
-  # The CloudFront Function is also attached here to handle /preview/<slug>/*
-  # SPA routing rewrites before S3 serves the request, so that deep-linked
-  # preview paths resolve to /preview/<slug>/index.html (not root index.html).
+  # Default behavior → S3 (root Angular SPA).
   default_cache_behavior {
     target_origin_id       = "s3-${var.bucket_id}"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
     compress               = true
-
-    function_association {
-      event_type   = "viewer-request"
-      function_arn = aws_cloudfront_function.strip_api_prefix.arn
-    }
 
     forwarded_values {
       query_string = false
@@ -136,6 +154,8 @@ resource "aws_cloudfront_distribution" "this" {
 
   # Angular SPA: S3 returns 403 (AccessDenied) for any key that doesn't exist.
   # Map both 403 and 404 to /index.html so the Angular router can take over.
+  # This also handles preview environment SPA deep links — Angular re-routes
+  # client-side using the correct base href (/preview/<slug>/).
   custom_error_response {
     error_code            = 403
     response_code         = 200

@@ -23,14 +23,14 @@ afterEach(async () => {
   await TechnologyCollection.deleteMany({});
 });
 
-describe('GET /technologies', () => {
+describe('GET /api/technologies', () => {
   it('returns 401 when no Authorization header is provided', async () => {
-    const response = await request.get('/technologies');
+    const response = await request.get('/api/technologies');
     expect(response.status).toBe(401);
   });
 
   it('responds with 200', async () => {
-    const response = await request.get('/technologies').set('Authorization', authHeader);
+    const response = await request.get('/api/technologies').set('Authorization', authHeader);
 
     expect(response.status).toEqual(200);
     expect(response.body).toEqual([]);
@@ -42,7 +42,7 @@ describe('GET /technologies', () => {
     await TechnologyCollection.insertOne(mockTechnology);
 
     const response = await request
-      .get('/technologies')
+      .get('/api/technologies')
       .set('Authorization', authHeader)
       .expect(200);
 

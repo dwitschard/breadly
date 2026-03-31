@@ -21,21 +21,21 @@ const minimalClaims = {
   'cognito:groups': [],
 };
 
-describe('GET /profile', () => {
+describe('GET /api/profile', () => {
   it('returns 401 when no Authorization header is provided', async () => {
-    const res = await request.get('/profile');
+    const res = await request.get('/api/profile');
     expect(res.status).toBe(401);
     expect(res.body).toHaveProperty('error');
   });
 
   it('returns 401 for a malformed token (not 3 segments)', async () => {
-    const res = await request.get('/profile').set('Authorization', 'Bearer bad.token');
+    const res = await request.get('/api/profile').set('Authorization', 'Bearer bad.token');
     expect(res.status).toBe(401);
   });
 
   it('returns the whitelisted profile fields for a valid token', async () => {
     const token = makeToken(minimalClaims);
-    const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       sub: 'user-abc',
@@ -47,7 +47,7 @@ describe('GET /profile', () => {
 
   it('maps cognito:groups to roles', async () => {
     const token = makeToken({ ...minimalClaims, 'cognito:groups': ['admin', 'editor'] });
-    const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.roles).toEqual(['admin', 'editor']);
   });
@@ -60,7 +60,7 @@ describe('GET /profile', () => {
       family_name: 'Builder',
       picture: 'https://example.com/pic.jpg',
     });
-    const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       name: 'Bob Builder',
@@ -72,7 +72,7 @@ describe('GET /profile', () => {
 
   it('omits optional fields when absent from claims', async () => {
     const token = makeToken(minimalClaims);
-    const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body).not.toHaveProperty('name');
     expect(res.body).not.toHaveProperty('givenName');
@@ -85,7 +85,7 @@ describe('GET /profile', () => {
       Object.entries(minimalClaims).filter(([k]) => k !== 'email_verified'),
     );
     const token = makeToken(withoutVerified);
-    const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.emailVerified).toBe(false);
   });
@@ -95,7 +95,7 @@ describe('GET /profile', () => {
       Object.entries(minimalClaims).filter(([k]) => k !== 'cognito:groups'),
     );
     const token = makeToken(withoutGroups);
-    const res = await request.get('/profile').set('Authorization', `Bearer ${token}`);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.roles).toEqual([]);
   });

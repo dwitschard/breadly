@@ -2,8 +2,8 @@
 # authorizer in front of the Lambda Express backend.
 #
 # Routing:
-#   ANY  /public/{proxy+}  → public Lambda, no auth (config and other public endpoints)
-#   ANY  /{proxy+}         → private Lambda, JWT authorizer (all other routes require a valid Cognito token)
+#   ANY  /api/public/{proxy+}  → public Lambda, no auth (config and other public endpoints)
+#   ANY  /api/{proxy+}         → private Lambda, JWT authorizer (all other routes require a valid Cognito token)
 #
 # Auth:
 #   The JWT authorizer validates Bearer tokens issued by the Cognito User Pool.
@@ -88,7 +88,7 @@ resource "aws_apigatewayv2_authorizer" "cognito" {
 # Protected catch-all route — all requests require a valid Cognito JWT.
 resource "aws_apigatewayv2_route" "default" {
   api_id    = aws_apigatewayv2_api.this.id
-  route_key = "ANY /{proxy+}"
+  route_key = "ANY /api/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 
   authorization_type = "JWT"
@@ -117,11 +117,11 @@ resource "aws_lambda_permission" "apigw_public" {
   source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
 }
 
-# Unauthenticated catch-all for /public/* — no JWT required.
-# More specific than ANY /{proxy+} so API Gateway matches this route first.
+# Unauthenticated catch-all for /api/public/* — no JWT required.
+# More specific than ANY /api/{proxy+} so API Gateway matches this route first.
 resource "aws_apigatewayv2_route" "public" {
   api_id    = aws_apigatewayv2_api.this.id
-  route_key = "ANY /public/{proxy+}"
+  route_key = "ANY /api/public/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_public.id}"
 
   # No authorization_type — unauthenticated by design.
