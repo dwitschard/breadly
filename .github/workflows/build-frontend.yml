@@ -10,13 +10,16 @@
 #   deploy   (main only) Call deploy-frontend.yml to deploy to dev
 #
 # Triggers
-#   push              Runs when frontend source files change.
+#   push              Runs on main when frontend source files change.
+#   workflow_call     Reusable entry point (used by preview-deploy).
 #   workflow_dispatch Manual trigger for re-running CI on demand.
 
 name: Build Frontend
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "breadly-frontend/**"
       - "infrastructure/aws/frontend/**"
@@ -24,6 +27,14 @@ on:
       - ".github/workflows/build-frontend.yml"
       - ".github/workflows/deploy-frontend.yml"
       - ".github/actions/**"
+
+  workflow_call:
+    inputs:
+      base_href:
+        description: "Base href for the Angular build (e.g. /preview/my-branch/). Defaults to /."
+        required: false
+        type: string
+        default: "/"
 
   workflow_dispatch:
 
@@ -70,7 +81,7 @@ jobs:
         run: npm run test:ci
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --base-href "${{ inputs.base_href || '/' }}"
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v6

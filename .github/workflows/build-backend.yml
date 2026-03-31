@@ -10,19 +10,24 @@
 #   deploy   (main only) Call deploy-backend.yml to deploy to dev
 #
 # Triggers
-#   push              Runs when backend source files change.
+#   push              Runs on main when backend source files change.
+#   workflow_call     Reusable entry point (used by preview-deploy).
 #   workflow_dispatch Manual trigger for re-running CI on demand.
 
 name: Build Backend
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "breadly-backend/**"
       - "infrastructure/aws/backend/**"
       - ".github/workflows/build-backend.yml"
       - ".github/workflows/deploy-backend.yml"
       - ".github/actions/**"
+
+  workflow_call:
 
   workflow_dispatch:
 

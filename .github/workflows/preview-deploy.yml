@@ -6,7 +6,9 @@
 #
 # Jobs:
 #   slugify          Computes the branch slug and enforces the 5-preview limit.
-#   deploy           build backend → build frontend → terraform apply → S3 sync → create demo users → seed data → PR comment.
+#   build-backend    Reuses build-backend.yml (lint → test → build → artifact).
+#   build-frontend   Reuses build-frontend.yml with preview base-href.
+#   deploy           terraform apply → create groups & users → S3 sync → PR comment → job summary.
 #
 # Triggers
 #   push to any branch except main.
@@ -88,11 +90,31 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
-  # Deploy preview environment (includes build steps)
+  # Build backend (reuses CI workflow)
+  # ---------------------------------------------------------------------------
+  build-backend:
+    name: Build Backend
+    needs: [slugify]
+    uses: ./.github/workflows/build-backend.yml
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Build frontend (reuses CI workflow with preview base-href)
+  # ---------------------------------------------------------------------------
+  build-frontend:
+    name: Build Frontend
+    needs: [slugify]
+    uses: ./.github/workflows/build-frontend.yml
+    with:
+      base_href: /preview/${{ needs.slugify.outputs.slug }}/
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Deploy preview environment
   # ---------------------------------------------------------------------------
   deploy:
     name: Deploy
-    needs: [slugify]
+    needs: [slugify, build-backend, build-frontend]
     runs-on: ubuntu-latest
     environment: preview
     permissions:
@@ -103,47 +125,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # --- Build backend ---
-
-      - name: Set up Node.js (backend)
-        uses: actions/setup-node@v6
+      - name: Download backend artifact
+        uses: actions/download-artifact@v8
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: breadly-backend/package-lock.json
+          name: backend-dist
 
-      - name: Install backend dependencies
-        working-directory: breadly-backend
-        run: npm ci
-
-      - name: Build backend
-        working-directory: breadly-backend
-        run: npm run build
-
-      - name: Install backend production dependencies
-        working-directory: breadly-backend
-        run: npm ci --omit=dev
-
-      - name: Create backend deployment zip
-        working-directory: breadly-backend
-        run: zip -r ../backend.zip dist/ node_modules/ package.json run.sh
-
-      # --- Build frontend ---
-
-      - name: Set up Node.js (frontend)
-        uses: actions/setup-node@v6
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v8
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: breadly-frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: breadly-frontend
-        run: npm ci
-
-      - name: Build frontend with preview base-href
-        working-directory: breadly-frontend
-        run: npm run build -- --base-href /preview/${{ needs.slugify.outputs.slug }}/
+          name: frontend-dist
+          path: frontend-dist/
 
       # --- Deploy ---
 
@@ -218,13 +209,35 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
 
-      - name: Create demo users
+      - name: Create user groups
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
           USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
 
-          # Create demo user (ignores error if already exists)
+          # Create groups matching roles.config.ts (idempotent — ignores if already exists)
+          aws cognito-idp create-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --group-name "ADMIN" \
+            --description "Full administrative access" || true
+
+          aws cognito-idp create-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --group-name "USER" \
+            --description "Standard user access" || true
+
+          aws cognito-idp create-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --group-name "PREMIUM_USER" \
+            --description "Premium tier user access" || true
+
+      - name: Create demo users and assign groups
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
+
+          # --- Demo user (USER group) ---
           aws cognito-idp admin-create-user \
             --user-pool-id "$USER_POOL_ID" \
             --username "demo@breadly.dev" \
@@ -236,7 +249,12 @@ jobs:
             --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" \
             --permanent
 
-          # Create admin user (ignores error if already exists)
+          aws cognito-idp admin-add-user-to-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "demo@breadly.dev" \
+            --group-name "USER"
+
+          # --- Admin user (ADMIN group) ---
           aws cognito-idp admin-create-user \
             --user-pool-id "$USER_POOL_ID" \
             --username "admin@breadly.dev" \
@@ -248,11 +266,16 @@ jobs:
             --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" \
             --permanent
 
+          aws cognito-idp admin-add-user-to-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "admin@breadly.dev" \
+            --group-name "ADMIN"
+
       - name: Sync frontend to S3
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
-          aws s3 sync breadly-frontend/dist/breadly-frontend/browser/ \
+          aws s3 sync frontend-dist/ \
             "s3://${{ steps.frontend.outputs.bucket_id }}/preview/${{ needs.slugify.outputs.slug }}/" \
             --delete
 
@@ -300,3 +323,17 @@ jobs:
               gh pr comment "$PR_NUMBER" --body "$BODY"
             fi
           fi
+
+      - name: Write preview URL to job summary
+        run: |
+          PREVIEW_URL="${{ steps.cf.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
+          echo "## Preview Environment" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch \`${{ github.ref_name }}\` deployed to:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**$PREVIEW_URL**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| User | Email | Group |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Demo | \`demo@breadly.dev\` | USER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Admin | \`admin@breadly.dev\` | ADMIN |" >> "$GITHUB_STEP_SUMMARY"
