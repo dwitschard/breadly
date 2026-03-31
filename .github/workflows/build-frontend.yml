@@ -20,6 +20,7 @@ on:
     paths:
       - "breadly-frontend/**"
       - "infrastructure/aws/frontend/**"
+      - "infrastructure/aws/cdn/**"
       - ".github/workflows/build-frontend.yml"
       - ".github/workflows/deploy-frontend.yml"
       - ".github/actions/**"

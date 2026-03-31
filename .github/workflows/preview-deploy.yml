@@ -45,19 +45,16 @@ jobs:
       slug: ${{ steps.slug.outputs.slug }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Compute branch slug
         id: slug
-        run: |
-          RAW="${{ github.ref_name }}"
-          # lowercase, replace /, _, ., + with -, strip leading/trailing -, truncate to 40
-          SLUG=$(echo "$RAW" | tr '[:upper:]' '[:lower:]' | sed 's|[/_.+]|-|g' | sed 's/^-\+//;s/-\+$//' | cut -c1-40 | sed 's/-*$//')
-          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
-          echo "Branch slug: $SLUG"
+        uses: ./.github/actions/slugify-branch
+        with:
+          branch: ${{ github.ref_name }}
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -104,12 +101,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # --- Build backend ---
 
       - name: Set up Node.js (backend)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -134,7 +131,7 @@ jobs:
       # --- Build frontend ---
 
       - name: Set up Node.js (frontend)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -150,7 +147,7 @@ jobs:
 
       # --- Deploy ---
 
-      - name: Setup Terraform
+      - name: Setup Terraform (preview)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/preview/deploy
@@ -165,8 +162,8 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: terraform workspace select -or-create preview-${{ needs.slugify.outputs.slug }}
 
-      - name: Get CloudFront URL from dev frontend state
-        id: cf
+      - name: Get bucket ID from dev frontend state
+        id: frontend
         working-directory: infrastructure/aws/frontend/deploy
         run: |
           terraform init \
@@ -174,12 +171,34 @@ jobs:
             -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
             -backend-config="region=${{ vars.AWS_REGION }}"
           terraform workspace select dev
-          CF_URL="https://$(terraform output -raw frontend_cloudfront_url)"
-          echo "cloudfront_url=$CF_URL" >> "$GITHUB_OUTPUT"
-          DIST_ID=$(terraform output -raw frontend_cloudfront_distribution_id)
           BUCKET_ID=$(terraform output -raw frontend_bucket_id)
-          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
           echo "bucket_id=$BUCKET_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Terraform (CDN)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: dev
+          session_name: github-preview-cdn-${{ needs.slugify.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Ensure CDN behaviors are deployed
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: dev
+
+      - name: Get CloudFront outputs from CDN state
+        id: cf
+        working-directory: infrastructure/aws/cdn/deploy
+        run: |
+          CF_URL=$(terraform output -raw cloudfront_url)
+          echo "cloudfront_url=$CF_URL" >> "$GITHUB_OUTPUT"
+          DIST_ID=$(terraform output -raw cloudfront_distribution_id)
+          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
 
       - name: Export Terraform secrets
         run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
@@ -234,7 +253,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
           aws s3 sync breadly-frontend/dist/breadly-frontend/browser/ \
-            "s3://${{ steps.cf.outputs.bucket_id }}/preview/${{ needs.slugify.outputs.slug }}/" \
+            "s3://${{ steps.frontend.outputs.bucket_id }}/preview/${{ needs.slugify.outputs.slug }}/" \
             --delete
 
       - name: Invalidate CloudFront cache for preview path

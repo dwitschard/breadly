@@ -1,15 +1,15 @@
 # deploy-frontend.yml
 #
 # Deployment pipeline for the Breadly frontend.
-# Deploys or tears down the Angular SPA on S3 via Terraform.
+# Deploys the Angular SPA to S3 and ensures the CDN (CloudFront) is up to date.
 #
 # Jobs
-#   deploy    Downloads the release asset and deploys via Terraform.
-#   teardown  Destroys all frontend infrastructure via terraform destroy.
+#   deploy    Downloads the release asset, deploys S3 via Terraform, applies
+#             CDN stack, and invalidates the CloudFront cache.
 #
 # Triggers
 #   workflow_call     Called by build-frontend.yml on main to auto-deploy to dev.
-#   workflow_dispatch Manually deploy or teardown a specific environment.
+#   workflow_dispatch Manually deploy a specific environment.
 #
 # Prerequisites
 #   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
@@ -76,7 +76,7 @@ jobs:
           mkdir -p breadly-frontend/dist/browser/
           unzip dist.zip -d breadly-frontend/dist/browser/
 
-      - name: Setup Terraform
+      - name: Setup Terraform (frontend)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/frontend/deploy
@@ -87,7 +87,7 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Deploy stack
+      - name: Deploy frontend stack (S3)
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/frontend/deploy
@@ -95,14 +95,31 @@ jobs:
           extra_tf_vars: >-
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"
 
+      - name: Setup Terraform (CDN)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-deploy-cdn-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Deploy CDN stack (CloudFront)
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: ${{ env.TARGET_ENV }}
+
       - name: Invalidate CloudFront cache
-        working-directory: infrastructure/aws/frontend/deploy
+        working-directory: infrastructure/aws/cdn/deploy
         run: |
-          DIST_ID=$(terraform output -raw frontend_cloudfront_distribution_id)
+          DIST_ID=$(terraform output -raw cloudfront_distribution_id)
           aws cloudfront create-invalidation \
             --distribution-id "$DIST_ID" \
             --paths "/*"
 
       - name: Print website URL
-        working-directory: infrastructure/aws/frontend/deploy
-        run: terraform output -raw frontend_website_url
+        working-directory: infrastructure/aws/cdn/deploy
+        run: terraform output -raw cloudfront_url

@@ -1,0 +1,35 @@
+# slugify-branch — single source of truth for branch-to-slug conversion in CI/CD.
+#
+# Algorithm (must match breadly-backend/src/common/branch-slug.ts):
+#   1. Lowercase
+#   2. Replace /, _, ., + with -
+#   3. Strip leading and trailing hyphens
+#   4. Truncate to 40 characters
+#   5. Strip trailing hyphens introduced by truncation
+
+name: Slugify Branch
+description: >
+  Converts a git branch name to a URL-safe slug (lowercase, max 40 chars).
+  Single source of truth for branch slug computation in CI/CD.
+
+inputs:
+  branch:
+    description: Raw branch name (e.g. github.ref_name or github.event.ref)
+    required: true
+
+outputs:
+  slug:
+    description: URL-safe branch slug (lowercase, max 40 chars, no leading/trailing hyphens)
+    value: ${{ steps.slugify.outputs.slug }}
+
+runs:
+  using: composite
+  steps:
+    - name: Slugify branch name
+      id: slugify
+      shell: bash
+      run: |
+        RAW="${{ inputs.branch }}"
+        SLUG=$(echo "$RAW" | tr '[:upper:]' '[:lower:]' | sed 's|[/_.+]|-|g' | sed 's/^-\+//;s/-\+$//' | cut -c1-40 | sed 's/-*$//')
+        echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+        echo "Branch slug: $SLUG"
