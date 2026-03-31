@@ -13,7 +13,11 @@
 
 locals {
   # Resource name prefix following the breadly-<env>-* convention.
-  name_prefix = "${var.project_name}-preview-${var.branch_slug}"
+  # Truncated to 36 chars so the longest derived resource name
+  # ("${name_prefix}-backend-public-lambda-role" = 36 + 27 = 63 chars) stays
+  # within AWS IAM's 64-char role name limit. The full branch_slug is still
+  # used in the URL path (frontend_url) and route definitions.
+  name_prefix = substr("${var.project_name}-preview-${var.branch_slug}", 0, 36)
 
   # Frontend URL for the preview environment under the shared CloudFront distribution.
   frontend_url = "${var.cloudfront_url}/preview/${var.branch_slug}"

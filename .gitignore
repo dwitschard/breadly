@@ -4,6 +4,7 @@
 
 **/generated/**
 **/node_modules/**
+**/cloudfront/node_modules/**
 
 # ── Terraform ─────────────────────────────────────────────────────────────────
 
