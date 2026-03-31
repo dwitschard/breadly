@@ -65,6 +65,7 @@ module "api_gateway" {
   public_lambda_function_name = module.backend_public.function_name
   cognito_issuer_url          = module.cognito.issuer_url
   cognito_user_pool_id        = module.cognito.user_pool_id
+  cognito_hosted_ui_domain    = module.cognito.hosted_ui_domain
   cognito_user_pool_client_id = module.cognito.client_id
   aws_region                  = var.aws_region
   frontend_urls               = var.frontend_urls

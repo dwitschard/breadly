@@ -10,8 +10,9 @@
     [ ] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
     [ ] Setup Dummy Data
     [ ] Delete Env once Branch is deleted
+    [ ] Check if Teardown of Preview Env (Lambda!) works
 [ ] E2E Setup
-    [ ] Spawn a Lambda for Testing
+    [ ] Spawn a Lambda for Testing -> preview/ci environment
     [ ] Playwright Test
     [ ] Deployment to a "CI" Environment
     [ ] Add Mock Data to it (Login, Recipe, etc.)

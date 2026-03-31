@@ -7,7 +7,7 @@ locals {
 
 resource "aws_s3_bucket" "tfstate" {
   bucket        = local.state_bucket_name
-  force_destroy = true
+  force_destroy = var.environment != "prod"
 }
 
 resource "aws_s3_bucket_versioning" "tfstate" {

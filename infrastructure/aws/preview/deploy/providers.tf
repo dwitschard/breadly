@@ -1,7 +1,7 @@
 # providers.tf — AWS provider configuration for the preview root module.
 
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.6.0"
 
   required_providers {
     aws = {
@@ -12,6 +12,14 @@ terraform {
 }
 
 provider "aws" {
-  region             = var.aws_region
+  region              = var.aws_region
   allowed_account_ids = [var.aws_account_id]
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = "preview"
+      ManagedBy   = "terraform"
+    }
+  }
 }
