@@ -14,12 +14,23 @@
 #   5. module.api_gateway_routes — adds 2 routes to the shared API Gateway for this branch.
 
 locals {
+  # Full resource name prefix before any truncation.
+  full_prefix      = "${var.project_name}-preview-${var.branch_slug}"
+  needs_truncation = length(local.full_prefix) > 36
+
   # Resource name prefix following the breadly-<env>-* convention.
-  # Truncated to 36 chars so the longest derived resource name
+  # Must stay ≤ 36 chars so the longest derived resource name
   # ("${name_prefix}-backend-public-lambda-role" = 36 + 27 = 63 chars) stays
-  # within AWS IAM's 64-char role name limit. The full branch_slug is still
-  # used in the URL path (frontend_url) and route definitions.
-  name_prefix = substr("${var.project_name}-preview-${var.branch_slug}", 0, 36)
+  # within AWS IAM's 64-char role name limit.
+  #
+  # When the full prefix exceeds 36 chars, the last 7 positions are replaced
+  # with a dash + 6-char SHA-256 hash of the full prefix (29 + 1 + 6 = 36).
+  # This guarantees uniqueness even when two branch slugs share the same
+  # first 29 characters. The full branch_slug is still used in the URL path
+  # (frontend_url) and API Gateway route definitions.
+  name_prefix = local.needs_truncation ? (
+    "${substr(local.full_prefix, 0, 29)}-${substr(sha256(local.full_prefix), 0, 6)}"
+  ) : local.full_prefix
 
   # Frontend URL for the preview environment under the shared CloudFront distribution.
   frontend_url = "${var.cloudfront_url}/preview/${var.branch_slug}"

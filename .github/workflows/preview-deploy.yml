@@ -121,8 +121,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # Deploy preview environment
   # ---------------------------------------------------------------------------
-  deploy:
-    name: Deploy
+  deploy-preview:
+    name: Deploy Preview
     needs: [slugify, build-backend, build-frontend]
     runs-on: ubuntu-latest
     environment: preview
