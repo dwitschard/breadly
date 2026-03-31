@@ -2,13 +2,13 @@
 #
 # Deploys a full-stack preview environment for every non-main branch push.
 # Each preview environment runs under /preview/<branch-slug>/ on the shared
-# dev CloudFront distribution.
+# dev CloudFront distribution, with its own dedicated S3 bucket for frontend assets.
 #
 # Jobs:
 #   slugify          Computes the branch slug and enforces the 5-preview limit.
-#   build-backend    Reuses build-backend.yml (lint → test → build → artifact).
+#   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses build-frontend.yml with preview base-href.
-#   deploy           terraform apply → create groups & users → S3 sync → PR comment → job summary.
+#   deploy           terraform apply (preview + CDN) -> create groups & users -> PR comment -> job summary.
 #
 # Triggers
 #   push to any branch except main.
@@ -159,18 +159,6 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: terraform workspace select -or-create preview-${{ needs.slugify.outputs.slug }}
 
-      - name: Get bucket ID from dev frontend state
-        id: frontend
-        working-directory: infrastructure/aws/frontend/deploy
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
-            -backend-config="region=${{ vars.AWS_REGION }}"
-          terraform workspace select dev
-          BUCKET_ID=$(terraform output -raw frontend_bucket_id)
-          echo "bucket_id=$BUCKET_ID" >> "$GITHUB_OUTPUT"
-
       - name: Setup Terraform (CDN)
         uses: ./.github/actions/terraform-setup
         with:
@@ -182,16 +170,11 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Ensure CDN behaviors are deployed
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: dev
-
       - name: Get CloudFront outputs from CDN state
         id: cf
         working-directory: infrastructure/aws/cdn/deploy
         run: |
+          terraform workspace select dev
           CF_URL=$(terraform output -raw cloudfront_url)
           echo "cloudfront_url=$CF_URL" >> "$GITHUB_OUTPUT"
           DIST_ID=$(terraform output -raw cloudfront_distribution_id)
@@ -209,6 +192,7 @@ jobs:
             -var="branch_slug=${{ needs.slugify.outputs.slug }}"
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
             -var="cloudfront_url=${{ steps.cf.outputs.cloudfront_url }}"
+            -var="frontend_dist_path=${{ github.workspace }}/frontend-dist"
 
       - name: Get Cognito User Pool ID
         id: cognito
@@ -277,13 +261,33 @@ jobs:
             --username "admin@breadly.dev" \
             --group-name "ADMIN"
 
-      - name: Sync frontend to S3
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+      - name: Collect active preview buckets
+        id: previews
+        working-directory: infrastructure/aws/preview/deploy
         run: |
-          aws s3 sync frontend-dist/ \
-            "s3://${{ steps.frontend.outputs.bucket_id }}/preview/${{ needs.slugify.outputs.slug }}/" \
-            --delete
+          PREVIEW_BUCKETS='{}'
+          WORKSPACES=$(terraform workspace list | grep -E '^\s+preview-' | sed 's/^[[:space:]]*//' | sed 's/^preview-//' || true)
+          for SLUG in $WORKSPACES; do
+            terraform workspace select "preview-${SLUG}"
+            BUCKET_ID=$(terraform output -raw frontend_bucket_id 2>/dev/null || echo "")
+            if [ -n "$BUCKET_ID" ]; then
+              BUCKET_ARN=$(terraform output -raw frontend_bucket_arn)
+              BUCKET_DOMAIN=$(terraform output -raw frontend_bucket_regional_domain_name)
+              PREVIEW_BUCKETS=$(echo "$PREVIEW_BUCKETS" | jq --arg slug "$SLUG" \
+                --arg id "$BUCKET_ID" --arg arn "$BUCKET_ARN" --arg domain "$BUCKET_DOMAIN" \
+                '. + {($slug): {bucket_id: $id, bucket_arn: $arn, bucket_regional_domain_name: $domain}}')
+            fi
+          done
+          echo "preview_buckets=$PREVIEW_BUCKETS" >> "$GITHUB_OUTPUT"
+          echo "Collected preview buckets: $PREVIEW_BUCKETS"
+
+      - name: Update CDN with preview origins
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: dev
+          extra_tf_vars: >-
+            -var='preview_buckets=${{ steps.previews.outputs.preview_buckets }}'
 
       - name: Invalidate CloudFront cache for preview path
         env:

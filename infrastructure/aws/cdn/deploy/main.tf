@@ -30,6 +30,7 @@ module "cdn" {
   bucket_arn                  = data.terraform_remote_state.frontend.outputs.frontend_bucket_arn
   bucket_regional_domain_name = data.terraform_remote_state.frontend.outputs.frontend_bucket_regional_domain
   api_gateway_url             = data.terraform_remote_state.backend.outputs.api_gateway_endpoint
+  preview_buckets             = var.preview_buckets
 
   tags = {
     Component = "cdn"

@@ -30,3 +30,13 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "preview_buckets" {
+  description = "Map of active preview environments. Key = branch slug, value = object with S3 bucket details. Each entry creates a dedicated CloudFront origin, OAC, bucket policy, and cache behavior."
+  type = map(object({
+    bucket_id                   = string
+    bucket_arn                  = string
+    bucket_regional_domain_name = string
+  }))
+  default = {}
+}

@@ -51,3 +51,8 @@ variable "cloudfront_url" {
   description = "Base HTTPS URL of the shared CloudFront distribution (e.g. https://<id>.cloudfront.net). Used as the Cognito callback URL."
   type        = string
 }
+
+variable "frontend_dist_path" {
+  description = "Path to the compiled frontend output directory to upload to the per-preview S3 bucket."
+  type        = string
+}

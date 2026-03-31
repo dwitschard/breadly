@@ -13,18 +13,22 @@
 #     /index.html with HTTP 200, enabling Angular's client-side router to handle the URL.
 #     These handle the root/main deployment only.
 #   • Preview environment SPA deep links are handled by a CloudFront Function
-#     (preview_spa_fallback) that rewrites /preview/<slug>/<non-asset-path> to
-#     /preview/<slug>/index.html at the viewer-request stage, before S3 returns an
-#     error. This ensures each preview loads its own Angular app with the correct
-#     base href and Cognito configuration.
+#     (preview_spa_fallback) that strips the /preview/<slug> prefix and rewrites
+#     non-asset paths to /index.html. Each preview has its own S3 bucket, so files
+#     are stored at the bucket root (not under a /preview/<slug>/ prefix).
 #
 # API routing:
 #   • /api/* requests are forwarded to the API Gateway origin unchanged.
 #   • /preview/*/api/* requests are forwarded to the API Gateway origin unchanged.
-#   • /preview/* requests are forwarded to S3 (static assets and SPA shell).
+#   • /preview/<slug>/* requests are forwarded to the per-preview S3 bucket origin.
 #   • The Authorization header is forwarded via the AllViewerExceptHostHeader
 #     managed origin request policy so the JWT reaches the Cognito authorizer.
 #   • Caching is fully disabled for API responses (CachingDisabled managed policy).
+#
+# Preview origins:
+#   • Each active preview environment gets its own S3 origin, OAC, bucket policy,
+#     and /preview/<slug>/* cache behavior. These are created dynamically from the
+#     preview_buckets variable, which is populated by the deploy/cleanup workflows.
 
 locals {
   # Extract the bare hostname from the URL — CloudFront requires a domain name with
@@ -34,7 +38,7 @@ locals {
 }
 
 # ---------------------------------------------------------------------------
-# Origin Access Control (S3)
+# Origin Access Control — main S3 bucket
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudfront_origin_access_control" "this" {
@@ -45,34 +49,51 @@ resource "aws_cloudfront_origin_access_control" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# CloudFront Function — Preview SPA Fallback
+# Origin Access Control — per-preview S3 buckets
 # ---------------------------------------------------------------------------
-# Rewrites preview SPA deep links to the correct per-branch index.html.
-# Attached to the /preview/* cache behavior (viewer-request stage).
+
+resource "aws_cloudfront_origin_access_control" "preview" {
+  for_each = var.preview_buckets
+
+  name                              = "${var.name}-preview-${each.key}"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# ---------------------------------------------------------------------------
+# CloudFront Function — Preview SPA Fallback & URI Rewrite
+# ---------------------------------------------------------------------------
+# Each preview environment has its own S3 bucket with files stored at the
+# bucket root (e.g. index.html, main.js). CloudFront sends the full URI
+# including the /preview/<slug>/ prefix, so this function must:
 #
-# Without this function, a request to /preview/<slug>/recipes/123 would hit S3,
-# which returns 403 (key not found). The distribution-global custom_error_response
-# would then serve /index.html (the root/main app with <base href="/">), loading
-# the wrong Angular app, wrong JS bundles, and wrong Cognito configuration.
+# 1. Strip the /preview/<slug> prefix so S3 can find the file.
+#    /preview/my-branch/assets/main.js  →  /assets/main.js
 #
-# The function inspects the URI: if the path after /preview/<slug>/ has no file
-# extension (i.e. it's a client-side route, not a static asset), it rewrites to
-# /preview/<slug>/index.html so S3 returns the correct Angular shell.
+# 2. Rewrite SPA deep links (paths without file extensions) to /index.html.
+#    /preview/my-branch/recipes/123  →  /index.html
+#
+# The function is attached to each per-preview cache behavior at viewer-request.
 
 resource "aws_cloudfront_function" "preview_spa_fallback" {
   name    = "${var.name}-preview-spa"
   runtime = "cloudfront-js-2.0"
-  comment = "Rewrite preview SPA deep links to /preview/<slug>/index.html"
+  comment = "Strip /preview/<slug> prefix and rewrite SPA deep links to /index.html"
   publish = true
   code    = <<-JS
     function handler(event) {
       var request = event.request;
       var uri = request.uri;
-      var match = uri.match(/^(\/preview\/[^\/]+)(\/.*)?$/);
+      var match = uri.match(/^\/preview\/[^\/]+(\/.*)?$/);
       if (match) {
-        var subPath = match[2] || '/';
-        if (!subPath.match(/\.[a-zA-Z0-9]+$/)) {
-          request.uri = match[1] + '/index.html';
+        var subPath = match[1] || '/';
+        if (subPath === '/') {
+          request.uri = '/index.html';
+        } else if (!subPath.match(/\.[a-zA-Z0-9]+$/)) {
+          request.uri = '/index.html';
+        } else {
+          request.uri = subPath;
         }
       }
       return request;
@@ -91,7 +112,7 @@ resource "aws_cloudfront_distribution" "this" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100" # EU + North America
 
-  # S3 origin — serves the Angular SPA static files.
+  # S3 origin — serves the Angular SPA static files (main deployment).
   origin {
     domain_name              = var.bucket_regional_domain_name
     origin_id                = "s3-${var.bucket_id}"
@@ -111,8 +132,18 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
+  # Per-preview S3 origins — one per active preview environment.
+  dynamic "origin" {
+    for_each = var.preview_buckets
+    content {
+      domain_name              = origin.value.bucket_regional_domain_name
+      origin_id                = "s3-preview-${origin.key}"
+      origin_access_control_id = aws_cloudfront_origin_access_control.preview[origin.key].id
+    }
+  }
+
   # /preview/*/api/* → API Gateway.
-  # More specific than /preview/* so CloudFront evaluates this first.
+  # More specific than /preview/<slug>/* so CloudFront evaluates this first.
   ordered_cache_behavior {
     path_pattern           = "/preview/*/api/*"
     target_origin_id       = "apigw"
@@ -129,32 +160,36 @@ resource "aws_cloudfront_distribution" "this" {
     origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
   }
 
-  # /preview/* → S3 (preview environment static assets and SPA shell).
-  # Deep-linked SPA routes are rewritten to /preview/<slug>/index.html by the
-  # preview_spa_fallback CloudFront Function before reaching S3.
-  ordered_cache_behavior {
-    path_pattern           = "/preview/*"
-    target_origin_id       = "s3-${var.bucket_id}"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    compress               = true
+  # Per-preview /preview/<slug>/* → per-preview S3 bucket.
+  # Each preview gets its own cache behavior pointing to its dedicated S3 origin.
+  # The preview_spa_fallback CloudFront Function strips the /preview/<slug> prefix
+  # and rewrites SPA deep links to /index.html.
+  dynamic "ordered_cache_behavior" {
+    for_each = var.preview_buckets
+    content {
+      path_pattern           = "/preview/${ordered_cache_behavior.key}/*"
+      target_origin_id       = "s3-preview-${ordered_cache_behavior.key}"
+      viewer_protocol_policy = "redirect-to-https"
+      allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = true
 
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
+      forwarded_values {
+        query_string = false
+        cookies {
+          forward = "none"
+        }
       }
-    }
 
-    function_association {
-      event_type   = "viewer-request"
-      function_arn = aws_cloudfront_function.preview_spa_fallback.arn
-    }
+      function_association {
+        event_type   = "viewer-request"
+        function_arn = aws_cloudfront_function.preview_spa_fallback.arn
+      }
 
-    min_ttl     = 0
-    default_ttl = 3600
-    max_ttl     = 86400
+      min_ttl     = 0
+      default_ttl = 3600
+      max_ttl     = 86400
+    }
   }
 
   # /api/* → API Gateway (evaluated before the default S3 behavior).
@@ -227,7 +262,7 @@ resource "aws_cloudfront_distribution" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# S3 Bucket Policy — CloudFront OAC only
+# S3 Bucket Policy — CloudFront OAC only (main bucket)
 # ---------------------------------------------------------------------------
 
 data "aws_caller_identity" "current" {}
@@ -245,6 +280,34 @@ resource "aws_s3_bucket_policy" "cloudfront_oac" {
       }
       Action   = "s3:GetObject"
       Resource = "${var.bucket_arn}/*"
+      Condition = {
+        StringEquals = {
+          "AWS:SourceArn" = aws_cloudfront_distribution.this.arn
+        }
+      }
+    }]
+  })
+}
+
+# ---------------------------------------------------------------------------
+# S3 Bucket Policies — CloudFront OAC for per-preview buckets
+# ---------------------------------------------------------------------------
+
+resource "aws_s3_bucket_policy" "preview_oac" {
+  for_each = var.preview_buckets
+
+  bucket = each.value.bucket_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AllowCloudFrontOAC"
+      Effect = "Allow"
+      Principal = {
+        Service = "cloudfront.amazonaws.com"
+      }
+      Action   = "s3:GetObject"
+      Resource = "${each.value.bucket_arn}/*"
       Condition = {
         StringEquals = {
           "AWS:SourceArn" = aws_cloudfront_distribution.this.arn

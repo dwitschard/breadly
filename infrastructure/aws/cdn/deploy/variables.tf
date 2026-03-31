@@ -25,3 +25,13 @@ variable "project_name" {
     error_message = "project_name must be lowercase alphanumeric with hyphens, 2-21 chars, starting with a letter."
   }
 }
+
+variable "preview_buckets" {
+  description = "Map of active preview environments. Key = branch slug, value = object with S3 bucket details. Passed by the deploy/cleanup workflows after collecting outputs from all active preview workspaces."
+  type = map(object({
+    bucket_id                   = string
+    bucket_arn                  = string
+    bucket_regional_domain_name = string
+  }))
+  default = {}
+}
