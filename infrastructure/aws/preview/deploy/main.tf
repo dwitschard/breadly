@@ -41,11 +41,12 @@ data "terraform_remote_state" "backend" {
 # ---------------------------------------------------------------------------
 
 module "cognito" {
-  source = "./modules/cognito"
+  source = "../../modules/cognito"
 
-  name          = local.name_prefix
-  aws_region    = var.aws_region
-  frontend_urls = local.frontend_url
+  name                       = local.name_prefix
+  aws_region                 = var.aws_region
+  frontend_urls              = local.frontend_url
+  enable_admin_password_auth = true
 
   tags = {
     Component   = "preview"
@@ -58,7 +59,7 @@ module "cognito" {
 # ---------------------------------------------------------------------------
 
 module "backend" {
-  source = "./modules/lambda_express"
+  source = "../../modules/lambda_express"
 
   name          = "${local.name_prefix}-backend"
   dist_zip_path = var.dist_zip_path
@@ -80,7 +81,7 @@ module "backend" {
 # ---------------------------------------------------------------------------
 
 module "backend_public" {
-  source = "./modules/lambda_express"
+  source = "../../modules/lambda_express"
 
   name          = "${local.name_prefix}-backend-public"
   dist_zip_path = var.dist_zip_path

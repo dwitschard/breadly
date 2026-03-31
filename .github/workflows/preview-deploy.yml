@@ -4,11 +4,9 @@
 # Each preview environment runs under /preview/<branch-slug>/ on the shared
 # dev CloudFront distribution.
 #
-# Jobs (parallelised where possible):
+# Jobs:
 #   slugify          Computes the branch slug and enforces the 5-preview limit.
-#   build-backend    Lint → test → build → zip the backend.
-#   build-frontend   Lint → test → build (with --base-href) the frontend.
-#   deploy           terraform apply → S3 sync → create demo users → seed data → PR comment.
+#   deploy           build backend → build frontend → terraform apply → S3 sync → create demo users → seed data → PR comment.
 #
 # Triggers
 #   push to any branch except main.
@@ -93,99 +91,11 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
-  # Build backend
-  # ---------------------------------------------------------------------------
-  build-backend:
-    name: Build Backend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: breadly-backend
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: breadly-backend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm run test:ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Install production dependencies only
-        run: npm ci --omit=dev
-
-      - name: Create deployment zip
-        run: zip -r ../backend.zip dist/ node_modules/ package.json run.sh
-
-      - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: preview-backend-dist
-          path: backend.zip
-          retention-days: 1
-
-  # ---------------------------------------------------------------------------
-  # Build frontend
-  # ---------------------------------------------------------------------------
-  build-frontend:
-    name: Build Frontend
-    needs: slugify
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: breadly-frontend
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: breadly-frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate API types
-        run: npm run generate-api
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm run test:ci
-
-      - name: Build with preview base-href
-        run: npx ng build --base-href /preview/${{ needs.slugify.outputs.slug }}/
-
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: preview-frontend-dist
-          path: breadly-frontend/dist/breadly-frontend/browser/
-          retention-days: 1
-
-  # ---------------------------------------------------------------------------
-  # Deploy preview environment
+  # Deploy preview environment (includes build steps)
   # ---------------------------------------------------------------------------
   deploy:
     name: Deploy
-    needs: [slugify, build-backend, build-frontend]
+    needs: [slugify]
     runs-on: ubuntu-latest
     environment: preview
     permissions:
@@ -196,16 +106,49 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download backend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: preview-backend-dist
+      # --- Build backend ---
 
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
+      - name: Set up Node.js (backend)
+        uses: actions/setup-node@v4
         with:
-          name: preview-frontend-dist
-          path: frontend-dist/
+          node-version: 24
+          cache: npm
+          cache-dependency-path: breadly-backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: breadly-backend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: breadly-backend
+        run: npm run build
+
+      - name: Install backend production dependencies
+        working-directory: breadly-backend
+        run: npm ci --omit=dev
+
+      - name: Create backend deployment zip
+        working-directory: breadly-backend
+        run: zip -r ../backend.zip dist/ node_modules/ package.json run.sh
+
+      # --- Build frontend ---
+
+      - name: Set up Node.js (frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: breadly-frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: breadly-frontend
+        run: npm ci
+
+      - name: Build frontend with preview base-href
+        working-directory: breadly-frontend
+        run: npx ng build --base-href /preview/${{ needs.slugify.outputs.slug }}/
+
+      # --- Deploy ---
 
       - name: Setup Terraform
         uses: ./.github/actions/terraform-setup
@@ -290,7 +233,7 @@ jobs:
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
-          aws s3 sync frontend-dist/ \
+          aws s3 sync breadly-frontend/dist/breadly-frontend/browser/ \
             "s3://${{ steps.cf.outputs.bucket_id }}/preview/${{ needs.slugify.outputs.slug }}/" \
             --delete
 
