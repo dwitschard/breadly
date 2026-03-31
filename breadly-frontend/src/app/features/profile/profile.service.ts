@@ -14,7 +14,7 @@ export class ProfileService {
 
   load(): void {
     this._loading.set(true);
-    this.http.get<UserProfile>('/api/profile').subscribe({
+    this.http.get<UserProfile>('api/profile').subscribe({
       next: (profile) => {
         this._profile.set(profile);
         this._loading.set(false);

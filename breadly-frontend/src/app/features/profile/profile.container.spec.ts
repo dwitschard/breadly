@@ -35,7 +35,7 @@ describe('ProfileContainerComponent', () => {
     fixture = TestBed.createComponent(ProfileContainerComponent);
     fixture.detectChanges();
     // flush the auto-triggered request
-    httpMock.expectOne('/api/profile').flush(mockProfile);
+    httpMock.expectOne('api/profile').flush(mockProfile);
     expect(fixture.componentInstance).toBeTruthy();
   });
 
@@ -43,7 +43,7 @@ describe('ProfileContainerComponent', () => {
     const loadSpy = vi.spyOn(service, 'load');
     fixture = TestBed.createComponent(ProfileContainerComponent);
     fixture.detectChanges();
-    httpMock.expectOne('/api/profile').flush(mockProfile);
+    httpMock.expectOne('api/profile').flush(mockProfile);
     expect(loadSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -54,7 +54,7 @@ describe('ProfileContainerComponent', () => {
 
     fixture = TestBed.createComponent(ProfileContainerComponent);
     fixture.detectChanges();
-    httpMock.expectNone('/api/profile');
+    httpMock.expectNone('api/profile');
 
     expect(loadSpy).not.toHaveBeenCalled();
   });
@@ -62,7 +62,7 @@ describe('ProfileContainerComponent', () => {
   it('renders app-profile child component', () => {
     fixture = TestBed.createComponent(ProfileContainerComponent);
     fixture.detectChanges();
-    httpMock.expectOne('/api/profile').flush(mockProfile);
+    httpMock.expectOne('api/profile').flush(mockProfile);
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('app-profile')).toBeTruthy();

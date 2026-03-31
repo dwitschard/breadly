@@ -87,7 +87,7 @@ export class AuthService {
     this.profileService.clear();
     this.oauthService.logOut({
       client_id: this.oauthService.clientId,
-      logout_uri: `${window.location.origin}`,
+      logout_uri: document.baseURI.replace(/\/$/, ''),
     });
   }
 

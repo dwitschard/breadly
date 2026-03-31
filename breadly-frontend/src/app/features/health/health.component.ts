@@ -103,7 +103,7 @@ export class HealthComponent implements OnInit {
 
     const startTime = Date.now();
 
-    this.http.get<HealthResponse>('/api/health').subscribe({
+    this.http.get<HealthResponse>('api/health').subscribe({
       next: (data) => {
         this.health.set(data);
         this.duration.set(Date.now() - startTime);

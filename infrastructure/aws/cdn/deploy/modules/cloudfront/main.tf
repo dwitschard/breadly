@@ -11,15 +11,17 @@
 #   • Default root object: index.html
 #   • Custom error responses map 403 and 404 (returned by S3 for missing keys) to
 #     /index.html with HTTP 200, enabling Angular's client-side router to handle the URL.
-#   • For preview environments, S3 returns 404 for deep-linked SPA routes. These also
-#     fall back to /index.html; Angular re-routes client-side using the base href.
+#     These handle the root/main deployment only.
+#   • Preview environment SPA deep links are handled by a CloudFront Function
+#     (preview_spa_fallback) that rewrites /preview/<slug>/<non-asset-path> to
+#     /preview/<slug>/index.html at the viewer-request stage, before S3 returns an
+#     error. This ensures each preview loads its own Angular app with the correct
+#     base href and Cognito configuration.
 #
 # API routing:
 #   • /api/* requests are forwarded to the API Gateway origin unchanged.
 #   • /preview/*/api/* requests are forwarded to the API Gateway origin unchanged.
 #   • /preview/* requests are forwarded to S3 (static assets and SPA shell).
-#   • No CloudFront Function is needed — paths are forwarded as-is. Express handles
-#     the /api prefix natively; the preview-path middleware strips /preview/<slug>.
 #   • The Authorization header is forwarded via the AllViewerExceptHostHeader
 #     managed origin request policy so the JWT reaches the Cognito authorizer.
 #   • Caching is fully disabled for API responses (CachingDisabled managed policy).
@@ -40,6 +42,42 @@ resource "aws_cloudfront_origin_access_control" "this" {
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
+}
+
+# ---------------------------------------------------------------------------
+# CloudFront Function — Preview SPA Fallback
+# ---------------------------------------------------------------------------
+# Rewrites preview SPA deep links to the correct per-branch index.html.
+# Attached to the /preview/* cache behavior (viewer-request stage).
+#
+# Without this function, a request to /preview/<slug>/recipes/123 would hit S3,
+# which returns 403 (key not found). The distribution-global custom_error_response
+# would then serve /index.html (the root/main app with <base href="/">), loading
+# the wrong Angular app, wrong JS bundles, and wrong Cognito configuration.
+#
+# The function inspects the URI: if the path after /preview/<slug>/ has no file
+# extension (i.e. it's a client-side route, not a static asset), it rewrites to
+# /preview/<slug>/index.html so S3 returns the correct Angular shell.
+
+resource "aws_cloudfront_function" "preview_spa_fallback" {
+  name    = "${var.name}-preview-spa"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrite preview SPA deep links to /preview/<slug>/index.html"
+  publish = true
+  code    = <<-JS
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+      var match = uri.match(/^(\/preview\/[^\/]+)(\/.*)?$/);
+      if (match) {
+        var subPath = match[2] || '/';
+        if (!subPath.match(/\.[a-zA-Z0-9]+$/)) {
+          request.uri = match[1] + '/index.html';
+        }
+      }
+      return request;
+    }
+  JS
 }
 
 # ---------------------------------------------------------------------------
@@ -92,8 +130,8 @@ resource "aws_cloudfront_distribution" "this" {
   }
 
   # /preview/* → S3 (preview environment static assets and SPA shell).
-  # S3 returns 404 for deep-linked SPA routes; the custom_error_response below
-  # maps these to /index.html so Angular's client-side router takes over.
+  # Deep-linked SPA routes are rewritten to /preview/<slug>/index.html by the
+  # preview_spa_fallback CloudFront Function before reaching S3.
   ordered_cache_behavior {
     path_pattern           = "/preview/*"
     target_origin_id       = "s3-${var.bucket_id}"
@@ -107,6 +145,11 @@ resource "aws_cloudfront_distribution" "this" {
       cookies {
         forward = "none"
       }
+    }
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.preview_spa_fallback.arn
     }
 
     min_ttl     = 0
@@ -154,8 +197,8 @@ resource "aws_cloudfront_distribution" "this" {
 
   # Angular SPA: S3 returns 403 (AccessDenied) for any key that doesn't exist.
   # Map both 403 and 404 to /index.html so the Angular router can take over.
-  # This also handles preview environment SPA deep links — Angular re-routes
-  # client-side using the correct base href (/preview/<slug>/).
+  # These only affect the root/main deployment — preview deep links are handled
+  # by the preview_spa_fallback CloudFront Function before S3 is reached.
   custom_error_response {
     error_code            = 403
     response_code         = 200

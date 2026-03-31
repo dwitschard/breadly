@@ -37,11 +37,14 @@ Navigate to **Settings → Secrets and variables → Actions → Environments** 
 | Variable | Scope | Description | Example |
 |---|---|---|---|
 | `AWS_REGION` | Repository | AWS region for all resources and the Terraform state bucket. | `eu-central-1` |
-| `OIDC_CALLBACK_URL` | Environment | Comma-separated frontend URL(s) registered as Cognito callback/logout URLs. | `https://app.example.com` |
 
 > `MONGODB_URI` must be set **per environment** (dev and prod each have their own value).
-> `OIDC_CALLBACK_URL` is already environment-scoped. `AWS_OIDC_ROLE_ARN` and `AWS_ACCOUNT_ID`
+> `AWS_OIDC_ROLE_ARN` and `AWS_ACCOUNT_ID`
 > can be repository-level secrets if dev and prod share the same AWS account.
+>
+> The frontend URL for Cognito callback/logout configuration is derived automatically
+> from the CDN stack's CloudFront URL. For the `dev` environment, `http://localhost:4200`
+> is also included as a valid callback URL.
 
 ---
 

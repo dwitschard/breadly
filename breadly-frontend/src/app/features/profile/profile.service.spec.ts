@@ -42,31 +42,31 @@ describe('ProfileService', () => {
   it('sets loading to true while request is in flight', () => {
     service.load();
     expect(service.loading()).toBe(true);
-    httpMock.expectOne('/api/profile').flush(mockProfile);
+    httpMock.expectOne('api/profile').flush(mockProfile);
     expect(service.loading()).toBe(false);
   });
 
   it('sets profile signal on successful load', () => {
     service.load();
-    httpMock.expectOne('/api/profile').flush(mockProfile);
+    httpMock.expectOne('api/profile').flush(mockProfile);
     expect(service.profile()).toEqual(mockProfile);
   });
 
   it('sets loading to false on HTTP error', () => {
     service.load();
-    httpMock.expectOne('/api/profile').error(new ErrorEvent('network error'));
+    httpMock.expectOne('api/profile').error(new ErrorEvent('network error'));
     expect(service.loading()).toBe(false);
   });
 
   it('leaves profile as null on HTTP error', () => {
     service.load();
-    httpMock.expectOne('/api/profile').error(new ErrorEvent('network error'));
+    httpMock.expectOne('api/profile').error(new ErrorEvent('network error'));
     expect(service.profile()).toBeNull();
   });
 
   it('clear() resets profile to null', () => {
     service.load();
-    httpMock.expectOne('/api/profile').flush(mockProfile);
+    httpMock.expectOne('api/profile').flush(mockProfile);
     expect(service.profile()).not.toBeNull();
 
     service.clear();

@@ -9,13 +9,13 @@ import { provideApi } from './generated/api';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideApi('/api'),
+    provideApi('api'),
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     provideOAuthClient({
       resourceServer: {
         sendAccessToken: true,
-        allowedUrls: ['/api'],
+        allowedUrls: [`${document.baseURI}api`],
       },
     }),
   ],

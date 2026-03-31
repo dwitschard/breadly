@@ -5,7 +5,7 @@ export function buildAuthConfig(issuer: string, clientId: string): AuthConfig {
     issuer,
     clientId,
     responseType: 'code',
-    redirectUri: `${window.location.origin}/oidc-callback`,
+    redirectUri: `${document.baseURI}oidc-callback`,
     scope: 'openid email',
     timeoutFactor: 0.75,
     nonceStateSeparator: '___',

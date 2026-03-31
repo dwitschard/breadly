@@ -16,7 +16,7 @@
 #
 # Required secrets/variables — see .github/workflows/README.md.
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID   MONGODB_URI
-#   Variables: AWS_REGION          OIDC_CALLBACK_URL
+#   Variables: AWS_REGION
 
 name: Deploy Backend
 
@@ -81,6 +81,28 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
+      - name: Setup Terraform (CDN — read-only)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/cdn/deploy
+          environment: ${{ env.TARGET_ENV }}
+          session_name: github-deploy-backend-cdn-${{ env.TARGET_ENV }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Get frontend URL from CDN stack
+        id: frontend
+        working-directory: infrastructure/aws/cdn/deploy
+        run: |
+          CF_URL=$(terraform output -raw cloudfront_url)
+          if [ "${{ env.TARGET_ENV }}" = "dev" ]; then
+            echo "urls=http://localhost:4200,${CF_URL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "urls=${CF_URL}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Export Terraform secrets
         run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
 
@@ -91,7 +113,7 @@ jobs:
           environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
-            -var="frontend_urls=${{ vars.OIDC_CALLBACK_URL }}"
+            -var="frontend_urls=${{ steps.frontend.outputs.urls }}"
 
       - name: Print API Gateway endpoint
         working-directory: infrastructure/aws/backend/deploy
