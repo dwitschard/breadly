@@ -17,11 +17,11 @@ app.use(express.json());
 // Must be registered before all route handlers so they receive clean paths.
 app.use(previewPathMiddleware());
 
-app.use('/', operationController);
-app.use('/public', publicController);
-app.use('/technologies', requireAuth(), technologyController);
-app.use('/recipe', requireAuth(), recipeController);
-app.use('/profile', requireAuth(), profileController);
+app.use('/api', operationController);
+app.use('/api/public', publicController);
+app.use('/api/technologies', requireAuth(), technologyController);
+app.use('/api/recipe', requireAuth(), recipeController);
+app.use('/api/profile', requireAuth(), profileController);
 
 app.use(globalErrorHandler);
 
