@@ -106,7 +106,7 @@ type Environment = 'dev' | 'prod';
 
 /** Derive the Cognito User Pool name from the environment, matching Terraform naming. */
 function userPoolName(env: Environment): string {
-  return `${PROJECT_NAME}-${env}-backend`;
+  return `${PROJECT_NAME}-${env}`;
 }
 
 /**
