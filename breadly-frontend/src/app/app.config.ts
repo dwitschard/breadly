@@ -22,13 +22,13 @@ export const appConfig: ApplicationConfig = {
     provideOAuthClient({
       resourceServer: {
         sendAccessToken: true,
-        allowedUrls: ['/api'],
+        allowedUrls: ['api'],
       },
     }),
     provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
     importProvidersFrom(
       TranslateModule.forRoot({
-        defaultLanguage: 'de',
+        fallbackLang: 'de',
       }),
     ),
   ],
