@@ -12,6 +12,10 @@
 
 name: Preview Cleanup
 
+concurrency:
+  group: preview-cleanup
+  cancel-in-progress: false
+
 on:
   delete:
     # Filters are not supported for delete events — we check ref_type in the job.
