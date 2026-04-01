@@ -6,7 +6,7 @@
 # Frontend files are uploaded by the workflow via `aws s3 sync`, not Terraform.
 
 resource "aws_apigatewayv2_api" "this" {
-  name          = "${var.project_name}-preview-backend"
+  name          = "${var.project_name}-preview"
   protocol_type = "HTTP"
 
   cors_configuration {
@@ -37,11 +37,11 @@ resource "aws_apigatewayv2_stage" "default" {
 # ---------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "preview_frontend" {
-  bucket        = "${var.project_name}-preview-frontend"
+  bucket        = "${var.project_name}-preview"
   force_destroy = true
 
   tags = {
-    Component = "preview-frontend"
+    Component = "preview"
   }
 }
 

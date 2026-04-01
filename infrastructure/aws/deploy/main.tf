@@ -126,7 +126,7 @@ module "api_gateway" {
 module "cdn" {
   source = "../cdn/deploy/modules/cloudfront"
 
-  name            = "${local.name_prefix}-frontend"
+  name            = local.name_prefix
   api_gateway_url = module.api_gateway.api_endpoint
 
   # Main S3 bucket origin.
