@@ -1,5 +1,8 @@
 # Notes
 
+## Next Week
+[ ] Git Worktree Setup for multiple Agents to build things on different branches without conflicts
+
 ## Week Goals
 [x] Create Skills / Agents for Coding itself
     [x] Architecture Description Backend
@@ -7,53 +10,45 @@
     [x] Architecture Description API Module
     [x] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
 [ ] Deploy Application from Feature Branch
-    [ ] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
+    [x] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
+    [x] Setup Dummy Data
+    [x] Delete Env once Branch is deleted
+    [x] Check if Teardown of Preview Env works
     [ ] Add a version in the backend and display it in the frontend (health status page)
-    [ ] Setup Dummy Data
-    [ ] Delete Env once Branch is deleted
-    [ ] Check if Teardown of Preview Env works
-        [ ] Lambda
-        [ ] IAM Roles
-        [ ] Cognito User Pools  
-[ ] E2E Setup
-    [ ] Deployment to a "CI" Environment (preview/ci)
+        [ ] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
+[ ] Move Variables / Secrets that are not env specific to repo level on Github
+    [ ] Make sure everything still work the same
+[ ] E2E Testing Setup
+    [ ] Deployment to a "CI" Environment (preview/ci) -> limit preview branches to 4
     [ ] Add Mock Data to it (Login, Recipe, etc.)
     [ ] Run Playwright Test against it
     [ ] Create Video to verify it
-[ ] Move Variables / Secrets that are not env specific to repo level on Github
-    [ ] Make sure everything still work the same
-
-
-- Backend is connected to DynamoDB
-
-Optional:
-- Custom UI for Login / Registration
-
-## Next Steps
-- DynamoDB Table Design for User
-- Add DynamoDB Connection
-    - Terraform Setup
-    - Implement DB Connection in Backend
-    - Add it to /health Endpoint
-- Remove MongoDB Connection -> Use AWS DocumentDB if really needed
-  - Also remove ApplicationDatabase
-
-- Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
-  - if necessary -> implement custom error code in valid range
-
-- Build Open API Spec for FE and BE differently (if needed)
-    - Development on BE and FE should be possible at the same time
-    - Check if real interfaces can be generated for FE and BE without types being defined in BE / FE
+[ ] DynamoDB Table Design for User
+[ ] Add DynamoDB Connection 
+    [ ] Terraform Setup
+    [ ] Implement DB Connection in Backend
+    [ ] Add it to /health Endpoint
+[ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
+    [ ] Also remove ApplicationDatabase
 
 ## Bugs
-- Keep the Navigation Header when `app is trying to log you in` screen is shown to user -> Reduce commulative layout shift
+[ ] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
+
+[ ] Build Open API Spec for FE and BE differently (if needed)
+    [ ] Check Frontend
+    [ ] Check Backend
+
+[ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
+    [ ] if necessary -> implement custom error code in valid range
+
 
 ## Ideas
-- Switch Testing in Frontend to use TestingLibrary
-- Implement a custom ui for login / registration
-- decide on ui library / elements
+[ ] Implement a custom ui for login / registration
+[ ] Switch Testing in Frontend to use TestingLibrary
+[ ] decide on ui library / elements
 
-- Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
+### Done
+[x] Store Auth Token as HttpOnly Cookie to prevent XSS Attacks 
     - Not easily possible, requires loop through BFF
     - Probably not relevant for now
 
