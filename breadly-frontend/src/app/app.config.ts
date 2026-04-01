@@ -22,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     provideOAuthClient({
       resourceServer: {
         sendAccessToken: true,
-        allowedUrls: [`api`, '/api'],
+        allowedUrls: ['/api'],
       },
     }),
     provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
