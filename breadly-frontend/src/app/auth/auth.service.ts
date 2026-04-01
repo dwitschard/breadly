@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { filter, take } from 'rxjs';
 import { buildAuthConfig } from './auth.config';
-import { ProfileService } from '../features/profile/profile.service';
+import { ProfileService } from '../shared/services/profile.service';
 import { ConfigService } from '../config/config.service';
 
 export interface LoginOptions {
@@ -54,7 +54,7 @@ export class AuthService {
         this._isLoggedIn.set(true);
         this.profileService.load();
         const returnUrl = decodeURIComponent(this.oauthService.state ?? '');
-        this.router.navigateByUrl(this.isSameOrigin(returnUrl) ? returnUrl : '/recipe');
+        this.router.navigateByUrl(this.isSameOrigin(returnUrl) ? returnUrl : '/recipes');
       });
   }
 
@@ -87,7 +87,7 @@ export class AuthService {
     this.profileService.clear();
     this.oauthService.logOut({
       client_id: this.oauthService.clientId,
-      logout_uri: `${window.location.origin}`,
+      logout_uri: document.baseURI.replace(/\/$/, ''),
     });
   }
 

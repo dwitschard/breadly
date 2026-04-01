@@ -24,7 +24,7 @@ export function requireAuth(roles?: Role[]): RequestHandler {
     const authHeader = req.headers['authorization'];
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Missing or malformed Authorization header' });
+      res.status(401).json({ message: 'Missing or malformed Authorization header', statusCode: 401 });
       return;
     }
 
@@ -32,13 +32,12 @@ export function requireAuth(roles?: Role[]): RequestHandler {
     const parts = token.split('.');
 
     if (parts.length !== 3) {
-      res.status(401).json({ error: 'Invalid JWT format' });
+      res.status(401).json({ message: 'Invalid JWT format', statusCode: 401 });
       return;
     }
 
     try {
       const payload = parts[1];
-      // Pad base64url to standard base64 before decoding
       const padded = payload.replace(/-/g, '+').replace(/_/g, '/').padEnd(
         payload.length + ((4 - (payload.length % 4)) % 4),
         '=',
@@ -46,7 +45,7 @@ export function requireAuth(roles?: Role[]): RequestHandler {
       const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf8')) as CognitoClaims;
       req.user = decoded;
     } catch {
-      res.status(401).json({ error: 'Failed to decode JWT payload' });
+      res.status(401).json({ message: 'Failed to decode JWT payload', statusCode: 401 });
       return;
     }
 
@@ -54,7 +53,7 @@ export function requireAuth(roles?: Role[]): RequestHandler {
       const userGroups = req.user?.['cognito:groups'] ?? [];
       const hasRole = roles.some((r) => userGroups.includes(r));
       if (!hasRole) {
-        res.status(403).json({ error: 'Insufficient permissions' });
+        res.status(403).json({ message: 'Insufficient permissions', statusCode: 403 });
         return;
       }
     }

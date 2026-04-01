@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { UserProfile } from './profile.types';
+import { Profile } from '../../generated/api';
 
 @Component({
-  selector: 'app-profile',
+  selector: 'profile-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="max-w-xl mx-auto p-6">
@@ -97,7 +97,7 @@ import { UserProfile } from './profile.types';
   `,
 })
 export class ProfileComponent {
-  readonly profile = input.required<UserProfile | null>();
+  readonly profile = input.required<Profile | null>();
   readonly loading = input.required<boolean>();
 
   protected displayName(): string {

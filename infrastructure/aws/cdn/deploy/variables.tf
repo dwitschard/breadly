@@ -25,3 +25,9 @@ variable "project_name" {
     error_message = "project_name must be lowercase alphanumeric with hyphens, 2-21 chars, starting with a letter."
   }
 }
+
+variable "preview_only" {
+  description = "When true, the distribution serves only preview environments (no main S3 origin). Gateway remote state provides the API Gateway URL and shared S3 bucket details."
+  type        = bool
+  default     = false
+}

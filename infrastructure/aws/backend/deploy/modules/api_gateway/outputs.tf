@@ -22,5 +22,5 @@ output "cognito_user_pool_client_id" {
 
 output "cognito_hosted_ui_domain" {
   description = "Passed through from the cognito module for operator convenience."
-  value       = "https://${var.name}.auth.${var.aws_region}.amazoncognito.com"
+  value       = var.cognito_hosted_ui_domain
 }

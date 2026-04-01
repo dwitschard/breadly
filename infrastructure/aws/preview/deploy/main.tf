@@ -1,9 +1,11 @@
 # main.tf — root module entry point for preview environments.
 #
 # Creates all per-branch resources for a single preview environment.
-# Uses the shared dev API Gateway and S3 bucket/CloudFront distribution.
+# Uses the shared preview API Gateway and preview CloudFront distribution.
+# Frontend assets are uploaded by the workflow via `aws s3 sync` to the shared
+# preview S3 bucket (managed by preview/gateway), not by Terraform.
 #
-# Reads the dev backend remote state to get the shared API Gateway ID.
+# Reads the preview gateway remote state to get the shared API Gateway ID.
 #
 # Dependency order (no circular dependencies):
 #   1. module.cognito        — per-branch Cognito User Pool + App Client + Hosted UI.
@@ -12,26 +14,37 @@
 #   4. module.api_gateway_routes — adds 2 routes to the shared API Gateway for this branch.
 
 locals {
+  # Full resource name prefix before any truncation.
+  full_prefix      = "${var.project_name}-preview-${var.branch_slug}"
+  needs_truncation = length(local.full_prefix) > 36
+
   # Resource name prefix following the breadly-<env>-* convention.
-  # Truncated to 36 chars so the longest derived resource name
+  # Must stay ≤ 36 chars so the longest derived resource name
   # ("${name_prefix}-backend-public-lambda-role" = 36 + 27 = 63 chars) stays
-  # within AWS IAM's 64-char role name limit. The full branch_slug is still
-  # used in the URL path (frontend_url) and route definitions.
-  name_prefix = substr("${var.project_name}-preview-${var.branch_slug}", 0, 36)
+  # within AWS IAM's 64-char role name limit.
+  #
+  # When the full prefix exceeds 36 chars, the last 7 positions are replaced
+  # with a dash + 6-char SHA-256 hash of the full prefix (29 + 1 + 6 = 36).
+  # This guarantees uniqueness even when two branch slugs share the same
+  # first 29 characters. The full branch_slug is still used in the URL path
+  # (frontend_url) and API Gateway route definitions.
+  name_prefix = local.needs_truncation ? (
+    "${substr(local.full_prefix, 0, 29)}-${substr(sha256(local.full_prefix), 0, 6)}"
+  ) : local.full_prefix
 
   # Frontend URL for the preview environment under the shared CloudFront distribution.
   frontend_url = "${var.cloudfront_url}/preview/${var.branch_slug}"
 }
 
 # ---------------------------------------------------------------------------
-# Read dev backend state — retrieves shared API Gateway ID
+# Read preview gateway state — retrieves shared API Gateway ID
 # ---------------------------------------------------------------------------
 
-data "terraform_remote_state" "backend" {
+data "terraform_remote_state" "gateway" {
   backend = "s3"
   config = {
-    bucket = "${var.project_name}-dev-tfstate"
-    key    = "env:/dev/backend/terraform.tfstate"
+    bucket = "${var.project_name}-preview-tfstate"
+    key    = "env:/preview/gateway/terraform.tfstate"
     region = var.aws_region
   }
 }
@@ -107,7 +120,7 @@ module "backend_public" {
 module "api_gateway_routes" {
   source = "./modules/api_gateway_routes"
 
-  api_gateway_id              = data.terraform_remote_state.backend.outputs.api_gateway_id
+  api_gateway_id              = data.terraform_remote_state.gateway.outputs.api_gateway_id
   branch_slug                 = var.branch_slug
   lambda_function_arn         = module.backend.function_arn
   lambda_function_name        = module.backend.function_name

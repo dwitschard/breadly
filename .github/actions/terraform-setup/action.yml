@@ -20,7 +20,7 @@ inputs:
     description: Path to the Terraform root module
     required: true
   environment:
-    description: Target environment (dev | prod)
+    description: Target environment (dev | prod | preview)
     required: true
   local_backend:
     description: >

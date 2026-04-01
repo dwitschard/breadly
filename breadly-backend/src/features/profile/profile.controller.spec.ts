@@ -3,7 +3,6 @@ import { app } from '../../app.js';
 
 const request = supertest(app);
 
-/** Build a fake JWT whose payload is the given object. */
 function makeToken(payload: Record<string, unknown>): string {
   const encode = (obj: Record<string, unknown>) =>
     Buffer.from(JSON.stringify(obj))
@@ -25,7 +24,7 @@ describe('GET /api/profile', () => {
   it('returns 401 when no Authorization header is provided', async () => {
     const res = await request.get('/api/profile');
     expect(res.status).toBe(401);
-    expect(res.body).toHaveProperty('error');
+    expect(res.body).toHaveProperty('message');
   });
 
   it('returns 401 for a malformed token (not 3 segments)', async () => {

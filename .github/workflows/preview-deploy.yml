@@ -1,12 +1,18 @@
 # preview-deploy.yml
 #
 # Deploys a full-stack preview environment for every non-main branch push.
-# Each preview environment runs under /preview/<branch-slug>/ on the shared
-# dev CloudFront distribution.
+# Each preview environment runs under /preview/<branch-slug>/ on the dedicated
+# preview CloudFront distribution, with frontend assets in the shared S3 bucket
+# under a /<branch-slug>/ key prefix.
+#
+# Shared preview infrastructure (API Gateway + S3 bucket + CloudFront) is fully
+# isolated from dev. State lives in breadly-preview-tfstate.
 #
 # Jobs:
-#   slugify          Computes the branch slug and enforces the 5-preview limit.
-#   deploy           build backend → build frontend → terraform apply → S3 sync → create demo users → seed data → PR comment.
+#   slugify          Computes the branch slug.
+#   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
+#   build-frontend   Reuses build-frontend.yml with preview base-href.
+#   deploy           terraform apply (gateway + CDN + preview) -> s3 sync -> users -> PR comment.
 #
 # Triggers
 #   push to any branch except main.
@@ -32,15 +38,11 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Slugify branch name and enforce preview limit
+  # Slugify branch name
   # ---------------------------------------------------------------------------
   slugify:
-    name: Slugify & Check Limit
+    name: Slugify
     runs-on: ubuntu-latest
-    environment: preview
-    permissions:
-      id-token: write
-      contents: read
     outputs:
       slug: ${{ steps.slug.outputs.slug }}
     steps:
@@ -53,46 +55,38 @@ jobs:
         with:
           branch: ${{ github.ref_name }}
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-          role-session-name: github-preview-limit-check
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: "~1.6"
-          terraform_wrapper: false
-
-      - name: Terraform init (preview module)
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
-            -backend-config="region=${{ vars.AWS_REGION }}"
-
-      - name: Enforce 5-preview limit
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          SLUG="${{ steps.slug.outputs.slug }}"
-          # Count workspaces with prefix 'preview-', excluding the current branch's own workspace
-          COUNT=$(terraform workspace list | grep -E '^\s+preview-' | grep -v "preview-${SLUG}" | wc -l | tr -d ' ')
-          echo "Active preview workspaces (excluding this branch): $COUNT"
-          if [ "$COUNT" -ge 5 ]; then
-            echo "ERROR: Maximum of 5 concurrent preview environments reached."
-            echo "Delete a branch to free up a slot before deploying this preview."
-            exit 1
-          fi
-
   # ---------------------------------------------------------------------------
-  # Deploy preview environment (includes build steps)
+  # Build backend (reuses CI workflow)
   # ---------------------------------------------------------------------------
-  deploy:
-    name: Deploy
+  build-backend:
+    name: Build Backend
     needs: [slugify]
+    uses: ./.github/workflows/build-backend.yml
+    permissions:
+      contents: write
+      id-token: write
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Build frontend (reuses CI workflow with preview base-href)
+  # ---------------------------------------------------------------------------
+  build-frontend:
+    name: Build Frontend
+    needs: [slugify]
+    uses: ./.github/workflows/build-frontend.yml
+    permissions:
+      contents: write
+      id-token: write
+    with:
+      base_href: /preview/${{ needs.slugify.outputs.slug }}/
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Deploy preview environment
+  # ---------------------------------------------------------------------------
+  deploy-preview:
+    name: Deploy Preview
+    needs: [slugify, build-backend, build-frontend]
     runs-on: ubuntu-latest
     environment: preview
     permissions:
@@ -103,95 +97,65 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # --- Build backend ---
-
-      - name: Set up Node.js (backend)
-        uses: actions/setup-node@v6
+      - name: Download backend artifact
+        uses: actions/download-artifact@v8
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: breadly-backend/package-lock.json
+          name: backend-dist
 
-      - name: Install backend dependencies
-        working-directory: breadly-backend
-        run: npm ci
-
-      - name: Build backend
-        working-directory: breadly-backend
-        run: npm run build
-
-      - name: Install backend production dependencies
-        working-directory: breadly-backend
-        run: npm ci --omit=dev
-
-      - name: Create backend deployment zip
-        working-directory: breadly-backend
-        run: zip -r ../backend.zip dist/ node_modules/ package.json run.sh
-
-      # --- Build frontend ---
-
-      - name: Set up Node.js (frontend)
-        uses: actions/setup-node@v6
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v8
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: breadly-frontend/package-lock.json
+          name: frontend-dist
+          path: frontend-dist/
 
-      - name: Install frontend dependencies
-        working-directory: breadly-frontend
-        run: npm ci
+      # --- Step 1: Deploy shared preview API Gateway + S3 bucket ---
 
-      - name: Build frontend with preview base-href
-        working-directory: breadly-frontend
-        run: npm run build -- --base-href /preview/${{ needs.slugify.outputs.slug }}/
-
-      # --- Deploy ---
-
-      - name: Setup Terraform (preview)
+      - name: Setup Terraform (gateway)
         uses: ./.github/actions/terraform-setup
         with:
-          working_dir: infrastructure/aws/preview/deploy
-          environment: dev
-          session_name: github-preview-deploy-${{ needs.slugify.outputs.slug }}
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
+          session_name: github-preview-gateway-${{ needs.slugify.outputs.slug }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Select or create Terraform workspace
-        working-directory: infrastructure/aws/preview/deploy
-        run: terraform workspace select -or-create preview-${{ needs.slugify.outputs.slug }}
+      - name: Deploy preview gateway
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
 
-      - name: Get bucket ID from dev frontend state
-        id: frontend
-        working-directory: infrastructure/aws/frontend/deploy
+      - name: Get gateway outputs
+        id: gw
+        working-directory: infrastructure/aws/preview/gateway
         run: |
-          terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
-            -backend-config="region=${{ vars.AWS_REGION }}"
-          terraform workspace select dev
-          BUCKET_ID=$(terraform output -raw frontend_bucket_id)
-          echo "bucket_id=$BUCKET_ID" >> "$GITHUB_OUTPUT"
+          echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
+
+      # --- Step 2: Deploy preview CDN (ensures CloudFront URL exists for Cognito) ---
 
       - name: Setup Terraform (CDN)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/cdn/deploy
-          environment: dev
+          environment: preview
           session_name: github-preview-cdn-${{ needs.slugify.outputs.slug }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Ensure CDN behaviors are deployed
+      - name: Deploy preview CDN
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/cdn/deploy
-          environment: dev
+          environment: preview
+          extra_tf_vars: >-
+            -var="preview_only=true"
 
-      - name: Get CloudFront outputs from CDN state
+      - name: Get CloudFront URL
         id: cf
         working-directory: infrastructure/aws/cdn/deploy
         run: |
@@ -200,6 +164,19 @@ jobs:
           DIST_ID=$(terraform output -raw cloudfront_distribution_id)
           echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
 
+      # --- Step 3: Deploy per-branch preview stack ---
+
+      - name: Setup Terraform (preview)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/deploy
+          environment: preview
+          session_name: github-preview-deploy-${{ needs.slugify.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
       - name: Export Terraform secrets
         run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
 
@@ -207,24 +184,67 @@ jobs:
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/preview/deploy
-          environment: dev
+          environment: preview
+          workspace: preview-${{ needs.slugify.outputs.slug }}
           extra_tf_vars: >-
             -var="branch_slug=${{ needs.slugify.outputs.slug }}"
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
             -var="cloudfront_url=${{ steps.cf.outputs.cloudfront_url }}"
+
+      # --- Step 4: Upload frontend assets to shared S3 bucket ---
+
+      - name: Upload frontend to shared S3 bucket
+        run: |
+          aws s3 sync frontend-dist/ \
+            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ needs.slugify.outputs.slug }}/" \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          # Upload HTML and JSON with no-cache headers
+          aws s3 sync frontend-dist/ \
+            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ needs.slugify.outputs.slug }}/" \
+            --exclude "*" \
+            --include "*.html" \
+            --include "*.json" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      # --- Step 5: Create Cognito users ---
 
       - name: Get Cognito User Pool ID
         id: cognito
         working-directory: infrastructure/aws/preview/deploy
         run: echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
 
-      - name: Create demo users
+      - name: Create user groups
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
           USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
 
-          # Create demo user (ignores error if already exists)
+          # Create groups matching roles.config.ts (idempotent — ignores if already exists)
+          aws cognito-idp create-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --group-name "ADMIN" \
+            --description "Full administrative access" || true
+
+          aws cognito-idp create-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --group-name "USER" \
+            --description "Standard user access" || true
+
+          aws cognito-idp create-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --group-name "PREMIUM_USER" \
+            --description "Premium tier user access" || true
+
+      - name: Create demo users and assign groups
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
+
+          # --- Demo user (USER group) ---
           aws cognito-idp admin-create-user \
             --user-pool-id "$USER_POOL_ID" \
             --username "demo@breadly.dev" \
@@ -236,7 +256,12 @@ jobs:
             --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" \
             --permanent
 
-          # Create admin user (ignores error if already exists)
+          aws cognito-idp admin-add-user-to-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "demo@breadly.dev" \
+            --group-name "USER"
+
+          # --- Admin user (ADMIN group) ---
           aws cognito-idp admin-create-user \
             --user-pool-id "$USER_POOL_ID" \
             --username "admin@breadly.dev" \
@@ -248,13 +273,12 @@ jobs:
             --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" \
             --permanent
 
-      - name: Sync frontend to S3
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          aws s3 sync breadly-frontend/dist/breadly-frontend/browser/ \
-            "s3://${{ steps.frontend.outputs.bucket_id }}/preview/${{ needs.slugify.outputs.slug }}/" \
-            --delete
+          aws cognito-idp admin-add-user-to-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "admin@breadly.dev" \
+            --group-name "ADMIN"
+
+      # --- Step 6: Invalidate, seed, and comment ---
 
       - name: Invalidate CloudFront cache for preview path
         env:
@@ -300,3 +324,17 @@ jobs:
               gh pr comment "$PR_NUMBER" --body "$BODY"
             fi
           fi
+
+      - name: Write preview URL to job summary
+        run: |
+          PREVIEW_URL="${{ steps.cf.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
+          echo "## Preview Environment" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch \`${{ github.ref_name }}\` deployed to:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**$PREVIEW_URL**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| User | Email | Group |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Demo | \`demo@breadly.dev\` | USER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Admin | \`admin@breadly.dev\` | ADMIN |" >> "$GITHUB_STEP_SUMMARY"

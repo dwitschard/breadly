@@ -23,14 +23,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicConfig'
-        '404':
+        '503':
           description: Configuration not available (environment variables not set)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /recipe:
+  /recipes:
     get:
       operationId: getRecipes
       summary: List all recipes
@@ -71,7 +71,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /recipe/{id}:
+  /recipes/{id}:
     parameters:
       - name: id
         in: path
@@ -176,6 +176,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /profile:
+    get:
+      operationId: getProfile
+      summary: Get the authenticated user's profile
+      description: Returns profile information derived from the authenticated user's JWT claims.
+      tags:
+        - Profile
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      operationId: getHealth
+      summary: Get system health status
+      description: Returns the health status of the API and its dependencies.
+      tags:
+        - Operations
+      responses:
+        '200':
+          description: Health status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
 components:
   schemas:
     Recipe:
@@ -219,6 +255,79 @@ components:
           type: string
           description: Name of the recipe
           minLength: 1
+
+    Profile:
+      type: object
+      required:
+        - sub
+        - email
+        - emailVerified
+        - roles
+      properties:
+        sub:
+          type: string
+          description: Subject identifier (unique user ID)
+        email:
+          type: string
+          description: User's email address
+        emailVerified:
+          type: boolean
+          description: Whether the email address has been verified
+        name:
+          type: string
+          description: User's full display name
+        givenName:
+          type: string
+          description: User's first name
+        familyName:
+          type: string
+          description: User's last name
+        picture:
+          type: string
+          description: URL to the user's profile picture
+        roles:
+          type: array
+          items:
+            type: string
+          description: List of roles assigned to the user
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - checks
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+          description: Overall system health status
+        checks:
+          type: object
+          required:
+            - api
+            - database
+          properties:
+            api:
+              $ref: '#/components/schemas/HealthCheck'
+            database:
+              $ref: '#/components/schemas/HealthCheck'
+
+    HealthCheck:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+          description: Status of this individual check
+        responseTime:
+          type: string
+          description: Response time of the check
 
     ErrorResponse:
       type: object

@@ -1,5 +1,5 @@
 # backend.tf — S3 remote state backend for preview environments.
-# Uses the same dev state bucket as the main backend, with a different key prefix.
+# Uses the preview state bucket (breadly-preview-tfstate), supplied via -backend-config.
 # Each branch gets its own Terraform workspace: preview-<slug>.
 
 terraform {

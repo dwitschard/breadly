@@ -40,6 +40,11 @@ variable "cognito_user_pool_client_id" {
   type        = string
 }
 
+variable "cognito_hosted_ui_domain" {
+  description = "Full Cognito Hosted UI domain URL. Passed through as an output for operator reference."
+  type        = string
+}
+
 variable "aws_region" {
   description = "AWS region."
   type        = string

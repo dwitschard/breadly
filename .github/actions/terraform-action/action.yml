@@ -8,7 +8,7 @@ inputs:
     description: Path to the Terraform root module
     required: true
   environment:
-    description: Target environment (dev | prod)
+    description: Target environment (dev | prod | preview)
     required: true
   local_backend:
     description: >
@@ -18,6 +18,12 @@ inputs:
     default: "false"
   extra_tf_vars:
     description: Additional -var flags as a single string — skipped when empty
+    required: false
+    default: ""
+  workspace:
+    description: >
+      Terraform workspace name to select. Defaults to the environment input.
+      Use this to pass a branch slug for preview deployments.
     required: false
     default: ""
 
@@ -31,7 +37,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: |
-        terraform workspace select -or-create ${{ inputs.environment }}
+        terraform workspace select -or-create ${{ inputs.workspace || inputs.environment }}
 
     - name: Update Terraform State
       if: inputs.local_backend == 'false'

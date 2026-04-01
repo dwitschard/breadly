@@ -5,23 +5,32 @@ variable "name" {
   type        = string
 }
 
+variable "preview_only" {
+  description = "When true, no main S3 origin is created. The distribution only serves preview environments via a shared preview S3 bucket and API Gateway."
+  type        = bool
+  default     = false
+}
+
 variable "bucket_id" {
-  description = "S3 bucket name; used to construct the OAC bucket policy."
+  description = "S3 bucket name; used to construct the OAC bucket policy. Ignored when preview_only = true."
   type        = string
+  default     = ""
 }
 
 variable "bucket_arn" {
-  description = "S3 bucket ARN; used in the OAC bucket policy resource statement."
+  description = "S3 bucket ARN; used in the OAC bucket policy resource statement. Ignored when preview_only = true."
   type        = string
+  default     = ""
 }
 
 variable "bucket_regional_domain_name" {
-  description = "S3 regional domain name used as the CloudFront origin (e.g. breadly-dev-frontend.s3.eu-central-1.amazonaws.com)."
+  description = "S3 regional domain name used as the CloudFront origin. Ignored when preview_only = true."
   type        = string
+  default     = ""
 }
 
 variable "api_gateway_url" {
-  description = "HTTPS URL of the API Gateway endpoint (no trailing slash), e.g. https://xxxxx.execute-api.eu-central-1.amazonaws.com. Used as the CloudFront origin for /api/* requests."
+  description = "HTTPS URL of the API Gateway endpoint (no trailing slash)."
   type        = string
 }
 
@@ -29,4 +38,22 @@ variable "tags" {
   description = "Additional tags merged onto all resources."
   type        = map(string)
   default     = {}
+}
+
+variable "preview_bucket_id" {
+  description = "Name of the shared preview S3 bucket. Required when preview_only = true."
+  type        = string
+  default     = ""
+}
+
+variable "preview_bucket_arn" {
+  description = "ARN of the shared preview S3 bucket. Required when preview_only = true."
+  type        = string
+  default     = ""
+}
+
+variable "preview_bucket_regional_domain_name" {
+  description = "Regional S3 domain name of the shared preview bucket. Required when preview_only = true."
+  type        = string
+  default     = ""
 }

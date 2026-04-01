@@ -1,7 +1,39 @@
 # AWS Infrastructure — Breadly
 
-Terraform configuration for deploying Breadly's frontend to AWS.
+Terraform configuration for deploying Breadly to AWS.
 All resources are managed via [Terraform](https://www.terraform.io/) and organised into reusable modules.
+
+---
+
+## Architecture overview
+
+Breadly runs on AWS with the following high-level architecture:
+
+- **Frontend** — Angular SPA hosted in S3, served through CloudFront
+- **Backend** — Express API running on Lambda (dual: private + public), exposed through API Gateway
+- **CDN** — CloudFront distribution that routes traffic to S3 (static assets) and API Gateway (API requests)
+- **Preview environments** — per-branch full-stack deployments under `/preview/<slug>/` on a dedicated preview CloudFront distribution, with a single shared S3 bucket using key prefixes for isolation
+
+### Request routing (CloudFront)
+
+**Dev/Prod distribution:**
+
+```
+CloudFront Distribution
+├── /api/*           → API Gateway (main backend)
+└── /* (default)     → Main S3 bucket (Angular SPA)
+```
+
+**Preview distribution:**
+
+```
+CloudFront Distribution
+├── /preview/*/api/* → API Gateway (preview backends, per-branch routes)
+├── /preview/*       → Shared S3 bucket (CF Function prepends /<slug>/ key prefix)
+└── /* (default)     → Fallback
+```
+
+Each preview environment stores frontend assets under a `/<slug>/` key prefix in the shared S3 bucket. A CloudFront Function strips the `/preview/<slug>` prefix and prepends the slug as an S3 key prefix, rewriting SPA deep links to `/<slug>/index.html`.
 
 ---
 
@@ -9,31 +41,67 @@ All resources are managed via [Terraform](https://www.terraform.io/) and organis
 
 ```
 aws/
+├── deploy/                              # Merged root module — dev/prod (frontend + backend + CDN)
+│   ├── providers.tf
+│   ├── backend.tf                       # S3 remote state (key: deploy/terraform.tfstate)
+│   ├── variables.tf
+│   ├── main.tf                          # Orchestrates: S3, Cognito, Lambda x2, API GW, CloudFront
+│   └── outputs.tf
 ├── frontend/
-│   ├── bootstrap/                   # Run once per environment to create state bucket + lock table
-│   │   ├── providers.tf             # AWS provider (no role assumption)
-│   │   ├── backend.tf               # Local backend (state stored on disk, gitignored)
-│   │   ├── variables.tf             # aws_account_id, aws_region, project_name, environment
-│   │   ├── main.tf                  # S3 state bucket, DynamoDB lock table
-│   │   └── outputs.tf               # Prints bucket/table names and next steps
-│   └── infra/                       # Root module — frontend deployment (runs on every deploy)
-│       ├── providers.tf             # AWS provider + account guard + optional role assumption
-│       ├── backend.tf               # S3 remote state + DynamoDB locking
-│       ├── variables.tf             # All input variables
-│       ├── main.tf                  # Calls modules, workspace-aware resource naming
-│       ├── outputs.tf               # Prints website URL and bucket details after apply
-│       ├── envs/
-│       │   ├── dev.tfvars           # Dev environment variable values
-│       │   └── prod.tfvars          # Prod environment variable values
+│   ├── setup/                           # Run once per environment to create state bucket + lock table
+│   │   ├── providers.tf
+│   │   ├── backend.tf                   # Local backend (state stored on disk, gitignored)
+│   │   ├── variables.tf
+│   │   ├── main.tf
+│   │   └── outputs.tf
+│   └── deploy/
 │       └── modules/
-│           └── s3_static_site/      # Reusable module: public S3 static website
+│           └── s3_static_site/          # Reusable module: S3 bucket + file upload
 │               ├── variables.tf
 │               ├── main.tf
 │               └── outputs.tf
+├── backend/
+│   └── deploy/
+│       └── modules/
+│           └── api_gateway/             # API Gateway HTTP API + routes + authorizer
+│               ├── variables.tf
+│               ├── main.tf
+│               └── outputs.tf
+├── cdn/
+│   └── deploy/                          # Root module — CloudFront distribution (also used standalone for preview CDN)
+│       ├── providers.tf
+│       ├── backend.tf
+│       ├── variables.tf                 # preview_only flag for preview-only mode
+│       ├── main.tf                      # Reads remote state (deploy or gateway), calls cloudfront module
+│       ├── outputs.tf
+│       └── modules/
+│           └── cloudfront/              # CloudFront distribution, OAC, bucket policies, CF Function
+│               ├── variables.tf
+│               ├── main.tf
+│               └── outputs.tf
+├── preview/
+│   ├── gateway/                         # Shared preview infrastructure (API Gateway + S3 bucket)
+│   │   ├── providers.tf
+│   │   ├── backend.tf
+│   │   ├── variables.tf
+│   │   ├── main.tf                      # Shared API Gateway + shared S3 bucket for all previews
+│   │   └── outputs.tf
+│   └── deploy/                          # Per-branch preview environment
+│       ├── providers.tf
+│       ├── backend.tf
+│       ├── variables.tf                 # branch_slug, dist_zip_path, cloudfront_url
+│       ├── main.tf                      # Per-preview: Cognito, Lambda x2, API GW routes
+│       ├── outputs.tf
+│       └── modules/
+│           └── api_gateway_routes/      # Adds preview routes to the shared API Gateway
+│               └── ...
+├── modules/                             # Shared modules used across root modules
+│   ├── cognito/                         # Cognito User Pool + App Client + Hosted UI
+│   └── lambda_express/                  # Lambda function with Express handler
+└── README.md
 ```
 
 ---
-
 
 ## Prerequisites
 
@@ -60,8 +128,8 @@ export AWS_SESSION_TOKEN=...        # if using temporary credentials
 
 ## One-time bootstrap
 
-The S3 state bucket and DynamoDB lock table are managed by the `frontend/bootstrap/` Terraform root.
-Run this **once per environment per AWS account** before the first frontend deployment.
+The S3 state bucket and DynamoDB lock table are managed by the `frontend/setup/` Terraform root.
+Run this **once per environment per AWS account** before the first deployment.
 
 Bootstrap creates:
 
@@ -73,7 +141,7 @@ Bootstrap creates:
 ### Run bootstrap
 
 ```bash
-cd infrastructure/aws/frontend/bootstrap
+cd infrastructure/aws/frontend/setup
 
 terraform init
 
@@ -110,9 +178,79 @@ Settings → Secrets and variables → Actions → Secrets:
 ### Bootstrap state file
 
 The bootstrap root uses a **local backend** — its state file is stored at
-`infrastructure/aws/frontend/bootstrap/terraform.tfstate` and is covered by `.gitignore`.
+`infrastructure/aws/frontend/setup/terraform.tfstate` and is covered by `.gitignore`.
 Back it up somewhere safe (a personal S3 bucket or a password manager) so you
 can manage bootstrap resources later (e.g. adding a new environment).
+
+---
+
+## Terraform root modules
+
+### `deploy/` — Merged dev/prod root
+
+The unified root module for dev and prod environments. Orchestrates all resources in a single `terraform apply`:
+
+- **S3 static site** — Angular SPA bucket + file upload (via `frontend/deploy/modules/s3_static_site`)
+- **Cognito** — User Pool + App Client + Hosted UI (via `modules/cognito`)
+- **Lambda x2** — private (authenticated) + public (unauthenticated) Express backends (via `modules/lambda_express`)
+- **API Gateway** — HTTP API with routes and JWT authorizer (via `backend/deploy/modules/api_gateway`)
+- **CloudFront** — CDN distribution fronting S3 + API Gateway (via `cdn/deploy/modules/cloudfront`)
+
+Cognito callback URLs are computed internally from the CloudFront domain — no external `frontend_urls` variable needed. Uses Terraform workspaces (`dev`, `prod`) for environment isolation.
+
+### `cdn/deploy/` — CloudFront distribution (standalone for preview)
+
+In dev/prod, the CloudFront module is called directly from `deploy/`. The `cdn/deploy/` root module is used standalone only for the **preview CDN**, where it reads remote state from `preview/gateway/` to get the API Gateway endpoint and shared S3 bucket details.
+
+Set `preview_only = true` when deploying for preview environments.
+
+### `preview/gateway/` — Shared preview infrastructure
+
+Creates resources shared across all preview branches:
+
+- **API Gateway HTTP API** — single shared gateway; each preview branch adds routes
+- **S3 bucket** — single shared bucket for all preview frontend assets (key prefix per branch)
+
+Deployed once and updated infrequently.
+
+### `preview/deploy/` — Per-branch preview environment
+
+Creates all per-branch resources for a single preview. Uses Terraform workspaces (`preview-<slug>`) to isolate state per branch.
+
+Each preview creates:
+- **Cognito User Pool** — per-preview with demo users and groups
+- **Lambda x2** — private (authenticated) + public (unauthenticated) Express backends
+- **API Gateway routes** — added to the shared preview API Gateway under `/preview/<slug>/api/*`
+
+Frontend files are uploaded to the shared S3 bucket by the workflow via `aws s3 sync`, not by Terraform.
+
+---
+
+## Preview environments
+
+### How it works
+
+1. **Deploy** (`preview-deploy.yml`) — triggered on push to any non-main branch:
+   - Builds frontend with `--base-href=/preview/<slug>/`
+   - Builds backend as a Lambda zip
+   - Ensures shared gateway (API Gateway + S3 bucket) and CDN are deployed
+   - Creates/updates preview workspace (`preview-<slug>`) with Cognito, Lambda, and API Gateway routes
+   - Uploads frontend assets to the shared S3 bucket under `/<slug>/` key prefix via `aws s3 sync`
+   - Invalidates the CloudFront cache for the preview path
+
+2. **Cleanup** (`preview-cleanup.yml`) — triggered when a branch is deleted:
+   - Runs `terraform destroy` in the preview workspace (destroys Cognito, Lambda, API GW routes)
+   - Deletes frontend assets from the shared S3 bucket (`aws s3 rm s3://<bucket>/<slug>/ --recursive`)
+   - Deletes the Terraform workspace
+
+### Preview URLs
+
+```
+https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/        # Frontend SPA
+https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/api/*   # Backend API
+```
+
+There is no hard limit on the number of concurrent preview environments. The CDN has a single static `/preview/*` cache behavior for the shared S3 bucket, so adding previews does not consume additional CloudFront behaviors.
 
 ---
 
@@ -120,7 +258,6 @@ can manage bootstrap resources later (e.g. adding a new environment).
 
 ### Setting your AWS account ID
 
-Each environment's `.tfvars` file contains a placeholder for the AWS account ID.
 **Do not commit real account IDs to source control.** Supply them at apply time via an environment variable:
 
 ```bash
@@ -130,7 +267,7 @@ export TF_VAR_aws_account_id="123456789012"
 Or pass them as a `-var` flag:
 
 ```bash
-terraform apply -var-file=envs/dev.tfvars -var="aws_account_id=123456789012"
+terraform apply -var="aws_account_id=123456789012"
 ```
 
 ### Cross-account deployments (optional)
@@ -145,188 +282,33 @@ The provider will assume this role before making any AWS API call.
 
 ---
 
-## Deployment workflow
-
-All commands are run from `infrastructure/aws/frontend/infra/`.
-
-### 1. Build the Angular frontend
-
-```bash
-cd breadly-frontend
-npm install
-npm run build
-# Output: breadly-frontend/dist/breadly-frontend/browser/
-```
-
-### 2. Initialise Terraform
-
-```bash
-cd infrastructure/aws/frontend/infra
-
-terraform init \
-  -backend-config="bucket=breadly-dev-tfstate" \
-  -backend-config="dynamodb_table=breadly-dev-tfstate-lock" \
-  -backend-config="region=eu-central-1"
-```
-
-### 3. Select a workspace
-
-Workspaces keep dev and prod state and resource names fully isolated.
-
-```bash
-# Create the workspace on first use, then select it on subsequent runs
-terraform workspace select -or-create dev    # or prod
-terraform workspace list                     # confirm active workspace
-```
-
-### 4. Plan
-
-Review what Terraform will create before applying:
-
-```bash
-terraform plan -var-file=envs/dev.tfvars
-```
-
-### 5. Apply
-
-```bash
-terraform apply -var-file=envs/dev.tfvars
-```
-
-After a successful apply, the website URL is printed:
-
-```
-Outputs:
-  frontend_website_url = "http://breadly-dev-frontend.s3-website.eu-central-1.amazonaws.com"
-```
-
-### Deploying to production
-
-```bash
-terraform workspace select prod
-terraform apply -var-file=envs/prod.tfvars
-```
-
----
-
-## Re-deploying after a frontend change
-
-The S3 upload uses each file's MD5 hash (`etag`) to detect changes.
-Only modified files are re-uploaded — no full re-sync is needed.
-
-```bash
-# 1. Rebuild
-cd breadly-frontend && npm run build
-
-# 2. Apply (Terraform will upload only changed files)
-cd infrastructure/aws/frontend/infra
-terraform apply -var-file=envs/dev.tfvars
-```
-
----
-
-## Tear down
-
-```bash
-# Dev — bucket is emptied and destroyed automatically (force_destroy = true)
-terraform workspace select dev
-terraform destroy -var-file=envs/dev.tfvars
-
-# Prod — protected; force_destroy is false, so you must empty the bucket
-# manually before destroy will succeed
-terraform workspace select prod
-terraform destroy -var-file=envs/prod.tfvars
-```
-
----
-
-## Inputs reference
-
-### Root module (`frontend/infra/`)
-
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `aws_account_id` | `string` | — | 12-digit AWS account ID. Required. |
-| `aws_region` | `string` | `eu-central-1` | AWS region for all resources. |
-| `aws_role_arn` | `string` | `""` | IAM role ARN to assume. Empty = use current credentials. |
-| `project_name` | `string` | `breadly` | Prefix applied to all resource names. |
-| `frontend_dist_path` | `string` | `../../../breadly-frontend/dist/breadly-frontend/browser` | Path to the compiled Angular output. |
-| `index_document` | `string` | `index.html` | S3 website index document. |
-| `error_document` | `string` | `index.html` | S3 website error document (same as index for SPA routing). |
-
-### `s3_static_site` module
-
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `bucket_name` | `string` | — | Globally unique S3 bucket name. |
-| `dist_path` | `string` | — | Path to compiled frontend files to upload. |
-| `index_document` | `string` | `index.html` | Website index document. |
-| `error_document` | `string` | `index.html` | Website error document. |
-| `force_destroy` | `bool` | `false` | Allow bucket deletion even if non-empty. |
-| `tags` | `map(string)` | `{}` | Additional resource tags. |
-
----
-
-## Outputs reference
-
-| Output | Description |
-|---|---|
-| `frontend_website_url` | Public HTTP URL of the deployed frontend. |
-| `frontend_website_domain` | Bare domain of the S3 website endpoint. |
-| `frontend_bucket_id` | Name of the S3 bucket. |
-| `frontend_bucket_arn` | ARN of the S3 bucket (for IAM policies). |
-| `frontend_bucket_regional_domain` | Regional S3 domain — use as CloudFront origin if added later. |
-| `frontend_uploaded_file_count` | Number of files synced in the last apply. |
-| `active_workspace` | Terraform workspace active during this apply. |
-
----
-
-## Extending the infrastructure
-
-Add new modules alongside `s3_static_site/` in the `modules/` directory, then call them from `main.tf`:
-
-```hcl
-# infrastructure/aws/frontend/infra/main.tf
-
-module "api_ecs" {
-  source = "./modules/ecs_service"
-  # ...
-}
-```
-
-Each module is self-contained and can be composed independently without modifying existing resources.
-
----
-
 ## CI/CD
 
-Deployments are driven by the GitHub Actions workflow at
-`.github/workflows/deploy-frontend.yml`.
+Deployments are driven by GitHub Actions workflows.
 
-### Triggers
+### Workflows
 
-| Event | Environment deployed |
-|---|---|
-| Push to `main` (paths: `breadly-frontend/**` or `infrastructure/aws/frontend/infra/**`) | `dev` — automatic |
-| `workflow_dispatch` → select `dev` or `prod` | chosen environment — manual |
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `deploy.yml` | Called by `build-backend.yml` or `build-frontend.yml` on push to `main` | Deploys backend + frontend + CDN to dev via merged root |
+| `preview-deploy.yml` | Push to any non-main branch | Deploys full-stack preview environment |
+| `preview-cleanup.yml` | Branch deletion | Tears down preview environment |
+| `teardown-application.yml` | Manual dispatch | Destroys all resources for a chosen environment |
 
-**Production is never deployed automatically.** To deploy to prod:
-1. Open the repository on GitHub.
-2. Go to **Actions → Deploy Frontend**.
-3. Click **Run workflow**, select `prod`, and confirm.
+**Production is never deployed automatically.** Use manual workflow dispatch on `deploy.yml`.
 
-### How secrets and variables map to Terraform
+### GitHub secrets and variables
 
-All sensitive values are passed into Terraform as `TF_VAR_*` environment variables sourced from GitHub Secrets — nothing is hardcoded in any committed file. Non-sensitive values are stored as GitHub Variables.
+| GitHub setting | Type | Purpose |
+|---|---|---|
+| `AWS_OIDC_ROLE_ARN` | Secret | OIDC role the runner assumes |
+| `AWS_ACCOUNT_ID` | Secret | Provider account guard |
+| `AWS_REGION` | Variable | AWS region for all resources |
+| `MONGODB_URI` | Secret (per-env) | MongoDB connection string for Lambda |
+| `PREVIEW_DEMO_PASSWORD` | Secret (preview) | Password for preview demo user |
+| `PREVIEW_ADMIN_PASSWORD` | Secret (preview) | Password for preview admin user |
 
-| GitHub setting | Type | Terraform variable / flag | Purpose |
-|---|---|---|---|
-| `AWS_OIDC_ROLE_ARN` | Secret | `configure-aws-credentials` action | OIDC role the runner assumes (created manually in IAM) |
-| `AWS_ACCOUNT_ID` | Secret | `TF_VAR_aws_account_id` | Provider account guard |
-| `AWS_REGION` | Variable | `TF_VAR_aws_region` + `-backend-config="region=..."` | AWS region |
-
-> `TF_STATE_BUCKET` and `TF_LOCK_TABLE` are not required as GitHub Variables.
-> Both workflows derive their names from `AWS_ACCOUNT_ID` and the target environment
-> using the convention: `breadly-<env>-tfstate` and `breadly-<env>-tfstate-lock`.
+> State bucket and lock table names are derived automatically from `AWS_ACCOUNT_ID`
+> and the environment using the convention: `breadly-<env>-tfstate` / `breadly-<env>-tfstate-lock`.
 
 For setup instructions (OIDC trust policy, IAM permissions, adding secrets to the repository) see **`.github/workflows/README.md`**.

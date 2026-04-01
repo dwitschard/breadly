@@ -32,7 +32,7 @@ variable "dist_zip_path" {
 }
 
 variable "frontend_urls" {
-  description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). Set via the OIDC_CALLBACK_URL GitHub Actions variable."
+  description = "Comma-separated frontend URLs for the Cognito App Client callback and logout lists (e.g. \"http://localhost:4200,https://example.com\"). Derived automatically from the CDN stack's CloudFront URL during deployment."
   type        = string
   default     = ""
 }

@@ -1,0 +1,69 @@
+{
+  "COMMON": {
+    "SAVE": "Speichern",
+    "CANCEL": "Abbrechen",
+    "DELETE": "L\u00f6schen",
+    "LOADING": "Laden...",
+    "ERROR": "Ein Fehler ist aufgetreten",
+    "ADD": "Hinzuf\u00fcgen",
+    "RELOAD": "Aktualisieren"
+  },
+  "NAV": {
+    "RECIPES": "Rezepte",
+    "HEALTH": "Systemstatus",
+    "PROFILE": "Profil",
+    "LOGIN": "Anmelden",
+    "LOGOUT": "Abmelden"
+  },
+  "HOME": {
+    "TITLE": "Willkommen bei Breadly",
+    "SUBTITLE": "Deine Rezeptverwaltung",
+    "LOGIN_BUTTON": "Jetzt anmelden"
+  },
+  "RECIPES": {
+    "TITLE": "Rezepte",
+    "ADD_TITLE": "Rezept hinzuf\u00fcgen",
+    "NAME_PLACEHOLDER": "Rezeptname",
+    "NAME_LABEL": "Rezeptname",
+    "ALL_TITLE": "Alle Rezepte",
+    "EMPTY": "Noch keine Rezepte vorhanden. Erstelle oben ein neues.",
+    "DELETE_LABEL": "Rezept l\u00f6schen: {{name}}",
+    "LOAD_ERROR": "Rezepte konnten nicht geladen werden.",
+    "CREATE_ERROR": "Rezept konnte nicht erstellt werden.",
+    "DELETE_ERROR": "Rezept konnte nicht gel\u00f6scht werden."
+  },
+  "HEALTH": {
+    "TITLE": "Systemstatus",
+    "RELOAD": "Aktualisieren",
+    "RELOADING": "Laden...",
+    "API": "API",
+    "DATABASE": "Datenbank",
+    "OPERATIONAL": "Betriebsbereit",
+    "ERROR": "Fehler",
+    "OVERALL_STATUS": "Gesamtstatus:",
+    "ALL_OPERATIONAL": "Alle Systeme betriebsbereit",
+    "DEGRADED": "Eingeschr\u00e4nkt",
+    "LOAD_ERROR": "Systemstatus konnte nicht abgerufen werden."
+  },
+  "PROFILE": {
+    "TITLE": "Profil",
+    "FIRST_NAME": "Vorname",
+    "LAST_NAME": "Nachname",
+    "EMAIL": "E-Mail",
+    "VERIFIED": "Verifiziert",
+    "UNVERIFIED": "Nicht verifiziert",
+    "USER_ID": "Benutzer-ID",
+    "ROLES": "Rollen",
+    "UNAVAILABLE": "Profilinformationen sind nicht verf\u00fcgbar.",
+    "LOADING": "Profil wird geladen..."
+  },
+  "AUTH": {
+    "LOGIN_TITLE": "Anmeldung",
+    "LOGOUT_TITLE": "Abmeldung",
+    "LOGOUT_MESSAGE": "Du wurdest abgemeldet."
+  },
+  "CONFIG": {
+    "ERROR_TITLE": "Konfigurationsfehler",
+    "ERROR_MESSAGE": "Die Anwendungskonfiguration konnte nicht geladen werden. Bitte versuche es sp\u00e4ter erneut."
+  }
+}

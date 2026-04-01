@@ -29,6 +29,7 @@ on:
         options:
           - dev
           - prod
+          - preview
       action:
         description: "Action to perform on the bootstrap stack"
         required: true

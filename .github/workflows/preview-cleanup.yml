@@ -4,7 +4,7 @@
 # Triggered automatically when a branch is deleted.
 #
 # Jobs:
-#   cleanup  terraform destroy → S3 prefix deletion → workspace deletion.
+#   cleanup  terraform destroy -> s3 cleanup -> workspace deletion.
 #
 # Required GitHub environment: preview
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID
@@ -38,26 +38,16 @@ jobs:
         with:
           branch: ${{ github.event.ref }}
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+      - name: Setup Terraform (preview module)
+        uses: ./.github/actions/terraform-setup
         with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-          role-session-name: github-preview-cleanup-${{ steps.slug.outputs.slug }}
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: "~1.6"
-          terraform_wrapper: false
-
-      - name: Terraform init (preview module)
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
-            -backend-config="region=${{ vars.AWS_REGION }}"
+          working_dir: infrastructure/aws/preview/deploy
+          environment: preview
+          session_name: github-preview-cleanup-${{ steps.slug.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
 
       - name: Select workspace (skip if not found)
         id: workspace
@@ -89,26 +79,34 @@ jobs:
         working-directory: infrastructure/aws/preview/deploy
         run: terraform destroy -auto-approve
 
-      - name: Get frontend bucket ID from dev state
-        if: steps.workspace.outputs.exists == 'true'
-        id: frontend
-        working-directory: infrastructure/aws/frontend/deploy
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-dev-tfstate" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-dev-tfstate-lock" \
-            -backend-config="region=${{ vars.AWS_REGION }}"
-          terraform workspace select dev
-          echo "bucket_id=$(terraform output -raw frontend_bucket_id)" >> "$GITHUB_OUTPUT"
+      # --- Remove frontend assets from shared S3 bucket ---
 
-      - name: Delete S3 preview prefix
+      - name: Setup Terraform (gateway)
         if: steps.workspace.outputs.exists == 'true'
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
+          session_name: github-preview-cleanup-gw-${{ steps.slug.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Get shared preview bucket
+        if: steps.workspace.outputs.exists == 'true'
+        id: gw
+        working-directory: infrastructure/aws/preview/gateway
         run: |
-          aws s3 rm \
-            "s3://${{ steps.frontend.outputs.bucket_id }}/preview/${{ steps.slug.outputs.slug }}/" \
-            --recursive
+          terraform workspace select preview
+          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
+
+      - name: Delete frontend assets from shared S3 bucket
+        if: steps.workspace.outputs.exists == 'true'
+        run: |
+          aws s3 rm "s3://${{ steps.gw.outputs.preview_bucket }}/${{ steps.slug.outputs.slug }}/" --recursive
+
+      # --- Delete Terraform workspace ---
 
       - name: Delete Terraform workspace
         if: steps.workspace.outputs.exists == 'true'
