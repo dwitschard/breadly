@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx --env-file=./src/.env src/server.ts",
-    "generate-api": "openapi-typescript ../breadly-api/openapi.yaml -o src/app/generated/api/openapi.ts",
+    "generate-api": "openapi-typescript ../breadly-api/openapi.yaml -o src/app/generated/api/index.ts --root-types --root-types-no-schema-prefix",
     "build": "npm run generate-api && tsc -p tsconfig.build.json",
     "test": "jest --no-cache --detectOpenHandles",
     "test:ci": "npm run generate-api && jest --no-cache --detectOpenHandles --forceExit",

@@ -7,7 +7,7 @@ import {
     replaceRecipe,
     saveRecipe,
 } from './recipe.service.js';
-import { CreateRecipeDto, PatchRecipeDto, UpdateRecipeDto } from '../../app/generated/api';
+import { CreateRecipeDto, PatchRecipeDto, UpdateRecipeDto } from '../../app/generated/api/index.js';
 import {validate} from '../../common/validation.middleware.js';
 import {
     CreateRecipeDtoSchema,
