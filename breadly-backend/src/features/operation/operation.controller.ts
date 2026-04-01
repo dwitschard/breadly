@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { ApplicationError } from '../../domain/error.types.js';
 import { ApplicationDatabase } from '../../database/application-database.js';
-import { HealthResponse, HealthResponseStatusEnum, HealthCheckStatusEnum } from '../../app/generated/api/index.js';
+import { HealthResponse } from '../../app/generated/api';
 
 const operationController = Router();
 
@@ -20,17 +20,17 @@ operationController.get('/generic-error', () => {
 operationController.get('/health', async (_req: express.Request, res: express.Response) => {
   const dbOk = await ApplicationDatabase.ping();
 
-  const status = dbOk ? HealthResponseStatusEnum.Ok : HealthResponseStatusEnum.Degraded;
+  const status = dbOk ? 'ok' : 'degraded';
 
   const response: HealthResponse = {
     status,
     checks: {
       api: {
-        status: HealthCheckStatusEnum.Ok,
+        status: 'ok',
         responseTime: undefined,
       },
       database: {
-        status: dbOk ? HealthCheckStatusEnum.Ok : HealthCheckStatusEnum.Degraded,
+        status: dbOk ? 'ok' : 'degraded',
         responseTime: undefined,
       },
     },

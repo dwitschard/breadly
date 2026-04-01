@@ -1,10 +1,10 @@
 import {ObjectId, UpdateFilter, WithId} from 'mongodb';
 import {ApplicationDatabase} from '../../database/application-database.js';
 import {RecipeModel} from './recipe.model.js';
-import { CreateRecipeDto, PatchRecipeDto, Recipe, UpdateRecipeDto } from "../../app/generated/api/index.js";
+import { CreateRecipeDto, PatchRecipeDto, Recipe, UpdateRecipeDto } from '../../app/generated/api/index.js';
 
 const toRecipe = (doc: WithId<RecipeModel>): Recipe => ({
-    id: doc._id.toHexString(),
+    _id: doc._id.toHexString(),
     name: doc.name,
 });
 
@@ -20,7 +20,7 @@ export const getRecipeById = async (id: string): Promise<Recipe | null> => {
 
 export const saveRecipe = async (dto: CreateRecipeDto): Promise<Recipe> => {
     const result = await getRecipeCollection().insertOne({name: dto.name});
-    return {id: result.insertedId.toHexString(), name: dto.name};
+    return {_id: result.insertedId.toHexString(), name: dto.name};
 };
 
 export const replaceRecipe = async (id: string, dto: UpdateRecipeDto): Promise<Recipe | null> => {

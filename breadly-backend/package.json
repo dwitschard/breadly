@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx --env-file=./src/.env src/server.ts",
-    "generate-api": "openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript -o src/app/generated/api --additional-properties=",
+    "generate-api": "openapi-typescript ../breadly-api/openapi.yaml -o src/app/generated/api/openapi.ts",
     "build": "npm run generate-api && tsc -p tsconfig.build.json",
     "test": "jest --no-cache --detectOpenHandles",
     "test:ci": "npm run generate-api && jest --no-cache --detectOpenHandles --forceExit",
@@ -26,7 +26,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@openapitools/openapi-generator-cli": "^2.20.0",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.2.1",
@@ -39,6 +38,7 @@
     "jest": "^30.2.0",
     "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.1.11",
+    "openapi-typescript": "^7.13.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",

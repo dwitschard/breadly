@@ -28,7 +28,7 @@ describe('recipe.service', () => {
       await collection.insertMany([{ name: 'Recipe A' }, { name: 'Recipe B' }]);
       const result = await getAllRecipes();
       expect(result).toHaveLength(2);
-      expect(result[0]).toHaveProperty('id');
+      expect(result[0]).toHaveProperty('_id');
       expect(result[0]).toHaveProperty('name', 'Recipe A');
       expect(result[1]).toHaveProperty('name', 'Recipe B');
     });
@@ -40,7 +40,7 @@ describe('recipe.service', () => {
       const result = await getRecipeById(insertedId.toHexString());
       expect(result).not.toBeNull();
       expect(result!.name).toBe('Found Me');
-      expect(result!.id).toBe(insertedId.toHexString());
+      expect(result!._id).toBe(insertedId.toHexString());
     });
 
     it('returns null when not found', async () => {
@@ -57,9 +57,9 @@ describe('recipe.service', () => {
     it('inserts a new recipe and returns it', async () => {
       const result = await saveRecipe({ name: 'New Recipe' });
       expect(result.name).toBe('New Recipe');
-      expect(result.id).toBeDefined();
+      expect(result._id).toBeDefined();
 
-      const doc = await collection.findOne({ _id: new ObjectId(result.id) });
+      const doc = await collection.findOne({ _id: new ObjectId(result._id) });
       expect(doc).not.toBeNull();
       expect(doc!.name).toBe('New Recipe');
     });

@@ -32,9 +32,9 @@ describe('Recipe Controller — /api/recipes', () => {
         .send({ name: 'Test Recipe' });
 
       expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('id');
+      expect(res.body).toHaveProperty('_id');
       expect(res.body.name).toBe('Test Recipe');
-      createdId = res.body.id;
+      createdId = res.body._id;
     });
 
     it('returns 400 for missing name', async () => {
@@ -82,7 +82,7 @@ describe('Recipe Controller — /api/recipes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.name).toBe('Test Recipe');
-      expect(res.body.id).toBe(createdId);
+      expect(res.body._id).toBe(createdId);
     });
 
     it('returns 404 for non-existing recipe', async () => {
