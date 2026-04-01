@@ -13,7 +13,7 @@
 module "cognito" {
   source = "../../modules/cognito"
 
-  name          = "${var.project_name}-${terraform.workspace}-backend"
+  name          = "${var.project_name}-${terraform.workspace}"
   aws_region    = var.aws_region
   frontend_urls = var.frontend_urls
 
@@ -58,7 +58,7 @@ module "backend_public" {
 module "api_gateway" {
   source = "./modules/api_gateway"
 
-  name                        = "${var.project_name}-${terraform.workspace}-backend"
+  name                        = "${var.project_name}-${terraform.workspace}"
   lambda_function_arn         = module.backend.function_arn
   lambda_function_name        = module.backend.function_name
   public_lambda_function_arn  = module.backend_public.function_arn

@@ -57,7 +57,7 @@ module "frontend" {
 module "cognito" {
   source = "../modules/cognito"
 
-  name          = "${local.name_prefix}-backend"
+  name          = local.name_prefix
   aws_region    = var.aws_region
   frontend_urls = local.frontend_urls
 
@@ -102,7 +102,7 @@ module "backend_public" {
 module "api_gateway" {
   source = "../backend/deploy/modules/api_gateway"
 
-  name                        = "${local.name_prefix}-backend"
+  name                        = local.name_prefix
   lambda_function_arn         = module.backend.function_arn
   lambda_function_name        = module.backend.function_name
   public_lambda_function_arn  = module.backend_public.function_arn

@@ -1,7 +1,7 @@
 # modules/cognito/variables.tf — module input variables.
 
 variable "name" {
-  description = "Base name prefix used for all resources (e.g. breadly-dev-backend)."
+  description = "Base name prefix used for all resources (e.g. breadly-dev)."
   type        = string
 }
 

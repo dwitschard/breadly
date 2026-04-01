@@ -35,7 +35,7 @@ data "terraform_remote_state" "gateway" {
 module "cdn" {
   source = "./modules/cloudfront"
 
-  name         = "${var.project_name}-${terraform.workspace}-frontend"
+  name         = "${var.project_name}-${terraform.workspace}"
   preview_only = var.preview_only
 
   # API Gateway URL — from deploy state (standard) or gateway state (preview).
