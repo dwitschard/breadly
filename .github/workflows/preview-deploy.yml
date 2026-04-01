@@ -247,35 +247,35 @@ jobs:
           # --- Demo user (USER group) ---
           aws cognito-idp admin-create-user \
             --user-pool-id "$USER_POOL_ID" \
-            --username "demo@breadly.dev" \
+            --username "demo@breadly.app" \
             --message-action SUPPRESS || true
 
           aws cognito-idp admin-set-user-password \
             --user-pool-id "$USER_POOL_ID" \
-            --username "demo@breadly.dev" \
+            --username "demo@breadly.app" \
             --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" \
             --permanent
 
           aws cognito-idp admin-add-user-to-group \
             --user-pool-id "$USER_POOL_ID" \
-            --username "demo@breadly.dev" \
+            --username "demo@breadly.app" \
             --group-name "USER"
 
           # --- Admin user (ADMIN group) ---
           aws cognito-idp admin-create-user \
             --user-pool-id "$USER_POOL_ID" \
-            --username "admin@breadly.dev" \
+            --username "admin@breadly.app" \
             --message-action SUPPRESS || true
 
           aws cognito-idp admin-set-user-password \
             --user-pool-id "$USER_POOL_ID" \
-            --username "admin@breadly.dev" \
+            --username "admin@breadly.app" \
             --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" \
             --permanent
 
           aws cognito-idp admin-add-user-to-group \
             --user-pool-id "$USER_POOL_ID" \
-            --username "admin@breadly.dev" \
+            --username "admin@breadly.app" \
             --group-name "ADMIN"
 
       # --- Step 6: Invalidate, seed, and comment ---
@@ -308,8 +308,8 @@ jobs:
           **Demo credentials:**
           | User | Email | Password |
           |------|-------|----------|
-          | Demo | \`demo@breadly.dev\` | See \`PREVIEW_DEMO_PASSWORD\` secret |
-          | Admin | \`admin@breadly.dev\` | See \`PREVIEW_ADMIN_PASSWORD\` secret |
+          | Demo | \`demo@breadly.app\` | See \`PREVIEW_DEMO_PASSWORD\` secret |
+          | Admin | \`admin@breadly.app\` | See \`PREVIEW_ADMIN_PASSWORD\` secret |
 
           _Updated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
 
@@ -336,5 +336,5 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| User | Email | Group |" >> "$GITHUB_STEP_SUMMARY"
           echo "|------|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Demo | \`demo@breadly.dev\` | USER |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Admin | \`admin@breadly.dev\` | ADMIN |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Demo | \`demo@breadly.app\` | USER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Admin | \`admin@breadly.app\` | ADMIN |" >> "$GITHUB_STEP_SUMMARY"

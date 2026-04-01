@@ -8,6 +8,7 @@
     [x] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
 [ ] Deploy Application from Feature Branch
     [ ] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
+    [ ] Add a version in the backend and display it in the frontend (health status page)
     [ ] Setup Dummy Data
     [ ] Delete Env once Branch is deleted
     [ ] Check if Teardown of Preview Env works
@@ -15,10 +16,9 @@
         [ ] IAM Roles
         [ ] Cognito User Pools  
 [ ] E2E Setup
-    [ ] Spawn a Lambda for Testing -> preview/ci environment
-    [ ] Playwright Test
-    [ ] Deployment to a "CI" Environment
+    [ ] Deployment to a "CI" Environment (preview/ci)
     [ ] Add Mock Data to it (Login, Recipe, etc.)
+    [ ] Run Playwright Test against it
     [ ] Create Video to verify it
 [ ] Move Variables / Secrets that are not env specific to repo level on Github
     [ ] Make sure everything still work the same
