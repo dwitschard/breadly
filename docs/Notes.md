@@ -8,6 +8,7 @@
     [x] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
 [ ] Deploy Application from Feature Branch
     [ ] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
+    [ ] Add a version in the backend and display it in the frontend (health status page)
     [ ] Setup Dummy Data
     [ ] Delete Env once Branch is deleted
     [ ] Check if Teardown of Preview Env works

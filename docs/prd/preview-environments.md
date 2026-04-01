@@ -134,8 +134,8 @@ Each preview branch gets its own Cognito User Pool, App Client, and Hosted UI do
 - Clean teardown (entire User Pool destroyed with `terraform destroy`).
 
 Two demo users are created per branch via AWS CLI (not Terraform, to avoid storing passwords in Terraform state):
-- `demo@breadly.dev` with password from `PREVIEW_DEMO_PASSWORD` GitHub secret.
-- `admin@breadly.dev` with password from `PREVIEW_ADMIN_PASSWORD` GitHub secret.
+- `demo@breadly.app` with password from `PREVIEW_DEMO_PASSWORD` GitHub secret.
+- `admin@breadly.app` with password from `PREVIEW_ADMIN_PASSWORD` GitHub secret.
 
 Users are created with `admin-create-user` + `admin-set-user-password --permanent` to skip email verification and force-change flows.
 
