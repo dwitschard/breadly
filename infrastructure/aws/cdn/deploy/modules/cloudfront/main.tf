@@ -57,7 +57,7 @@ resource "aws_cloudfront_origin_access_control" "preview" {
 
 resource "aws_cloudfront_function" "preview_spa_rewrite" {
   count   = local.has_preview_bucket ? 1 : 0
-  name    = "${var.name}-preview-spa"
+  name    = "${var.name}-rewrite-spa-link"
   runtime = "cloudfront-js-2.0"
   comment = "Rewrite /preview/<slug>/... to /<slug>/... key prefix, SPA fallback to /<slug>/index.html"
   publish = true

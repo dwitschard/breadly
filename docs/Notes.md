@@ -16,10 +16,9 @@
         [ ] IAM Roles
         [ ] Cognito User Pools  
 [ ] E2E Setup
-    [ ] Spawn a Lambda for Testing -> preview/ci environment
-    [ ] Playwright Test
-    [ ] Deployment to a "CI" Environment
+    [ ] Deployment to a "CI" Environment (preview/ci)
     [ ] Add Mock Data to it (Login, Recipe, etc.)
+    [ ] Run Playwright Test against it
     [ ] Create Video to verify it
 [ ] Move Variables / Secrets that are not env specific to repo level on Github
     [ ] Make sure everything still work the same
