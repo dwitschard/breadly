@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import { ApplicationError } from '../../domain/error.types.js';
 import { ApplicationDatabase } from '../../database/application-database.js';
+import { HealthResponse, HealthResponseStatusEnum, HealthCheckStatusEnum } from '../../app/generated/api/index.js';
 
 const operationController = Router();
 
@@ -16,24 +17,26 @@ operationController.get('/generic-error', () => {
   throw new Error('Something went terribly wrong!');
 });
 
-operationController.get('/health', async (req: express.Request, res: express.Response) => {
+operationController.get('/health', async (_req: express.Request, res: express.Response) => {
   const dbOk = await ApplicationDatabase.ping();
 
-  const status = dbOk ? 'ok' : 'degraded';
+  const status = dbOk ? HealthResponseStatusEnum.Ok : HealthResponseStatusEnum.Degraded;
 
-  res.json({
+  const response: HealthResponse = {
     status,
     checks: {
       api: {
-        status: 'ok',
-        message: 'Breadly API v1.0.0',
+        status: HealthCheckStatusEnum.Ok,
+        responseTime: undefined,
       },
       database: {
-        status: dbOk ? 'ok' : 'error',
-        message: dbOk ? 'Connected' : 'Unreachable',
+        status: dbOk ? HealthCheckStatusEnum.Ok : HealthCheckStatusEnum.Degraded,
+        responseTime: undefined,
       },
     },
-  });
+  };
+
+  res.json(response);
 });
 
 export { operationController };

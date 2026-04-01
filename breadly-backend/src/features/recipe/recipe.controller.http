@@ -1,10 +1,32 @@
 ### GET Recipes
-GET http://localhost:3000/api/recipe
+GET http://localhost:3000/api/recipes
 
 ### Persist new recipe
-POST http://localhost:3000/api/recipe
+POST http://localhost:3000/api/recipes
 Content-Type: application/json
 
 {
   "name": "Sauerteigbrot v1"
 }
+
+### Get recipe by ID
+GET http://localhost:3000/api/recipes/{{recipeId}}
+
+### Replace recipe
+PUT http://localhost:3000/api/recipes/{{recipeId}}
+Content-Type: application/json
+
+{
+  "name": "Updated Recipe Name"
+}
+
+### Partially update recipe
+PATCH http://localhost:3000/api/recipes/{{recipeId}}
+Content-Type: application/json
+
+{
+  "name": "Patched Recipe Name"
+}
+
+### Delete recipe
+DELETE http://localhost:3000/api/recipes/{{recipeId}}

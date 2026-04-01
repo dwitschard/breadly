@@ -9,21 +9,30 @@ describe('Operation Controller', () => {
     const response = await request.get('/api/application-error');
 
     expect(response.status).toEqual(450);
-    expect(response.body).toEqual({ error: 'Custom Error - 450!' });
+    expect(response.body).toEqual({ message: 'Custom Error - 450!', statusCode: 450 });
   });
 
   it('should respond with message in json format for client error', async () => {
     const response = await request.get('/api/client-error');
 
     expect(response.status).toEqual(400);
-    expect(response.body).toEqual({ error: 'Custom Error- 400!' });
+    expect(response.body).toEqual({ message: 'Custom Error- 400!', statusCode: 400 });
   });
 
   it('should respond with message in json format for generic error', async () => {
     const response = await request.get('/api/generic-error');
 
     expect(response.status).toEqual(500);
-    expect(response.body).toEqual({ error: 'Something went terribly wrong!' });
+    expect(response.body).toEqual({ message: 'Something went terribly wrong!', statusCode: 500 });
+  });
+
+  it('should return health status', async () => {
+    const response = await request.get('/api/health');
+
+    expect(response.status).toEqual(200);
+    expect(response.body).toHaveProperty('status');
+    expect(response.body).toHaveProperty('checks.api.status', 'ok');
+    expect(response.body).toHaveProperty('checks.database');
   });
 
 });

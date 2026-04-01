@@ -3,15 +3,13 @@ import { ApplicationError } from '../domain/error.types.js';
 
 export const globalErrorHandler = (
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  nextFn: NextFunction,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _nextFn: NextFunction,
 ) => {
   const statusCode = err instanceof ApplicationError ? err.statusCode : 500;
   const message = err.message || 'Internal Server Error';
 
-  res.status(statusCode).json({ error: message });
-
-  // Delegate Error to Default Express Error Handler in case not handled above
-  nextFn(err);
+  res.status(statusCode).json({ message, statusCode });
 };

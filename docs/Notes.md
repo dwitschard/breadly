@@ -10,7 +10,10 @@
     [ ] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
     [ ] Setup Dummy Data
     [ ] Delete Env once Branch is deleted
-    [ ] Check if Teardown of Preview Env (Lambda!) works
+    [ ] Check if Teardown of Preview Env works
+        [ ] Lambda
+        [ ] IAM Roles
+        [ ] Cognito User Pools  
 [ ] E2E Setup
     [ ] Spawn a Lambda for Testing -> preview/ci environment
     [ ] Playwright Test

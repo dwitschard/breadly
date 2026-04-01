@@ -7,7 +7,7 @@ publicController.get('/config', (req: express.Request, res: express.Response) =>
   const clientId = process.env['COGNITO_CLIENT_ID'];
 
   if (!issuer || !clientId) {
-    res.status(404).json({ message: 'Configuration not available' });
+    res.status(503).json({ message: 'Configuration not available', statusCode: 503 });
     return;
   }
 

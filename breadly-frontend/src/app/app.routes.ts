@@ -3,16 +3,14 @@ import { withAuth } from './auth/auth.guard';
 
 export const routes: Routes = [
   {
-    path: 'recipe',
+    path: 'recipes',
     canActivate: [withAuth()],
-    loadComponent: () =>
-      import('./features/recipes/recipes.component').then((m) => m.RecipesComponent),
+    loadChildren: () => import('./features/recipes/recipes.routes').then((m) => m.RECIPES_ROUTES),
   },
   {
     path: 'health',
     canActivate: [withAuth()],
-    loadComponent: () =>
-      import('./features/health/health.component').then((m) => m.HealthComponent),
+    loadChildren: () => import('./features/health/health.routes').then((m) => m.HEALTH_ROUTES),
   },
   {
     path: 'login',
@@ -36,6 +34,10 @@ export const routes: Routes = [
     path: '',
     loadComponent: () =>
       import('./features/home/home.container').then((m) => m.HomeContainerComponent),
+  },
+  {
+    path: 'recipe',
+    redirectTo: 'recipes',
   },
   {
     path: '**',

@@ -16,7 +16,6 @@ describe('App', () => {
       ],
     }).compileComponents();
 
-    // Seed ConfigService so AuthService can initialise without throwing.
     TestBed.inject(ConfigService).setConfig({
       issuer: 'https://example.com',
       clientId: 'test-client-id',
@@ -29,10 +28,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render a router outlet', () => {
+  it('should render the layout shell when config is loaded', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled: HTMLElement = fixture.nativeElement;
-    expect(compiled.querySelector('router-outlet')).toBeTruthy();
+    expect(compiled.querySelector('app-layout')).toBeTruthy();
   });
 });

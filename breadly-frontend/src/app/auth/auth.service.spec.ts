@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { OAuthService, provideOAuthClient } from 'angular-oauth2-oidc';
 import { AuthService } from './auth.service';
 import { ConfigService } from '../config/config.service';
-import { ProfileService } from '../features/profile/profile.service';
+import { ProfileService } from '../shared/services/profile.service';
 
 describe('AuthService', () => {
   let service: AuthService;

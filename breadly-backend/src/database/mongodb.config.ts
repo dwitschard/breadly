@@ -5,7 +5,6 @@ export const MONGODB_CONFIG = {
     DB_NAME: 'breadly',
     COLLECTIONS: {
         RecipeCollection: 'recipe',
-        TechnologyCollection: 'technology',
     },
 };
 

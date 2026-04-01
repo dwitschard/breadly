@@ -2,10 +2,10 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ProfileContainerComponent } from './profile.container';
-import { ProfileService } from './profile.service';
-import { UserProfile } from './profile.types';
+import { ProfileService } from '../../shared/services/profile.service';
+import { Profile, provideApi } from '../../generated/api';
 
-const mockProfile: UserProfile = {
+const mockProfile: Profile = {
   sub: 'user-1',
   email: 'alice@example.com',
   emailVerified: true,
@@ -20,7 +20,7 @@ describe('ProfileContainerComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ProfileContainerComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideApi('api')],
     }).compileComponents();
 
     service = TestBed.inject(ProfileService);
@@ -34,7 +34,6 @@ describe('ProfileContainerComponent', () => {
   it('should create', () => {
     fixture = TestBed.createComponent(ProfileContainerComponent);
     fixture.detectChanges();
-    // flush the auto-triggered request
     httpMock.expectOne('api/profile').flush(mockProfile);
     expect(fixture.componentInstance).toBeTruthy();
   });
@@ -48,7 +47,6 @@ describe('ProfileContainerComponent', () => {
   });
 
   it('does NOT call ProfileService.load() when profile is already set', () => {
-    // Pre-populate the service with a profile
     service['_profile'].set(mockProfile);
     const loadSpy = vi.spyOn(service, 'load');
 
@@ -65,6 +63,6 @@ describe('ProfileContainerComponent', () => {
     httpMock.expectOne('api/profile').flush(mockProfile);
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('app-profile')).toBeTruthy();
+    expect(el.querySelector('profile-view')).toBeTruthy();
   });
 });
