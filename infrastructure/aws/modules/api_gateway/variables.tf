@@ -45,11 +45,6 @@ variable "cognito_hosted_ui_domain" {
   type        = string
 }
 
-variable "aws_region" {
-  description = "AWS region."
-  type        = string
-}
-
 variable "frontend_urls" {
   description = "Comma-separated frontend URLs. Kept for symmetry with other modules; not used directly here — Cognito callback URLs are configured in the cognito module."
   type        = string

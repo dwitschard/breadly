@@ -51,9 +51,6 @@ jobs:
 
       - name: Set Terraform variables
         run: |
-          echo "TF_VAR_aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" >> "$GITHUB_ENV"
-          echo "TF_VAR_aws_region=${{ vars.AWS_REGION }}" >> "$GITHUB_ENV"
-          echo "TF_VAR_project_name=${{ env.PROJECT_NAME }}" >> "$GITHUB_ENV"
           echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
           echo "TF_VAR_mongodb_uri=placeholder" >> "$GITHUB_ENV"
           echo "TF_VAR_cloudfront_url=https://placeholder.cloudfront.net" >> "$GITHUB_ENV"
@@ -112,47 +109,12 @@ jobs:
           terraform destroy -auto-approve
 
   # ---------------------------------------------------------------------------
-  # Teardown CDN (preview only, after preview branches)
-  # ---------------------------------------------------------------------------
-  teardown-cdn:
-    name: Teardown CDN (preview)
-    needs: [teardown-preview-branches]
-    if: inputs.environment == 'preview' && (needs.teardown-preview-branches.result == 'success')
-    runs-on: ubuntu-latest
-    environment: preview
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Terraform
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: preview
-          session_name: github-teardown-cdn-preview
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Terraform destroy
-        working-directory: infrastructure/aws/cdn/deploy
-        shell: bash
-        run: |
-          terraform workspace select preview
-          terraform destroy -auto-approve \
-            -var="preview_only=true"
-
-  # ---------------------------------------------------------------------------
-  # Teardown Preview Gateway (preview only, after CDN)
+  # Teardown Preview Gateway (preview only, after preview branches)
   # ---------------------------------------------------------------------------
   teardown-preview-gateway:
     name: Teardown Preview Gateway
     if: inputs.environment == 'preview'
-    needs: [teardown-cdn]
+    needs: [teardown-preview-branches]
     runs-on: ubuntu-latest
     environment: preview
     permissions:

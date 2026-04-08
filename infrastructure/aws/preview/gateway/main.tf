@@ -1,7 +1,9 @@
-# main.tf — shared API Gateway and S3 bucket for all preview environments.
+# main.tf — shared API Gateway, S3 bucket, and CloudFront distribution for all
+# preview environments.
 #
 # Creates a single HTTP API that all preview branches add routes to.
 # Creates a single shared S3 bucket for all preview frontend assets.
+# Creates a CloudFront distribution with the API Gateway and S3 bucket as origins.
 # No Cognito, no Lambda — those are per-branch resources managed by preview/deploy.
 # Frontend files are uploaded by the workflow via `aws s3 sync`, not Terraform.
 
@@ -63,4 +65,27 @@ resource "aws_s3_bucket_public_access_block" "preview_frontend" {
   restrict_public_buckets = true
 
   depends_on = [aws_s3_bucket.preview_frontend]
+}
+
+# ---------------------------------------------------------------------------
+# CDN — CloudFront distribution for the preview environment.
+# Serves preview frontend assets from the shared S3 bucket and routes
+# /preview/*/api/* requests to the shared API Gateway.
+# ---------------------------------------------------------------------------
+
+module "cdn" {
+  source = "../../modules/cloudfront"
+
+  name         = "${var.project_name}-preview"
+  preview_only = true
+
+  api_gateway_url = aws_apigatewayv2_stage.default.invoke_url
+
+  preview_bucket_id                   = aws_s3_bucket.preview_frontend.id
+  preview_bucket_arn                  = aws_s3_bucket.preview_frontend.arn
+  preview_bucket_regional_domain_name = aws_s3_bucket.preview_frontend.bucket_regional_domain_name
+
+  tags = {
+    Component = "preview-cdn"
+  }
 }
