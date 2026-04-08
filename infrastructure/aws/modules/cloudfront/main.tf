@@ -53,7 +53,7 @@ resource "aws_cloudfront_origin_access_control" "this" {
 resource "aws_cloudfront_origin_access_control" "preview" {
   count = local.has_preview_bucket ? 1 : 0
 
-  name                              = "${var.name}-preview"
+  name                              = "${var.name}-preview-v2"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
