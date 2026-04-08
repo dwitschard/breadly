@@ -6,7 +6,14 @@ import { VersionInfo } from '../../../generated/api';
 
 class FakeLoader implements TranslateLoader {
   getTranslation() {
-    return of({ HEALTH: { VERSIONS: 'Versionen' } });
+    return of({
+      HEALTH: {
+        VERSIONS: 'Versionen',
+        VERSIONS_LABEL: 'Versionen',
+        FRONTEND: 'Frontend',
+        BACKEND: 'Backend',
+      },
+    });
   }
 }
 

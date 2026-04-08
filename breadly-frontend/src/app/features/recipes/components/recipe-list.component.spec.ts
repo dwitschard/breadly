@@ -1,6 +1,19 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { RecipeListComponent } from './recipe-list.component';
 import { Recipe } from '../../../generated/api';
+
+class FakeLoader implements TranslateLoader {
+  getTranslation() {
+    return of({
+      RECIPES: {
+        EMPTY: 'Noch keine Rezepte vorhanden. Erstelle oben ein neues.',
+        DELETE_LABEL: 'Rezept löschen: {{name}}',
+      },
+    });
+  }
+}
 
 const mockRecipes: Recipe[] = [
   { _id: '1', name: 'Pasta' },
@@ -12,8 +25,13 @@ describe('RecipeListComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RecipeListComponent],
+      imports: [
+        RecipeListComponent,
+        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
+      ],
     }).compileComponents();
+
+    TestBed.inject(TranslateService).use('de');
   });
 
   it('should create', () => {

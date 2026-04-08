@@ -33,6 +33,7 @@ export const appConfig: ApplicationConfig = {
     provideTranslateHttpLoader({ prefix: translationPrefix(), suffix: '.json' }),
     importProvidersFrom(
       TranslateModule.forRoot({
+        lang: 'de',
         fallbackLang: 'de',
       }),
     ),

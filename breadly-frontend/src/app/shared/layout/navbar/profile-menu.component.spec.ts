@@ -1,7 +1,23 @@
 import { Component, signal } from '@angular/core';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { ProfileMenuComponent } from './profile-menu.component';
 import { Profile } from '../../../generated/api';
+
+class FakeLoader implements TranslateLoader {
+  getTranslation() {
+    return of({
+      NAV: {
+        LOGIN: 'Anmelden',
+        LOGOUT: 'Abmelden',
+        PROFILE: 'Profil anzeigen',
+        ACCOUNT_MENU: 'Kontomenü für {{name}}',
+        ACCOUNT_OPTIONS: 'Kontooptionen',
+      },
+    });
+  }
+}
 
 const mockProfile: Profile = {
   sub: 'user-1',
@@ -34,8 +50,14 @@ class TestHostComponent {
 describe('ProfileMenuComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProfileMenuComponent, TestHostComponent],
+      imports: [
+        ProfileMenuComponent,
+        TestHostComponent,
+        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
+      ],
     }).compileComponents();
+
+    TestBed.inject(TranslateService).use('de');
   });
 
   function create(
@@ -75,7 +97,7 @@ describe('ProfileMenuComponent', () => {
       const fixture = create(null, false);
       const btn: HTMLButtonElement = fixture.nativeElement.querySelector('button');
       expect(btn).toBeTruthy();
-      expect(btn.textContent?.trim()).toBe('Login');
+      expect(btn.textContent?.trim()).toBe('Anmelden');
     });
 
     it('emits loginClick via host binding', () => {
@@ -170,7 +192,9 @@ describe('ProfileMenuComponent', () => {
       fixture.detectChanges();
       const outsideEl = document.createElement('div');
       document.body.appendChild(outsideEl);
-      asAny(fixture.componentInstance).onDocumentClick({ target: outsideEl } as unknown as MouseEvent);
+      asAny(fixture.componentInstance).onDocumentClick({
+        target: outsideEl,
+      } as unknown as MouseEvent);
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
       document.body.removeChild(outsideEl);

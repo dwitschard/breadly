@@ -2,49 +2,58 @@
   "COMMON": {
     "SAVE": "Speichern",
     "CANCEL": "Abbrechen",
-    "DELETE": "L\u00f6schen",
+    "DELETE": "Löschen",
     "LOADING": "Laden...",
     "ERROR": "Ein Fehler ist aufgetreten",
-    "ADD": "Hinzuf\u00fcgen",
+    "ADD": "Hinzufügen",
     "RELOAD": "Aktualisieren"
   },
   "NAV": {
     "RECIPES": "Rezepte",
     "HEALTH": "Systemstatus",
-    "PROFILE": "Profil",
+    "PROFILE": "Profil anzeigen",
     "LOGIN": "Anmelden",
-    "LOGOUT": "Abmelden"
+    "LOGOUT": "Abmelden",
+    "ACCOUNT_MENU": "Kontomenü für {{name}}",
+    "ACCOUNT_OPTIONS": "Kontooptionen",
+    "HOME": "breadly Startseite",
+    "MAIN_NAV": "Hauptnavigation"
   },
   "HOME": {
     "TITLE": "Willkommen bei Breadly",
-    "SUBTITLE": "Deine Rezeptverwaltung",
+    "SUBTITLE": "Deine Rezeptverwaltung. Melde dich an, um Rezepte zu verwalten und den Systemstatus zu prüfen.",
     "LOGIN_BUTTON": "Jetzt anmelden"
   },
   "RECIPES": {
     "TITLE": "Rezepte",
-    "ADD_TITLE": "Rezept hinzuf\u00fcgen",
+    "ADD_TITLE": "Rezept hinzufügen",
     "NAME_PLACEHOLDER": "Rezeptname",
     "NAME_LABEL": "Rezeptname",
     "ALL_TITLE": "Alle Rezepte",
     "EMPTY": "Noch keine Rezepte vorhanden. Erstelle oben ein neues.",
-    "DELETE_LABEL": "Rezept l\u00f6schen: {{name}}",
+    "DELETE_LABEL": "Rezept löschen: {{name}}",
     "LOAD_ERROR": "Rezepte konnten nicht geladen werden.",
     "CREATE_ERROR": "Rezept konnte nicht erstellt werden.",
-    "DELETE_ERROR": "Rezept konnte nicht gel\u00f6scht werden."
+    "DELETE_ERROR": "Rezept konnte nicht gelöscht werden.",
+    "LIST_LABEL": "Rezeptliste"
   },
   "HEALTH": {
     "TITLE": "Systemstatus",
     "RELOAD": "Aktualisieren",
     "RELOADING": "Laden...",
+    "CHECKS_LABEL": "Systemstatus-Prüfungen",
     "API": "API",
     "DATABASE": "Datenbank",
     "OPERATIONAL": "Betriebsbereit",
     "ERROR": "Fehler",
     "OVERALL_STATUS": "Gesamtstatus:",
     "ALL_OPERATIONAL": "Alle Systeme betriebsbereit",
-    "DEGRADED": "Eingeschr\u00e4nkt",
+    "DEGRADED": "Eingeschränkt",
     "LOAD_ERROR": "Systemstatus konnte nicht abgerufen werden.",
-    "VERSIONS": "Versionen"
+    "VERSIONS": "Versionen",
+    "VERSIONS_LABEL": "Versionen",
+    "FRONTEND": "Frontend",
+    "BACKEND": "Backend"
   },
   "PROFILE": {
     "TITLE": "Profil",
@@ -53,18 +62,20 @@
     "EMAIL": "E-Mail",
     "VERIFIED": "Verifiziert",
     "UNVERIFIED": "Nicht verifiziert",
+    "EMAIL_VERIFIED": "E-Mail verifiziert",
+    "EMAIL_NOT_VERIFIED": "E-Mail nicht verifiziert",
     "USER_ID": "Benutzer-ID",
     "ROLES": "Rollen",
-    "UNAVAILABLE": "Profilinformationen sind nicht verf\u00fcgbar.",
+    "UNAVAILABLE": "Profilinformationen sind nicht verfügbar.",
     "LOADING": "Profil wird geladen..."
   },
   "AUTH": {
     "LOGIN_TITLE": "Anmeldung",
     "LOGOUT_TITLE": "Abmeldung",
-    "LOGOUT_MESSAGE": "Du wurdest abgemeldet."
+    "LOGOUT_MESSAGE": "Deine Sitzung wurde beendet. Verwende die Navigation, um dich erneut anzumelden."
   },
   "CONFIG": {
     "ERROR_TITLE": "Konfigurationsfehler",
-    "ERROR_MESSAGE": "Die Anwendungskonfiguration konnte nicht geladen werden. Bitte versuche es sp\u00e4ter erneut."
+    "ERROR_MESSAGE": "Die Anwendungskonfiguration konnte nicht geladen werden. Bitte versuche es später erneut."
   }
 }

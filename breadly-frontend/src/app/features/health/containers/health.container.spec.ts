@@ -8,7 +8,23 @@ import { HealthResponse, provideApi } from '../../../generated/api';
 
 class FakeLoader implements TranslateLoader {
   getTranslation() {
-    return of({ HEALTH: { VERSIONS: 'Versionen' } });
+    return of({
+      COMMON: { RELOAD: 'Aktualisieren' },
+      HEALTH: {
+        TITLE: 'Systemstatus',
+        VERSIONS: 'Versionen',
+        VERSIONS_LABEL: 'Versionen',
+        CHECKS_LABEL: 'Systemstatus-Prüfungen',
+        LOAD_ERROR: 'Systemstatus konnte nicht abgerufen werden.',
+        API: 'API',
+        DATABASE: 'Datenbank',
+        OPERATIONAL: 'Betriebsbereit',
+        ERROR: 'Fehler',
+        OVERALL_STATUS: 'Gesamtstatus:',
+        ALL_OPERATIONAL: 'Alle Systeme betriebsbereit',
+        DEGRADED: 'Eingeschränkt',
+      },
+    });
   }
 }
 

@@ -8,9 +8,9 @@ import { VersionInfo } from '../../../generated/api';
   imports: [TranslateModule],
   template: `
     <h2 class="mb-3 text-lg font-semibold">{{ 'HEALTH.VERSIONS' | translate }}</h2>
-    <ul class="space-y-3" aria-label="Versionen">
+    <ul class="space-y-3" [attr.aria-label]="'HEALTH.VERSIONS_LABEL' | translate">
       <li class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-        <span class="font-medium">Frontend</span>
+        <span class="font-medium">{{ 'HEALTH.FRONTEND' | translate }}</span>
         @if (frontendVersion().releaseUrl) {
           <a
             [href]="frontendVersion().releaseUrl"
@@ -25,7 +25,7 @@ import { VersionInfo } from '../../../generated/api';
         }
       </li>
       <li class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-        <span class="font-medium">Backend</span>
+        <span class="font-medium">{{ 'HEALTH.BACKEND' | translate }}</span>
         @if (backendVersion().releaseUrl) {
           <a
             [href]="backendVersion().releaseUrl"
