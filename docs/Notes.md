@@ -14,6 +14,7 @@
     [x] Setup Dummy Data
     [x] Delete Env once Branch is deleted
     [x] Check if Teardown of Preview Env works
+    [x] Make deployments / Terraform Setup easier
     [ ] Add a version in the backend and display it in the frontend (health status page)
         [ ] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
 [ ] Move Variables / Secrets that are not env specific to repo level on Github
