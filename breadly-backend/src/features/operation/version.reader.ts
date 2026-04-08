@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { VersionInfo } from '../../app/generated/api';
+import { VersionInfo } from '../../app/generated/api/index.js';
 
 const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
 

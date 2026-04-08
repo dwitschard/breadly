@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { ApplicationError } from '../../domain/error.types.js';
 import { ApplicationDatabase } from '../../database/application-database.js';
 import { getVersionInfo } from './version.reader.js';
-import {HealthResponse} from "../../app/generated/api";
+import {HealthResponse} from "../../app/generated/api/index.js";
 
 const operationController = Router();
 
