@@ -7,11 +7,13 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { LucideCircleUser } from '@lucide/angular';
 import { Profile } from '../../../generated/api';
 
 @Component({
   selector: 'app-profile-menu',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [LucideCircleUser],
   host: {
     '(document:click)': 'onDocumentClick($event)',
     '(document:keydown.escape)': 'close()',
@@ -42,15 +44,7 @@ import { Profile } from '../../../generated/api';
               class="w-full h-full object-cover"
             />
           } @else {
-            <svg
-              viewBox="0 0 36 36"
-              aria-hidden="true"
-              class="w-full h-full rounded-full bg-gray-200"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="18" cy="13" r="7" fill="#9ca3af" />
-              <path d="M4 34c0-7.732 6.268-14 14-14s14 6.268 14 14" fill="#9ca3af" />
-            </svg>
+            <svg lucideCircleUser [size]="36" aria-hidden="true" class="text-gray-400" />
           }
         </button>
 
@@ -124,7 +118,7 @@ export class ProfileMenuComponent {
     this.logoutClick.emit();
   }
 
-  onDocumentClick(event: MouseEvent): void {
+  protected onDocumentClick(event: MouseEvent): void {
     if (!this.elementRef.nativeElement.contains(event.target)) {
       this.close();
     }

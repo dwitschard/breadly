@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { LucideRefreshCw } from '@lucide/angular';
 import { HealthFeatureService } from '../health.service';
 import { HealthDashboardComponent } from '../components/health-dashboard.component';
 import { VersionInfoComponent } from '../components/version-info.component';
@@ -11,7 +12,13 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
 @Component({
   selector: 'health-container',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HealthDashboardComponent, VersionInfoComponent, SpinnerComponent, ErrorBannerComponent],
+  imports: [
+    HealthDashboardComponent,
+    VersionInfoComponent,
+    SpinnerComponent,
+    ErrorBannerComponent,
+    LucideRefreshCw,
+  ],
   template: `
     <main class="p-6">
       <div class="flex items-center justify-between mb-6">
@@ -20,9 +27,10 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
           type="button"
           (click)="healthService.reload()"
           [disabled]="healthService.healthResource.isLoading()"
-          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
           [attr.aria-busy]="healthService.healthResource.isLoading()"
         >
+          <svg lucideRefreshCw [size]="16" aria-hidden="true" />
           {{ healthService.healthResource.isLoading() ? 'Laden...' : 'Aktualisieren' }}
         </button>
       </div>

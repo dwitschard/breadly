@@ -170,7 +170,7 @@ describe('ProfileMenuComponent', () => {
       fixture.detectChanges();
       const outsideEl = document.createElement('div');
       document.body.appendChild(outsideEl);
-      fixture.componentInstance.onDocumentClick({ target: outsideEl } as unknown as MouseEvent);
+      asAny(fixture.componentInstance).onDocumentClick({ target: outsideEl } as unknown as MouseEvent);
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
       document.body.removeChild(outsideEl);

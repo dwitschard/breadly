@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { LucideTrash2 } from '@lucide/angular';
 import { Recipe } from '../../../generated/api';
 
 @Component({
   selector: 'recipe-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [LucideTrash2],
   template: `
     @if (recipes().length === 0) {
       <p class="text-gray-500">Noch keine Rezepte vorhanden. Erstelle oben ein neues.</p>
@@ -15,9 +17,10 @@ import { Recipe } from '../../../generated/api';
             <button
               type="button"
               (click)="deleteRecipe.emit(recipe)"
-              class="text-red-600 hover:text-red-800 text-sm cursor-pointer"
+              class="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm cursor-pointer"
               [attr.aria-label]="'Rezept loeschen: ' + recipe.name"
             >
+              <svg lucideTrash2 [size]="14" aria-hidden="true" />
               Loeschen
             </button>
           </li>

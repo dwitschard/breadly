@@ -82,8 +82,13 @@ jobs:
 
       - name: Write version.json
         run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            URL="https://github.com/${{ github.repository }}/releases/tag/backend-${{ steps.sha.outputs.short }}"
+          else
+            URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          fi
           cat > dist/version.json <<EOF
-          {"version":"${{ steps.sha.outputs.short }}","releaseUrl":"https://github.com/${{ github.repository }}/releases/tag/backend-${{ steps.sha.outputs.short }}"}
+          {"version":"${{ steps.sha.outputs.short }}","releaseUrl":"$URL"}
           EOF
 
       - name: Install production dependencies only

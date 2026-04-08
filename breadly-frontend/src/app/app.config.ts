@@ -13,6 +13,11 @@ import { routes } from './app.routes';
 import { provideApi } from './generated/api';
 import { authErrorInterceptor } from './auth/auth-error.interceptor';
 
+function translationPrefix(): string {
+  const base = document.baseURI;
+  return base.endsWith('/') ? `${base}assets/i18n/` : `${base}/assets/i18n/`;
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -25,7 +30,7 @@ export const appConfig: ApplicationConfig = {
         allowedUrls: ['api'],
       },
     }),
-    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
+    provideTranslateHttpLoader({ prefix: translationPrefix(), suffix: '.json' }),
     importProvidersFrom(
       TranslateModule.forRoot({
         fallbackLang: 'de',

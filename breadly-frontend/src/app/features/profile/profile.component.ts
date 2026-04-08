@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { LucideCircleUser } from '@lucide/angular';
 import { Profile } from '../../generated/api';
 
 @Component({
   selector: 'profile-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [LucideCircleUser],
   template: `
     <main class="max-w-xl mx-auto p-6">
       <h1 class="text-2xl font-bold mb-6">Profile</h1>
@@ -22,14 +24,11 @@ import { Profile } from '../../generated/api';
               />
             } @else {
               <svg
-                viewBox="0 0 64 64"
+                lucideCircleUser
+                [size]="64"
                 aria-hidden="true"
-                class="w-16 h-16 rounded-full bg-gray-200"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="32" cy="22" r="13" fill="#9ca3af" />
-                <path d="M6 60c0-14.359 11.641-26 26-26s26 11.641 26 26" fill="#9ca3af" />
-              </svg>
+                class="text-gray-400 rounded-full bg-gray-200"
+              />
             }
             <div>
               <p class="text-lg font-semibold text-gray-900">{{ displayName() }}</p>
