@@ -17,9 +17,9 @@
     [x] Make deployments / Terraform Setup easier
     [x] Add a version in the backend and display it in the frontend (health status page)
         [x] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
-        [x] For preview branches don't create a link to the non existant release -> use commit
+        [x] For preview branches don't create a link to the non existent release -> use commit
         [x] Translations don't work on preview branches
-        [x] Use Icons for Buttons (Aktualisieren, Löschen, Aktualisieren)
+        [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 [ ] Move Variables / Secrets that are not env specific to repo level on Github
     [ ] Make sure everything still work the same
 [ ] E2E Testing Setup
