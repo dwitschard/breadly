@@ -18,7 +18,7 @@
 
 locals {
   api_gateway_host   = regex("^https://([^/]+)", var.api_gateway_url)[0]
-  has_preview_bucket = var.preview_bucket_id != ""
+  has_preview_bucket = var.preview_only
 }
 
 # ---------------------------------------------------------------------------
