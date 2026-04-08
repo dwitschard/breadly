@@ -47,7 +47,6 @@ jobs:
     name: Setup (${{ inputs.environment }})
     if: inputs.action == 'create'
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -71,14 +70,12 @@ jobs:
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/frontend/setup
-          environment: ${{ inputs.environment }}
           local_backend: "true"
 
   teardown:
     name: Teardown (${{ inputs.environment }})
     if: inputs.action == 'destroy'
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read

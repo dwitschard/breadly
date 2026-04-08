@@ -16,13 +16,13 @@
     [x] Check if Teardown of Preview Env works
     [ ] Add a version in the backend and display it in the frontend (health status page)
         [ ] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
-[ ] Move Variables / Secrets that are not env specific to repo level on Github
-    [ ] Make sure everything still work the same
 [ ] E2E Testing Setup
     [ ] Deployment to a "CI" Environment (preview/ci) -> limit preview branches to 4
     [ ] Add Mock Data to it (Login, Recipe, etc.)
     [ ] Run Playwright Test against it
     [ ] Create Video to verify it
+[ ] Move Variables / Secrets that are not env specific to repo level on Github
+    [ ] Make sure everything still work the same
 [ ] DynamoDB Table Design for User
 [ ] Add DynamoDB Connection 
     [ ] Terraform Setup

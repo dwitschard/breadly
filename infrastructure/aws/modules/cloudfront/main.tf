@@ -17,8 +17,20 @@
 #   to include the slug as the S3 key prefix.
 
 locals {
-  api_gateway_host  = regex("^https://([^/]+)", var.api_gateway_url)[0]
+  api_gateway_host   = regex("^https://([^/]+)", var.api_gateway_url)[0]
   has_preview_bucket = var.preview_bucket_id != ""
+}
+
+# ---------------------------------------------------------------------------
+# AWS Managed Cache / Origin Request Policies
+# ---------------------------------------------------------------------------
+
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
 }
 
 # ---------------------------------------------------------------------------
@@ -140,9 +152,9 @@ resource "aws_cloudfront_distribution" "this" {
       compress               = true
 
       # Managed-CachingDisabled: forward all requests to API Gateway, no caching.
-      cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+      cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
       # Managed-AllViewerExceptHostHeader: forward all viewer headers except Host.
-      origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+      origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     }
   }
 
@@ -187,9 +199,9 @@ resource "aws_cloudfront_distribution" "this" {
       compress               = true
 
       # Managed-CachingDisabled: forward all requests to API Gateway, no caching.
-      cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+      cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
       # Managed-AllViewerExceptHostHeader: forward all viewer headers except Host.
-      origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+      origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     }
   }
 

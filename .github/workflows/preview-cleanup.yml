@@ -69,9 +69,6 @@ jobs:
       - name: Set Terraform variables
         if: steps.workspace.outputs.exists == 'true'
         run: |
-          echo "TF_VAR_aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" >> "$GITHUB_ENV"
-          echo "TF_VAR_aws_region=${{ vars.AWS_REGION }}" >> "$GITHUB_ENV"
-          echo "TF_VAR_project_name=${{ env.PROJECT_NAME }}" >> "$GITHUB_ENV"
           echo "TF_VAR_branch_slug=${{ steps.slug.outputs.slug }}" >> "$GITHUB_ENV"
           # Dummy values for variables required by plan/destroy but not needed for destroy
           echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
