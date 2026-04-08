@@ -43,7 +43,8 @@
     "OVERALL_STATUS": "Gesamtstatus:",
     "ALL_OPERATIONAL": "Alle Systeme betriebsbereit",
     "DEGRADED": "Eingeschr\u00e4nkt",
-    "LOAD_ERROR": "Systemstatus konnte nicht abgerufen werden."
+    "LOAD_ERROR": "Systemstatus konnte nicht abgerufen werden.",
+    "VERSIONS": "Versionen"
   },
   "PROFILE": {
     "TITLE": "Profil",

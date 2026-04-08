@@ -80,6 +80,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Write version.json
+        run: |
+          cat > dist/version.json <<EOF
+          {"version":"${{ steps.sha.outputs.short }}","releaseUrl":"https://github.com/${{ github.repository }}/releases/tag/backend-${{ steps.sha.outputs.short }}"}
+          EOF
+
       - name: Install production dependencies only
         run: npm ci --omit=dev
 

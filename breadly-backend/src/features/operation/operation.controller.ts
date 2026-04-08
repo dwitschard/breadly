@@ -1,7 +1,8 @@
 import express, { Router } from 'express';
 import { ApplicationError } from '../../domain/error.types.js';
 import { ApplicationDatabase } from '../../database/application-database.js';
-import { HealthResponse } from '../../app/generated/api/index.js';
+import { getVersionInfo } from './version.reader.js';
+import {HealthResponse} from "../../app/generated/api";
 
 const operationController = Router();
 
@@ -37,6 +38,11 @@ operationController.get('/health', async (_req: express.Request, res: express.Re
   };
 
   res.json(response);
+});
+
+operationController.get('/version', async (_req: express.Request, res: express.Response) => {
+  const versionInfo = await getVersionInfo();
+  res.json(versionInfo);
 });
 
 export { operationController };

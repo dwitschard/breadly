@@ -35,4 +35,12 @@ describe('Operation Controller', () => {
     expect(response.body).toHaveProperty('checks.database');
   });
 
+  it('should return version info', async () => {
+    const response = await request.get('/api/version');
+
+    expect(response.status).toEqual(200);
+    expect(response.body).toHaveProperty('version');
+    expect(response.body).toHaveProperty('releaseUrl');
+  });
+
 });

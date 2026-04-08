@@ -1,13 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { HealthFeatureService } from '../health.service';
 import { HealthDashboardComponent } from '../components/health-dashboard.component';
+import { VersionInfoComponent } from '../components/version-info.component';
 import { SpinnerComponent } from '../../../shared/components/spinner.component';
 import { ErrorBannerComponent } from '../../../shared/components/error-banner.component';
+import { VersionInfo } from '../../../generated/api';
+
+const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
 
 @Component({
   selector: 'health-container',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HealthDashboardComponent, SpinnerComponent, ErrorBannerComponent],
+  imports: [HealthDashboardComponent, VersionInfoComponent, SpinnerComponent, ErrorBannerComponent],
   template: `
     <main class="p-6">
       <div class="flex items-center justify-between mb-6">
@@ -30,10 +34,23 @@ import { ErrorBannerComponent } from '../../../shared/components/error-banner.co
       } @else if (health()) {
         <health-dashboard [health]="health()!" />
       }
+
+      <section class="mt-8">
+        <health-version-info
+          [frontendVersion]="frontendVersion()"
+          [backendVersion]="backendVersion()"
+        />
+      </section>
     </main>
   `,
 })
 export class HealthContainerComponent {
   protected readonly healthService = inject(HealthFeatureService);
   protected readonly health = computed(() => this.healthService.healthResource.value());
+  protected readonly frontendVersion = computed(
+    () => this.healthService.frontendVersionResource.value() ?? DEV_FALLBACK,
+  );
+  protected readonly backendVersion = computed(
+    () => this.healthService.backendVersionResource.value() ?? DEV_FALLBACK,
+  );
 }

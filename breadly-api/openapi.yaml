@@ -212,6 +212,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
 
+  /version:
+    get:
+      operationId: getVersion
+      summary: Get build version information
+      description: Returns the build version (git short SHA) and a link to the corresponding GitHub release. No authentication required.
+      tags:
+        - Operations
+      responses:
+        '200':
+          description: Version information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInfo'
+
 components:
   schemas:
     Recipe:
@@ -340,6 +355,19 @@ components:
         statusCode:
           type: integer
           description: HTTP status code
+
+    VersionInfo:
+      type: object
+      required:
+        - version
+        - releaseUrl
+      properties:
+        version:
+          type: string
+          description: Git short SHA identifying the build
+        releaseUrl:
+          type: string
+          description: URL to the corresponding GitHub release
 
     PublicConfig:
       type: object

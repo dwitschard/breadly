@@ -1,5 +1,8 @@
-### GET request to example server
+### Health
 GET localhost:3000/api/health
+
+### Version
+GET localhost:3000/api/version
 
 ### Application Error
 GET localhost:3000/api/application-error
