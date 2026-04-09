@@ -14,8 +14,14 @@
     [x] Setup Dummy Data
     [x] Delete Env once Branch is deleted
     [x] Check if Teardown of Preview Env works
-    [ ] Add a version in the backend and display it in the frontend (health status page)
-        [ ] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
+    [x] Make deployments / Terraform Setup easier
+    [x] Add a version in the backend and display it in the frontend (health status page)
+        [x] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
+        [x] For preview branches don't create a link to the non existent release -> use commit
+        [x] Translations don't work on preview branches
+        [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
+[ ] Move Variables / Secrets that are not env specific to repo level on Github
+    [ ] Make sure everything still work the same
 [ ] E2E Testing Setup
     [ ] Deployment to a "CI" Environment (preview/ci) -> limit preview branches to 4
     [ ] Add Mock Data to it (Login, Recipe, etc.)
@@ -30,6 +36,9 @@
     [ ] Add it to /health Endpoint
 [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     [ ] Also remove ApplicationDatabase
+
+## UI
+[x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
 [ ] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's

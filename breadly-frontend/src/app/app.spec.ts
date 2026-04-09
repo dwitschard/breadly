@@ -2,13 +2,14 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideOAuthClient } from 'angular-oauth2-oidc';
+import { TranslateModule } from '@ngx-translate/core';
 import { App } from './app';
 import { ConfigService } from './config/config.service';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [App, TranslateModule.forRoot()],
       providers: [
         provideRouter([]),
         provideHttpClient(withInterceptorsFromDi()),

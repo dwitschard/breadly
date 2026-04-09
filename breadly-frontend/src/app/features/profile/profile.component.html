@@ -1,0 +1,86 @@
+<main class="max-w-xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-6">{{ 'PROFILE.TITLE' | translate }}</h1>
+
+  @if (loading()) {
+    <p aria-live="polite">{{ 'PROFILE.LOADING' | translate }}</p>
+  } @else if (profile()) {
+    <div class="flex flex-col gap-6">
+      <div class="flex items-center gap-4">
+        @if (profile()!.picture) {
+          <img
+            [src]="profile()!.picture"
+            [alt]="displayName()"
+            class="w-16 h-16 rounded-full object-cover border border-gray-200"
+          />
+        } @else {
+          <svg
+            lucideCircleUser
+            [size]="64"
+            aria-hidden="true"
+            class="text-gray-400 rounded-full bg-gray-200"
+          />
+        }
+        <div>
+          <p class="text-lg font-semibold text-gray-900">{{ displayName() }}</p>
+          <p class="text-sm text-gray-500">{{ profile()!.email }}</p>
+        </div>
+      </div>
+
+      <dl class="divide-y divide-gray-100 rounded-lg border border-gray-200">
+        @if (profile()!.givenName) {
+          <div class="px-4 py-3 flex justify-between">
+            <dt class="text-sm font-medium text-gray-500">
+              {{ 'PROFILE.FIRST_NAME' | translate }}
+            </dt>
+            <dd class="text-sm text-gray-900">{{ profile()!.givenName }}</dd>
+          </div>
+        }
+        @if (profile()!.familyName) {
+          <div class="px-4 py-3 flex justify-between">
+            <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.LAST_NAME' | translate }}</dt>
+            <dd class="text-sm text-gray-900">{{ profile()!.familyName }}</dd>
+          </div>
+        }
+        <div class="px-4 py-3 flex justify-between">
+          <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.EMAIL' | translate }}</dt>
+          <dd class="text-sm text-gray-900 flex items-center gap-2">
+            {{ profile()!.email }}
+            @if (profile()!.emailVerified) {
+              <span
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700"
+                [attr.aria-label]="'PROFILE.EMAIL_VERIFIED' | translate"
+                >{{ 'PROFILE.VERIFIED' | translate }}</span
+              >
+            } @else {
+              <span
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700"
+                [attr.aria-label]="'PROFILE.EMAIL_NOT_VERIFIED' | translate"
+                >{{ 'PROFILE.UNVERIFIED' | translate }}</span
+              >
+            }
+          </dd>
+        </div>
+        <div class="px-4 py-3 flex justify-between">
+          <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.USER_ID' | translate }}</dt>
+          <dd class="text-sm text-gray-500 font-mono break-all">{{ profile()!.sub }}</dd>
+        </div>
+        @if (profile()!.roles.length > 0) {
+          <div class="px-4 py-3 flex justify-between items-start">
+            <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.ROLES' | translate }}</dt>
+            <dd class="flex flex-wrap gap-1 justify-end">
+              @for (role of profile()!.roles; track role) {
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700"
+                >
+                  {{ role }}
+                </span>
+              }
+            </dd>
+          </div>
+        }
+      </dl>
+    </div>
+  } @else {
+    <p class="text-gray-500">{{ 'PROFILE.UNAVAILABLE' | translate }}</p>
+  }
+</main>

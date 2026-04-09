@@ -1,6 +1,25 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { HealthDashboardComponent } from './health-dashboard.component';
 import { HealthResponse } from '../../../generated/api';
+
+class FakeLoader implements TranslateLoader {
+  getTranslation() {
+    return of({
+      HEALTH: {
+        CHECKS_LABEL: 'Systemstatus-Prüfungen',
+        API: 'API',
+        DATABASE: 'Datenbank',
+        OPERATIONAL: 'Betriebsbereit',
+        ERROR: 'Fehler',
+        OVERALL_STATUS: 'Gesamtstatus:',
+        ALL_OPERATIONAL: 'Alle Systeme betriebsbereit',
+        DEGRADED: 'Eingeschränkt',
+      },
+    });
+  }
+}
 
 const mockHealth: HealthResponse = {
   status: 'ok' as HealthResponse.StatusEnum,
@@ -23,8 +42,13 @@ describe('HealthDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HealthDashboardComponent],
+      imports: [
+        HealthDashboardComponent,
+        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
+      ],
     }).compileComponents();
+
+    TestBed.inject(TranslateService).use('de');
   });
 
   it('should create', () => {
@@ -58,7 +82,7 @@ describe('HealthDashboardComponent', () => {
     fixture.componentRef.setInput('health', degradedHealth);
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('Eingeschraenkt');
+    expect(el.textContent).toContain('Eingeschränkt');
   });
 
   it('displays response time when available', () => {

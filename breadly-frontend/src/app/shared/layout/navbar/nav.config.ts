@@ -1,11 +1,11 @@
 export interface NavLink {
-  label: string;
+  labelKey: string;
   path: string;
   requiresAuth?: boolean;
   requiresGuest?: boolean;
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { label: 'Recipes', path: '/recipes', requiresAuth: true },
-  { label: 'Health', path: '/health', requiresAuth: true },
+  { labelKey: 'NAV.RECIPES', path: '/recipes', requiresAuth: true },
+  { labelKey: 'NAV.HEALTH', path: '/health', requiresAuth: true },
 ];

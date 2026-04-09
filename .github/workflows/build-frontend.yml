@@ -84,6 +84,17 @@ jobs:
       - name: Build
         run: npm run build -- --base-href "${{ inputs.base_href || '/' }}"
 
+      - name: Write version.json
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            URL="https://github.com/${{ github.repository }}/releases/tag/frontend-${{ steps.sha.outputs.short }}"
+          else
+            URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          fi
+          cat > dist/breadly-frontend/browser/version.json <<EOF
+          {"version":"${{ steps.sha.outputs.short }}","releaseUrl":"$URL"}
+          EOF
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v6
         with:

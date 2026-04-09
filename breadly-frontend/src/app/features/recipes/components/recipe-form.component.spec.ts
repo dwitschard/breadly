@@ -1,5 +1,16 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { RecipeFormComponent } from './recipe-form.component';
+
+class FakeLoader implements TranslateLoader {
+  getTranslation() {
+    return of({
+      COMMON: { ADD: 'Hinzufügen' },
+      RECIPES: { NAME_LABEL: 'Rezeptname', NAME_PLACEHOLDER: 'Rezeptname' },
+    });
+  }
+}
 
 describe('RecipeFormComponent', () => {
   let fixture: ComponentFixture<RecipeFormComponent>;
@@ -7,8 +18,13 @@ describe('RecipeFormComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RecipeFormComponent],
+      imports: [
+        RecipeFormComponent,
+        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
+      ],
     }).compileComponents();
+
+    TestBed.inject(TranslateService).use('de');
 
     fixture = TestBed.createComponent(RecipeFormComponent);
     component = fixture.componentInstance;

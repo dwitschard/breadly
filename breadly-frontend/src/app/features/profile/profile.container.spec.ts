@@ -1,9 +1,32 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { ProfileContainerComponent } from './profile.container';
 import { ProfileService } from '../../shared/services/profile.service';
 import { Profile, provideApi } from '../../generated/api';
+
+class FakeLoader implements TranslateLoader {
+  getTranslation() {
+    return of({
+      PROFILE: {
+        TITLE: 'Profil',
+        FIRST_NAME: 'Vorname',
+        LAST_NAME: 'Nachname',
+        EMAIL: 'E-Mail',
+        VERIFIED: 'Verifiziert',
+        UNVERIFIED: 'Nicht verifiziert',
+        EMAIL_VERIFIED: 'E-Mail verifiziert',
+        EMAIL_NOT_VERIFIED: 'E-Mail nicht verifiziert',
+        USER_ID: 'Benutzer-ID',
+        ROLES: 'Rollen',
+        UNAVAILABLE: 'Profilinformationen sind nicht verfügbar.',
+        LOADING: 'Profil wird geladen...',
+      },
+    });
+  }
+}
 
 const mockProfile: Profile = {
   sub: 'user-1',
@@ -19,9 +42,14 @@ describe('ProfileContainerComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProfileContainerComponent],
+      imports: [
+        ProfileContainerComponent,
+        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
+      ],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideApi('api')],
     }).compileComponents();
+
+    TestBed.inject(TranslateService).use('de');
 
     service = TestBed.inject(ProfileService);
     httpMock = TestBed.inject(HttpTestingController);

@@ -25,11 +25,11 @@ export const appConfig: ApplicationConfig = {
         allowedUrls: ['api'],
       },
     }),
-    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
     importProvidersFrom(
       TranslateModule.forRoot({
         fallbackLang: 'de',
       }),
     ),
+    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
   ],
 };
