@@ -12,7 +12,7 @@
 #   slugify          Computes the branch slug.
 #   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses build-frontend.yml with preview base-href.
-#   deploy           terraform apply (gateway + CDN + preview) -> s3 sync -> users -> PR comment.
+#   deploy           terraform apply (gateway + preview) -> s3 sync -> users -> PR comment.
 #
 # Triggers
 #   push to any branch except main.
@@ -108,7 +108,7 @@ jobs:
           name: frontend-dist
           path: frontend-dist/
 
-      # --- Step 1: Deploy shared preview API Gateway + S3 bucket ---
+      # --- Step 1: Deploy shared preview API Gateway + S3 bucket + CDN ---
 
       - name: Setup Terraform (gateway)
         uses: ./.github/actions/terraform-setup
@@ -125,7 +125,6 @@ jobs:
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/preview/gateway
-          environment: preview
 
       - name: Get gateway outputs
         id: gw
@@ -133,38 +132,10 @@ jobs:
         run: |
           echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
           echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_url=$(terraform output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
 
-      # --- Step 2: Deploy preview CDN (ensures CloudFront URL exists for Cognito) ---
-
-      - name: Setup Terraform (CDN)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: preview
-          session_name: github-preview-cdn-${{ needs.slugify.outputs.slug }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Deploy preview CDN
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/cdn/deploy
-          environment: preview
-          extra_tf_vars: >-
-            -var="preview_only=true"
-
-      - name: Get CloudFront URL
-        id: cf
-        working-directory: infrastructure/aws/cdn/deploy
-        run: |
-          CF_URL=$(terraform output -raw cloudfront_url)
-          echo "cloudfront_url=$CF_URL" >> "$GITHUB_OUTPUT"
-          DIST_ID=$(terraform output -raw cloudfront_distribution_id)
-          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
-
-      # --- Step 3: Deploy per-branch preview stack ---
+      # --- Step 2: Deploy per-branch preview stack ---
 
       - name: Setup Terraform (preview)
         uses: ./.github/actions/terraform-setup
@@ -184,14 +155,13 @@ jobs:
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/preview/deploy
-          environment: preview
           workspace: preview-${{ needs.slugify.outputs.slug }}
           extra_tf_vars: >-
             -var="branch_slug=${{ needs.slugify.outputs.slug }}"
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
-            -var="cloudfront_url=${{ steps.cf.outputs.cloudfront_url }}"
+            -var="cloudfront_url=${{ steps.gw.outputs.cloudfront_url }}"
 
-      # --- Step 4: Upload frontend assets to shared S3 bucket ---
+      # --- Step 3: Upload frontend assets to shared S3 bucket ---
 
       - name: Upload frontend to shared S3 bucket
         run: |
@@ -209,7 +179,7 @@ jobs:
             --include "*.json" \
             --cache-control "no-cache, no-store, must-revalidate"
 
-      # --- Step 5: Create Cognito users ---
+      # --- Step 4: Create Cognito users ---
 
       - name: Get Cognito User Pool ID
         id: cognito
@@ -278,14 +248,14 @@ jobs:
             --username "admin@breadly.app" \
             --group-name "ADMIN"
 
-      # --- Step 6: Invalidate, seed, and comment ---
+      # --- Step 5: Invalidate, seed, and comment ---
 
       - name: Invalidate CloudFront cache for preview path
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id "${{ steps.cf.outputs.distribution_id }}" \
+            --distribution-id "${{ steps.gw.outputs.distribution_id }}" \
             --paths "/preview/${{ needs.slugify.outputs.slug }}/*"
 
       - name: Seed data (placeholder)
@@ -298,7 +268,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PREVIEW_URL="${{ steps.cf.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
+          PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
           BODY="## Preview Environment
 
           Branch \`${{ github.ref_name }}\` has been deployed to a preview environment.
@@ -327,7 +297,7 @@ jobs:
 
       - name: Write preview URL to job summary
         run: |
-          PREVIEW_URL="${{ steps.cf.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
+          PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
           echo "## Preview Environment" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Branch \`${{ github.ref_name }}\` deployed to:" >> "$GITHUB_STEP_SUMMARY"

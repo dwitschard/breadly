@@ -150,7 +150,6 @@ jobs:
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/deploy
-          environment: ${{ env.TARGET_ENV }}
           extra_tf_vars: >-
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"

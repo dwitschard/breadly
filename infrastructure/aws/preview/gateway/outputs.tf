@@ -24,3 +24,13 @@ output "preview_bucket_regional_domain_name" {
   description = "Regional S3 domain name for CloudFront origin configuration."
   value       = aws_s3_bucket.preview_frontend.bucket_regional_domain_name
 }
+
+output "cloudfront_url" {
+  description = "HTTPS URL of the preview CloudFront distribution."
+  value       = module.cdn.cloudfront_domain_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID; used for cache invalidations."
+  value       = module.cdn.cloudfront_distribution_id
+}

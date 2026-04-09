@@ -27,6 +27,8 @@
     [ ] Add Mock Data to it (Login, Recipe, etc.)
     [ ] Run Playwright Test against it
     [ ] Create Video to verify it
+[ ] Move Variables / Secrets that are not env specific to repo level on Github
+    [ ] Make sure everything still work the same
 [ ] DynamoDB Table Design for User
 [ ] Add DynamoDB Connection 
     [ ] Terraform Setup

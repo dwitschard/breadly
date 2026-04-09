@@ -39,7 +39,7 @@ locals {
 # ---------------------------------------------------------------------------
 
 module "frontend" {
-  source = "../frontend/deploy/modules/s3_static_site"
+  source = "../modules/s3_static_site"
 
   bucket_name   = "${local.name_prefix}-frontend"
   dist_path     = var.frontend_dist_path
@@ -100,7 +100,7 @@ module "backend_public" {
 }
 
 module "api_gateway" {
-  source = "../backend/deploy/modules/api_gateway"
+  source = "../modules/api_gateway"
 
   name                        = local.name_prefix
   lambda_function_arn         = module.backend.function_arn
@@ -111,7 +111,6 @@ module "api_gateway" {
   cognito_user_pool_id        = module.cognito.user_pool_id
   cognito_hosted_ui_domain    = module.cognito.hosted_ui_domain
   cognito_user_pool_client_id = module.cognito.client_id
-  aws_region                  = var.aws_region
   frontend_urls               = local.frontend_urls
 
   tags = {
@@ -124,7 +123,7 @@ module "api_gateway" {
 # ---------------------------------------------------------------------------
 
 module "cdn" {
-  source = "../cdn/deploy/modules/cloudfront"
+  source = "../modules/cloudfront"
 
   name            = local.name_prefix
   api_gateway_url = module.api_gateway.api_endpoint

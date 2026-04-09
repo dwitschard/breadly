@@ -118,7 +118,7 @@ module "backend_public" {
 # ---------------------------------------------------------------------------
 
 module "api_gateway_routes" {
-  source = "./modules/api_gateway_routes"
+  source = "../../modules/api_gateway_routes"
 
   api_gateway_id              = data.terraform_remote_state.gateway.outputs.api_gateway_id
   branch_slug                 = var.branch_slug
