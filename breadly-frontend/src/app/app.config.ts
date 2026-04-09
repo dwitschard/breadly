@@ -13,11 +13,6 @@ import { routes } from './app.routes';
 import { provideApi } from './generated/api';
 import { authErrorInterceptor } from './auth/auth-error.interceptor';
 
-function translationPrefix(): string {
-  const base = document.baseURI;
-  return base.endsWith('/') ? `${base}assets/i18n/` : `${base}/assets/i18n/`;
-}
-
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -32,10 +27,9 @@ export const appConfig: ApplicationConfig = {
     }),
     importProvidersFrom(
       TranslateModule.forRoot({
-        lang: 'de',
         fallbackLang: 'de',
       }),
     ),
-    provideTranslateHttpLoader({ prefix: translationPrefix(), suffix: '.json' }),
+    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
   ],
 };
