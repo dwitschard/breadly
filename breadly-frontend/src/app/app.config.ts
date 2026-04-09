@@ -30,12 +30,12 @@ export const appConfig: ApplicationConfig = {
         allowedUrls: ['api'],
       },
     }),
-    provideTranslateHttpLoader({ prefix: translationPrefix(), suffix: '.json' }),
     importProvidersFrom(
       TranslateModule.forRoot({
         lang: 'de',
         fallbackLang: 'de',
       }),
     ),
+    provideTranslateHttpLoader({ prefix: translationPrefix(), suffix: '.json' }),
   ],
 };
