@@ -1,10 +1,25 @@
+extends:
+  - recommended
+
 apis:
   default:
     root: openapi.yaml
-    x-openapi-ts:
-      output: ./generated/openapi.ts
+
 rules:
+  # Disabled: not using security schemes yet
   security-defined: off
+  # Disabled: no license needed for internal project
   info-license: off
+  # Disabled: localhost is fine for dev
   no-server-example.com: off
+
+  # Enforced rules
   operation-4xx-response: warn
+  operation-operationId: error
+  operation-summary: error
+  operation-description: warn
+  no-ambiguous-paths: error
+  path-declaration-must-exist: error
+  no-identical-paths: error
+  operation-2xx-response: error
+  no-enum-type-mismatch: error

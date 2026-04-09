@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx --env-file=./src/.env src/server.ts",
-    "generate-api": "openapi-typescript ../breadly-api/openapi.yaml -o src/app/generated/api/index.ts --root-types --root-types-no-schema-prefix",
+    "generate-api": "npm run --prefix ../breadly-api lint && openapi-typescript ../breadly-api/openapi.yaml -o src/app/generated/api/index.ts --root-types --root-types-no-schema-prefix",
     "build": "npm run generate-api && tsc -p tsconfig.build.json",
     "test": "jest --no-cache --detectOpenHandles",
     "test:ci": "npm run generate-api && jest --no-cache --detectOpenHandles --forceExit",
@@ -16,7 +16,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "breadly-api": "file:../breadly-api",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "mongodb": "^7.1.0",

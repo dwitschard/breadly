@@ -9,19 +9,28 @@
     [x] Architecture Description Frontend
     [x] Architecture Description API Module
     [x] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
-[ ] Deploy Application from Feature Branch
+
+[x] Deploy Application from Feature Branch
     [x] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
     [x] Setup Dummy Data
     [x] Delete Env once Branch is deleted
     [x] Check if Teardown of Preview Env works
     [x] Make deployments / Terraform Setup easier
-    [x] Add a version in the backend and display it in the frontend (health status page)
-        [x] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
-        [x] For preview branches don't create a link to the non existent release -> use commit
-        [x] Translations don't work on preview branches
-        [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
-[ ] Move Variables / Secrets that are not env specific to repo level on Github
-    [ ] Make sure everything still work the same
+[x] Add a version in the backend and display it in the frontend (health status page)
+    [x] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
+    [x] For preview branches don't create a link to the non existent release -> use commit
+    [x] Translations don't work on preview branches
+    [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
+
+[x] Move Variables / Secrets that are not env specific to repo level on Github
+    [x] Make sure everything still work the same
+
+[ ] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
+
+[ ] Build Open API Spec for FE and BE differently (if needed)
+    [ ] Check Frontend
+    [ ] Check Backend
+
 [ ] E2E Testing Setup
     [ ] Deployment to a "CI" Environment (preview/ci) -> limit preview branches to 4
     [ ] Add Mock Data to it (Login, Recipe, etc.)
@@ -41,12 +50,6 @@
 [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
-[ ] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
-
-[ ] Build Open API Spec for FE and BE differently (if needed)
-    [ ] Check Frontend
-    [ ] Check Backend
-
 [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
     [ ] if necessary -> implement custom error code in valid range
 
