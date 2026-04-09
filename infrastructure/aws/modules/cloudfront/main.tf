@@ -90,10 +90,6 @@ resource "aws_cloudfront_function" "preview_spa_rewrite" {
       return request;
     }
   JS
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 # ---------------------------------------------------------------------------
