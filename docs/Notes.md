@@ -9,7 +9,7 @@
     [x] Architecture Description Frontend
     [x] Architecture Description API Module
     [x] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
-[ ] Deploy Application from Feature Branch
+[x] Deploy Application from Feature Branch
     [x] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
     [x] Setup Dummy Data
     [x] Delete Env once Branch is deleted
@@ -22,13 +22,12 @@
         [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 [ ] Move Variables / Secrets that are not env specific to repo level on Github
     [ ] Make sure everything still work the same
+[ ] Switch Component Testing in Frontend to use TestingLibrary
 [ ] E2E Testing Setup
-    [ ] Deployment to a "CI" Environment (preview/ci) -> limit preview branches to 4
+    [ ] Run E2E-Tests on Preview Branch
     [ ] Add Mock Data to it (Login, Recipe, etc.)
     [ ] Run Playwright Test against it
     [ ] Create Video to verify it
-[ ] Move Variables / Secrets that are not env specific to repo level on Github
-    [ ] Make sure everything still work the same
 [ ] DynamoDB Table Design for User
 [ ] Add DynamoDB Connection 
     [ ] Terraform Setup
@@ -53,7 +52,6 @@
 
 ## Ideas
 [ ] Implement a custom ui for login / registration
-[ ] Switch Testing in Frontend to use TestingLibrary
 [ ] decide on ui library / elements
 
 ### Done
