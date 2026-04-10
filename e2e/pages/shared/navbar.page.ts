@@ -44,7 +44,7 @@ export class NavbarPage {
 
   async navigateToHome(): Promise<void> {
     await this.homeLink.click();
-    await this.page.waitForURL(/\/$/);
+    await expect(this.page.getByTestId('home-title')).toBeVisible();
   }
 
   async openProfileMenu(): Promise<void> {

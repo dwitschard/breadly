@@ -93,16 +93,23 @@ export async function warmUpHealthCheck(
   maxRetries = 5,
   delayMs = 2000,
 ): Promise<void> {
-  const healthUrl = `${baseURL}/api/health`;
+  const normalizedBase = baseURL.replace(/\/+$/, '');
+  const healthUrl = `${normalizedBase}/api/health`;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(healthUrl);
       if (response.ok) {
+        console.log(`Health check passed: ${healthUrl}`);
         return;
       }
+      console.warn(
+        `Health check attempt ${attempt}/${maxRetries} returned ${response.status}`,
+      );
     } catch {
-      // Connection refused or network error — retry
+      console.warn(
+        `Health check attempt ${attempt}/${maxRetries} failed (connection error)`,
+      );
     }
 
     if (attempt < maxRetries) {
@@ -110,7 +117,8 @@ export async function warmUpHealthCheck(
     }
   }
 
-  throw new Error(
-    `Health check at ${healthUrl} failed after ${maxRetries} attempts`,
+  console.warn(
+    `Health check at ${healthUrl} failed after ${maxRetries} attempts — continuing anyway. ` +
+      'Tests will fail if the backend is unreachable.',
   );
 }

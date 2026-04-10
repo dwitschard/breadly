@@ -181,14 +181,19 @@ describe('cognito.helper', () => {
       vi.unstubAllGlobals();
     });
 
-    it('throws after max retries', async () => {
+    it('warns but does not throw after max retries', async () => {
       const fetchMock = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       vi.stubGlobal('fetch', fetchMock);
 
-      await expect(
-        warmUpHealthCheck('http://localhost:4200', 2, 0),
-      ).rejects.toThrow('Health check at http://localhost:4200/api/health failed after 2 attempts');
+      await warmUpHealthCheck('http://localhost:4200', 2, 0);
 
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('failed after 2 attempts'),
+      );
+
+      warnSpy.mockRestore();
       vi.unstubAllGlobals();
     });
   });

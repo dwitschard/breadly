@@ -9,10 +9,6 @@ test.describe('Sign in and out', () => {
     const username = process.env['E2E_DEMO_USERNAME'] ?? 'demo@breadly.app';
     const password = process.env['E2E_DEMO_PASSWORD'] ?? '';
 
-    if (!password) {
-      test.skip(true, 'E2E_DEMO_PASSWORD not set — skipping login UI test');
-    }
-
     await page.goto('/recipes');
 
     await page.waitForURL('**/login**');
@@ -26,6 +22,7 @@ test.describe('Sign in and out', () => {
 
     await navbar.logout();
 
-    await page.waitForURL('**/logout**');
+    await expect(page.getByTestId('home-title')).toBeVisible();
+    await expect(page.getByTestId('home-login-btn')).toBeVisible();
   });
 });

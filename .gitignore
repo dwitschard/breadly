@@ -5,6 +5,7 @@
 **/generated/**
 **/node_modules/**
 **/cloudfront/node_modules/**
+**/*.env
 
 # ── Terraform ─────────────────────────────────────────────────────────────────
 

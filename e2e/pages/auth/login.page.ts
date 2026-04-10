@@ -20,9 +20,14 @@ export class LoginPage {
     username: string,
     password: string,
   ): Promise<void> {
-    await this.page.locator('input[name="username"]').fill(username);
-    await this.page.locator('input[name="password"]').fill(password);
-    await this.page.locator('input[type="submit"][name="signInSubmitButton"]').click();
+    const usernameInput = this.page.locator('input[id="signInFormUsername"]:visible');
+    const passwordInput = this.page.locator('input[id="signInFormPassword"]:visible');
+    const submitButton = this.page.locator('input[type="submit"][name="signInSubmitButton"]:visible');
+
+    await usernameInput.waitFor({ state: 'visible', timeout: 15_000 });
+    await usernameInput.fill(username);
+    await passwordInput.fill(password);
+    await submitButton.click();
   }
 
   async expectLoggedIn(): Promise<void> {

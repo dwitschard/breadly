@@ -49,6 +49,7 @@
 [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
+[ ] In Profile also add email address of user (not only verification status). Include E-Mail in JWT Token
 [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
     [ ] if necessary -> implement custom error code in valid range
 
