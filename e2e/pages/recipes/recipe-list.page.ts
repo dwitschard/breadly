@@ -45,11 +45,16 @@ export class RecipeListPage {
   }
 
   async expectRecipeNotVisible(name: string): Promise<void> {
+    await this.expectListRendered();
     await expect(this.getRecipeItem(name)).not.toBeVisible();
   }
 
   async expectEmptyState(): Promise<void> {
     await expect(this.emptyMessage).toBeVisible();
+  }
+
+  async expectListRendered(): Promise<void> {
+    await expect(this.recipeList.or(this.emptyMessage)).toBeVisible();
   }
 
   async expectLoaded(): Promise<void> {
