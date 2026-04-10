@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "npm run generate-api && ng build",
+    "start": "npm run generate-api && ng serve",
+    "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "generate-api": "openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript-angular -o src/app/generated/api --additional-properties=ngVersion=21,supportsES6=true,withInterfaces=true",
+    "generate-api": "npm run --prefix ../breadly-api lint && openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript-angular -o src/app/generated/api --additional-properties=ngVersion=21,supportsES6=true",
     "lint": "prettier --write \"src/**/*.{ts,html,css}\"",
-    "test:ci": "npm run generate-api && ng test --no-watch"
+    "test:ci": "ng test --no-watch"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

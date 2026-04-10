@@ -34,6 +34,7 @@ paths:
     get:
       operationId: getRecipes
       summary: List all recipes
+      description: Returns all recipes for the authenticated user.
       tags:
         - Recipes
       responses:
@@ -49,6 +50,7 @@ paths:
     post:
       operationId: createRecipe
       summary: Create a new recipe
+      description: Creates a new recipe with the provided data.
       tags:
         - Recipes
       requestBody:
@@ -83,6 +85,7 @@ paths:
     get:
       operationId: getRecipeById
       summary: Get a recipe by ID
+      description: Returns a single recipe identified by its MongoDB ObjectId.
       tags:
         - Recipes
       responses:
@@ -102,6 +105,7 @@ paths:
     put:
       operationId: replaceRecipe
       summary: Fully replace a recipe
+      description: Replaces all fields of an existing recipe with the provided data.
       tags:
         - Recipes
       requestBody:
@@ -133,6 +137,7 @@ paths:
     patch:
       operationId: updateRecipe
       summary: Partially update a recipe
+      description: Updates only the provided fields of an existing recipe.
       tags:
         - Recipes
       requestBody:
@@ -164,6 +169,7 @@ paths:
     delete:
       operationId: deleteRecipe
       summary: Delete a recipe
+      description: Permanently deletes a recipe identified by its MongoDB ObjectId.
       tags:
         - Recipes
       responses:

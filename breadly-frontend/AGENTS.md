@@ -863,6 +863,8 @@ The generated API client in `src/app/generated/api/` is auto-generated and gitig
 
 - **Never manually edit** files in `src/app/generated/`
 - **Always regenerate** after pulling changes: `npm run generate-api`
-- The `generate-api` script must run before build and CI
+- Generated code must exist before running `build`, `test`, or `lint` — run `npm run generate-api` first
+- `npm start` chains `generate-api` automatically for convenience; other scripts assume it has already been run
+- In CI, a dedicated workflow step handles generation before lint/test/build
 - If generated code does not fit the use case, the fix goes into `openapi.yaml` — not the generated output
 - Generated DTOs and services are the canonical API types — do not redefine them in feature code

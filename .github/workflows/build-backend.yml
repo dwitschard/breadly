@@ -65,6 +65,10 @@ jobs:
           cache: "npm"
           cache-dependency-path: breadly-backend/package-lock.json
 
+      - name: Install API spec dependencies
+        run: npm ci
+        working-directory: breadly-api
+
       - name: Install dependencies
         run: npm ci
 
