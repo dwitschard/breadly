@@ -5,16 +5,16 @@
   "scripts": {
     "postinstall": "playwright install --with-deps chromium",
     "test": "playwright test",
+    "test:preview": "playwright test",
+    "test:preview:ui": "playwright test --ui",
     "test:ui" : "playwright test --ui",
-    "test:unit": "vitest run",
     "test:headed": "playwright test --headed",
     "report": "playwright show-report"
   },
   "devDependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.782.0",
     "@playwright/test": "^1.52.0",
-    "typescript": "~5.8.3",
-    "vitest": "^3.2.1"
+    "typescript": "~5.8.3"
   },
   "dependencies": {
     "dotenv": "^17.4.1"

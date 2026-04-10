@@ -19,7 +19,7 @@ export class RecipeListPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/recipes');
+    await this.page.goto('recipes');
     await expect(this.heading).toBeVisible();
   }
 

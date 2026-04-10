@@ -88,37 +88,3 @@ export function writeStorageState(
   fs.writeFileSync(filePath, JSON.stringify(storageState, null, 2));
 }
 
-export async function warmUpHealthCheck(
-  baseURL: string,
-  maxRetries = 5,
-  delayMs = 2000,
-): Promise<void> {
-  const normalizedBase = baseURL.replace(/\/+$/, '');
-  const healthUrl = `${normalizedBase}/api/health`;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await fetch(healthUrl);
-      if (response.ok) {
-        console.log(`Health check passed: ${healthUrl}`);
-        return;
-      }
-      console.warn(
-        `Health check attempt ${attempt}/${maxRetries} returned ${response.status}`,
-      );
-    } catch {
-      console.warn(
-        `Health check attempt ${attempt}/${maxRetries} failed (connection error)`,
-      );
-    }
-
-    if (attempt < maxRetries) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-
-  console.warn(
-    `Health check at ${healthUrl} failed after ${maxRetries} attempts — continuing anyway. ` +
-      'Tests will fail if the backend is unreachable.',
-  );
-}

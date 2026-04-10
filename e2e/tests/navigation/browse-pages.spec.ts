@@ -7,7 +7,7 @@ test.describe('Browse pages', () => {
   }) => {
     const navbar = new NavbarPage(page);
 
-    await page.goto('/');
+    await page.goto('.');
 
     await navbar.expectLoggedIn();
     await navbar.expectRecipesLinkVisible();

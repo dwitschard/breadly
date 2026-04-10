@@ -37,7 +37,7 @@ These documents are the authoritative source for coding conventions within each 
 | `breadly-api/` | `npm run lint` | — | — | — |
 | `breadly-frontend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
 | `breadly-backend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
-| `e2e/` | — | — | `npm test` (Playwright) / `npm run test:unit` (Vitest) | — |
+| `e2e/` | — | — | `npm test` (Playwright) | — |
 
 ## Development Pipeline
 
@@ -88,9 +88,8 @@ If any step fails, fix the issue before proceeding to the next step.
 Skip this phase if the task does not affect user-facing behavior (e.g., pure refactoring, documentation, backend-only internal changes with no API surface changes).
 
 11. **Write E2E tests** for new user-facing features or flows. Each new feature should include at least one user journey spec in `e2e/tests/<feature>/`.
-12. **Run E2E unit tests** locally: `npm run test:unit` in `e2e/` to verify helpers, page objects, and test utilities.
 
-E2E integration tests (`npm test` in `e2e/`) run against deployed preview environments in CI. They are not run locally as part of the development pipeline unless the developer has a local environment running.
+E2E tests (`npm test` in `e2e/`) run against deployed preview environments in CI. They are not run locally as part of the development pipeline unless the developer has a local environment running.
 
 ### Phase 5: Code Review
 

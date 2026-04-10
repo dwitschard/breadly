@@ -1,5 +1,4 @@
 import type { Page, Locator } from '@playwright/test';
-import { expect } from '@playwright/test';
 
 export class LoginPage {
   readonly loginButton: Locator;
@@ -9,7 +8,7 @@ export class LoginPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/');
+    await this.page.goto('.');
   }
 
   async expectRedirectedToLogin(): Promise<void> {

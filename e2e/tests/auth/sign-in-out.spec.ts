@@ -5,11 +5,19 @@ import { NavbarPage } from '../../pages/shared/navbar.page';
 test.describe('Sign in and out', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
+  // This test navigates through the Cognito Hosted UI, which requires a
+  // deployed environment with registered redirect URIs. Skip when running
+  // against localhost (E2E_BASE_URL not set).
+  test.skip(
+    !process.env['E2E_BASE_URL'],
+    'Cognito Hosted UI login requires a deployed environment',
+  );
+
   test('sign in via Cognito Hosted UI and sign out', async ({ page }) => {
     const username = process.env['E2E_DEMO_USERNAME'] ?? 'demo@breadly.app';
     const password = process.env['E2E_DEMO_PASSWORD'] ?? '';
 
-    await page.goto('/recipes');
+    await page.goto('recipes');
 
     await page.waitForURL('**/login**');
 

@@ -21,7 +21,7 @@ export class ProfilePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/profile');
+    await this.page.goto('profile');
     await expect(this.heading).toBeVisible();
   }
 

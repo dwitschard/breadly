@@ -1,8 +1,8 @@
+import 'dotenv/config';
 import {
   authenticateWithCognito,
   buildStorageState,
   writeStorageState,
-  warmUpHealthCheck,
 } from './helpers/cognito.helper';
 
 async function globalSetup(): Promise<void> {
@@ -37,8 +37,6 @@ async function globalSetup(): Promise<void> {
 
   const storageState = buildStorageState(tokens, baseURL);
   writeStorageState(storageState, '.auth/user.json');
-
-  await warmUpHealthCheck(baseURL);
 }
 
 export default globalSetup;
