@@ -1,0 +1,2 @@
+### Health
+GET localhost:3000/api/public/config
