@@ -326,12 +326,13 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -387,16 +388,46 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report-${{ needs.slugify.outputs.slug }}
-          path: e2e/playwright-report/
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
           retention-days: 7
 
-      - name: Upload test results
+      - name: Post E2E results to PR
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-results-${{ needs.slugify.outputs.slug }}
-          path: e2e/test-results/
-          retention-days: 7
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+        run: |
+          PR_NUMBER=$(gh pr list --head "${{ github.ref_name }}" --json number --jq '.[0].number // empty')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No open PR found for branch ${{ github.ref_name }}, skipping comment."
+            exit 0
+          fi
+
+          RESULTS=e2e/test-results/results.json
+          {
+            echo "## E2E Test Results"
+            echo ""
+            echo "**Base URL:** \`$E2E_BASE_URL\`"
+            echo ""
+            if [ ! -f "$RESULTS" ]; then
+              echo "> **E2E tests did not produce results.** Check the workflow logs."
+            else
+              jq -r '"| Test | Project | Status | Duration |", "|------|---------|--------|----------|", (.suites[].suites[]?.specs[] | .title as $title | .tests[] | "| \($title) | \(.projectName) | \(if .status == "expected" then "passed" elif .status == "skipped" then "skipped" else "**FAILED**" end) | \(((.results[0].duration // 0) / 1000 * 10 | floor / 10))s |")' "$RESULTS" 2>/dev/null || echo "> Could not parse test results."
+            fi
+            echo ""
+            echo "_Download the \`playwright-report-${{ needs.slugify.outputs.slug }}\` artifact for the full HTML report with videos and traces._"
+            echo ""
+            echo "_Updated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
+          } > /tmp/e2e-comment.md
+
+          EXISTING=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("## E2E Test Results")) | .databaseId' | head -1)
+          if [ -n "$EXISTING" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/$EXISTING" -X PATCH -f body="$(cat /tmp/e2e-comment.md)"
+          else
+            gh pr comment "$PR_NUMBER" --body-file /tmp/e2e-comment.md
+          fi

@@ -29,11 +29,12 @@
 [x] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
 [x] Build Open API Spec for FE and BE differently (if needed)
 
-[ ] E2E Testing Setup
-    [ ] Run E2E-Tests on Preview Branch
-    [ ] Add Mock Data to it (Login, Recipe, etc.)
-    [ ] Run Playwright Test against it
-    [ ] Create Video to verify it
+[x] E2E Testing Setup
+    [x] Run E2E-Tests on Preview Branch
+    [x] Create Video to verify it
+    [x] Add Summary of Tests to Step Summary of Build Step in Github Actions
+    [x] Add Summary of Tests to PRs
+    [ ] Think about stage `dev` -> login mechanism via API ok to open?
 
 [ ] DynamoDB Table Design for User
 
@@ -41,6 +42,7 @@
     [ ] Terraform Setup
     [ ] Implement DB Connection in Backend
     [ ] Add it to /health Endpoint
+    [ ] Create Dummy Data for preview branches
 
 [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     [ ] Also remove ApplicationDatabase
