@@ -30,6 +30,7 @@ This document is the single source of truth for architecture decisions, coding c
 20. [Code Quality](#20-code-quality)
 21. [Guards](#21-guards)
 22. [Generated Code Policy](#22-generated-code-policy)
+23. [E2E Testing & data-testid Conventions](#23-e2e-testing--data-testid-conventions)
 
 ---
 
@@ -868,3 +869,109 @@ The generated API client in `src/app/generated/api/` is auto-generated and gitig
 - In CI, a dedicated workflow step handles generation before lint/test/build
 - If generated code does not fit the use case, the fix goes into `openapi.yaml` — not the generated output
 - Generated DTOs and services are the canonical API types — do not redefine them in feature code
+
+---
+
+## 23. E2E Testing & data-testid Conventions
+
+### Overview
+
+End-to-end tests live in the `e2e/` project at the monorepo root, independent of the frontend. E2E tests validate user journeys against deployed preview environments using Playwright. The frontend's responsibility is to provide stable `data-testid` attributes for E2E selectors.
+
+### `data-testid` Attribute Convention
+
+Place `data-testid` attributes on interactive elements and key structural elements that E2E Page Objects need to locate. Not every element needs one — only those where CSS-cascade selectors would be brittle.
+
+#### Naming Format
+
+`<feature>-<element>` using kebab-case:
+
+```
+recipe-list              # The recipe list container
+recipe-list-item         # Individual recipe in the list
+recipe-name-input        # The recipe name input field
+recipe-add-btn           # The add recipe button
+recipe-delete-btn        # A delete button on a recipe
+nav-recipes-link         # Navbar link to recipes
+nav-health-link          # Navbar link to health
+profile-email            # Email display on profile page
+profile-title            # Profile page title
+```
+
+#### Prefixes by Feature
+
+| Feature | Prefix |
+|---------|--------|
+| Recipes | `recipe-` |
+| Profile | `profile-` |
+| Health | `health-` |
+| Navigation | `nav-` |
+| Auth | `auth-` |
+| Home | `home-` |
+
+#### Rules
+
+- `data-testid` values are static strings — no dynamic values based on data
+- Do NOT add `data-testid` to every element; only where E2E tests need stable selectors
+- `data-testid` attributes are kept in production builds (no stripping)
+- When adding a new feature, add `data-testid` attributes to key interactive and structural elements as part of the implementation
+
+### Adding E2E Tests for New Features
+
+When a new user-facing feature is implemented, the following E2E artifacts must be created in `e2e/`:
+
+1. **Page Object** (`e2e/pages/<feature>/<name>.page.ts`): Encapsulates all selectors and user actions for the feature. References `data-testid` attributes. Exposes methods named after user actions (e.g., `createRecipe()`, `expectRecipeVisible()`).
+
+2. **Spec file** (`e2e/tests/<feature>/<verb>-<noun>.spec.ts`): Describes the user journey. Uses Page Object methods exclusively — never references selectors directly. Each spec file covers one complete user journey.
+
+3. **Test data**: Use `[E2E-<test-name>]` prefix pattern for created data. Clean up in `afterAll`/`afterEach` via API calls.
+
+### Page Object Pattern
+
+Page Objects are organized by feature, mirroring the frontend structure:
+
+```
+e2e/pages/
+  recipes/
+    recipe-list.page.ts
+    recipe-detail.page.ts
+    recipe-form.page.ts
+  profile/
+    profile.page.ts
+  auth/
+    login.page.ts
+  shared/
+    navbar.page.ts
+```
+
+Rules:
+- One Page Object per page/route
+- All selectors use `data-testid` attributes via `page.getByTestId()`
+- Methods are named after user actions, not DOM operations
+- Spec files never reference selectors — only Page Object methods
+
+### Fixtures
+
+E2E tests use custom Playwright fixtures:
+- **`auth.fixture.ts`**: Validates that storageState exists (authentication is set up)
+- **`api.fixture.ts`**: Extends auth fixture with API helper methods for test data creation/cleanup
+
+### Spec File Naming
+
+Spec files use `<verb>-<noun>.spec.ts` format describing the user journey:
+
+```
+manage-recipe.spec.ts    # CRUD operations on recipes
+browse-pages.spec.ts     # Navigation between pages
+view-profile.spec.ts     # Viewing profile information
+sign-in-out.spec.ts      # Authentication flow
+```
+
+### E2E Testing Responsibilities
+
+| Artifact | E2E Coverage |
+|----------|-------------|
+| **New feature** | At least one user journey spec |
+| **New page/route** | Page Object + spec covering navigation and key content |
+| **New interactive element** | `data-testid` attribute on the element |
+| **API changes** | Update test data helpers if affected |

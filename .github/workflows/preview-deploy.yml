@@ -12,7 +12,8 @@
 #   slugify          Computes the branch slug.
 #   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses build-frontend.yml with preview base-href.
-#   deploy           terraform apply (gateway + preview) -> s3 sync -> users -> PR comment.
+#   deploy-preview   terraform apply (gateway + preview) -> s3 sync -> users -> PR comment.
+#   e2e              Runs Playwright E2E tests against the deployed preview.
 #
 # Triggers
 #   push to any branch except main.
@@ -89,6 +90,9 @@ jobs:
     needs: [slugify, build-backend, build-frontend]
     runs-on: ubuntu-latest
     environment: preview
+    outputs:
+      preview_url: ${{ steps.gw.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/
+      cognito_client_id: ${{ steps.cognito.outputs.client_id }}
     permissions:
       id-token: write
       contents: read
@@ -181,10 +185,12 @@ jobs:
 
       # --- Step 4: Create Cognito users ---
 
-      - name: Get Cognito User Pool ID
+      - name: Get Cognito outputs
         id: cognito
         working-directory: infrastructure/aws/preview/deploy
-        run: echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
+          echo "client_id=$(terraform output -raw cognito_user_pool_client_id)" >> "$GITHUB_OUTPUT"
 
       - name: Create user groups
         env:
@@ -308,3 +314,72 @@ jobs:
           echo "|------|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Demo | \`demo@breadly.app\` | USER |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Admin | \`admin@breadly.app\` | ADMIN |" >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # End-to-End Tests (Playwright)
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: E2E Tests
+    needs: [slugify, deploy-preview]
+    runs-on: ubuntu-latest
+    environment: preview
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install E2E dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
+
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: e2e
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E tests
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+          E2E_COGNITO_CLIENT_ID: ${{ needs.deploy-preview.outputs.cognito_client_id }}
+          E2E_AWS_REGION: ${{ vars.AWS_REGION }}
+          E2E_DEMO_USERNAME: demo@breadly.app
+          E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ needs.slugify.outputs.slug }}
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ needs.slugify.outputs.slug }}
+          path: e2e/test-results/
+          retention-days: 7

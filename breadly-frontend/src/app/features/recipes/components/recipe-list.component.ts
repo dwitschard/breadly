@@ -9,14 +9,20 @@ import { Recipe } from '../../../generated/api';
   imports: [LucideTrash2, TranslateModule],
   template: `
     @if (recipes().length === 0) {
-      <p class="text-gray-500">{{ 'RECIPES.EMPTY' | translate }}</p>
+      <p data-testid="recipe-empty-message" class="text-gray-500">
+        {{ 'RECIPES.EMPTY' | translate }}
+      </p>
     } @else {
-      <ul class="space-y-2">
+      <ul data-testid="recipe-list" class="space-y-2">
         @for (recipe of recipes(); track recipe._id) {
-          <li class="flex items-center justify-between border border-gray-200 rounded px-4 py-3">
+          <li
+            data-testid="recipe-list-item"
+            class="flex items-center justify-between border border-gray-200 rounded px-4 py-3"
+          >
             <span>{{ recipe.name }}</span>
             <button
               type="button"
+              data-testid="recipe-delete-btn"
               (click)="deleteRecipe.emit(recipe)"
               class="text-red-600 hover:text-red-800 cursor-pointer"
               [attr.aria-label]="'RECIPES.DELETE_LABEL' | translate: { name: recipe.name }"

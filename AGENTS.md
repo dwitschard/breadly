@@ -9,6 +9,7 @@ Breadly is a recipe management application built as a monorepo with an API-first
 | `breadly-api/` | OpenAPI spec — single source of truth for all API types | OpenAPI 3.1, Redocly |
 | `breadly-backend/` | REST API server | Express 5, TypeScript, MongoDB, Jest |
 | `breadly-frontend/` | Single-page application | Angular 21, TypeScript, Tailwind CSS v4, Vitest |
+| `e2e/` | End-to-end tests against deployed preview environments | Playwright, TypeScript, Vitest |
 | `infrastructure/` | Deployment infrastructure | Terraform (AWS), Docker Compose (local) |
 | `docs/` | Project documentation | Markdown |
 
@@ -36,6 +37,7 @@ These documents are the authoritative source for coding conventions within each 
 | `breadly-api/` | `npm run lint` | — | — | — |
 | `breadly-frontend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
 | `breadly-backend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
+| `e2e/` | — | — | `npm test` (Playwright) / `npm run test:unit` (Vitest) | — |
 
 ## Development Pipeline
 
@@ -81,10 +83,19 @@ Run verification commands in each affected project separately. Skip projects tha
 
 If any step fails, fix the issue before proceeding to the next step.
 
-### Phase 4: Code Review
+### Phase 4: E2E Tests (e2e/)
 
-11. After all verification passes, invoke the `code-reviewer` sub-agent via the Task tool to review all changes made in phases 1-3. Pass it a description of what was changed and which files were affected.
-12. If the code-reviewer applied fixes, re-run Phase 3 verification (lint, build, test) on the affected projects to ensure the fixes did not introduce regressions.
+Skip this phase if the task does not affect user-facing behavior (e.g., pure refactoring, documentation, backend-only internal changes with no API surface changes).
+
+11. **Write E2E tests** for new user-facing features or flows. Each new feature should include at least one user journey spec in `e2e/tests/<feature>/`.
+12. **Run E2E unit tests** locally: `npm run test:unit` in `e2e/` to verify helpers, page objects, and test utilities.
+
+E2E integration tests (`npm test` in `e2e/`) run against deployed preview environments in CI. They are not run locally as part of the development pipeline unless the developer has a local environment running.
+
+### Phase 5: Code Review
+
+13. After all verification passes, invoke the `code-reviewer` sub-agent via the Task tool to review all changes made in phases 1-4. Pass it a description of what was changed and which files were affected.
+14. If the code-reviewer applied fixes, re-run Phase 3 verification (lint, build, test) on the affected projects to ensure the fixes did not introduce regressions.
 
 ### Smart Skipping Rules
 
@@ -93,7 +104,8 @@ If any step fails, fix the issue before proceeding to the next step.
 - **No API changes:** skip Phase 1 entirely
 - **Documentation-only changes:** skip all phases, no review needed
 - **Test-only changes:** skip Phase 1, run only test-related verification
-- **Lint/formatting fixes:** skip Phase 1, skip Phase 4 (no review needed for formatting)
+- **Lint/formatting fixes:** skip Phase 1, skip Phase 4 (E2E), skip Phase 5 (no review needed for formatting)
+- **No user-facing behavior changes:** skip Phase 4 (E2E)
 
 ## Code Review
 

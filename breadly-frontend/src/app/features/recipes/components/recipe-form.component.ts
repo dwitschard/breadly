@@ -13,6 +13,7 @@ import { CreateRecipeDto } from '../../../generated/api';
       <label for="recipe-name" class="sr-only">{{ 'RECIPES.NAME_LABEL' | translate }}</label>
       <input
         id="recipe-name"
+        data-testid="recipe-name-input"
         type="text"
         [(ngModel)]="name"
         name="name"
@@ -23,6 +24,7 @@ import { CreateRecipeDto } from '../../../generated/api';
       />
       <button
         type="submit"
+        data-testid="recipe-add-btn"
         [disabled]="name().length === 0"
         [attr.aria-label]="'COMMON.ADD' | translate"
         class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"

@@ -10,6 +10,11 @@ output "cognito_user_pool_id" {
   value       = module.cognito.user_pool_id
 }
 
+output "cognito_user_pool_client_id" {
+  description = "Client ID of the per-branch Cognito User Pool app client."
+  value       = module.cognito.client_id
+}
+
 output "cognito_hosted_ui_domain" {
   description = "Base URL of the per-branch Cognito Hosted UI."
   value       = module.cognito.hosted_ui_domain

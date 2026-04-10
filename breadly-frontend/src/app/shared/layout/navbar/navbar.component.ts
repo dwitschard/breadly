@@ -14,6 +14,7 @@ import { ProfileMenuComponent } from './profile-menu.component';
       <div class="flex items-center gap-4">
         <a
           routerLink="/"
+          data-testid="nav-home-link"
           class="text-lg font-bold text-gray-900 hover:text-blue-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
           [attr.aria-label]="'NAV.HOME' | translate"
         >
@@ -26,6 +27,7 @@ import { ProfileMenuComponent } from './profile-menu.component';
               <li>
                 <a
                   [routerLink]="link.path"
+                  [attr.data-testid]="'nav-' + link.path.replace('/', '') + '-link'"
                   routerLinkActive="bg-gray-100 text-gray-900"
                   [routerLinkActiveOptions]="{ exact: false }"
                   class="px-3 py-2 rounded text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
