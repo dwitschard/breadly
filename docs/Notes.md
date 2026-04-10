@@ -27,19 +27,13 @@
     [x] Make sure everything still work the same
 
 [x] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
-
-[ ] Build Open API Spec for FE and BE differently (if needed)
-    [ ] Check Frontend
-    [ ] Check Backend
+[x] Build Open API Spec for FE and BE differently (if needed)
 
 [ ] E2E Testing Setup
     [ ] Deployment to a "CI" Environment (preview/ci) -> limit preview branches to 4
     [ ] Add Mock Data to it (Login, Recipe, etc.)
     [ ] Run Playwright Test against it
     [ ] Create Video to verify it
-
-[ ] Move Variables / Secrets that are not env specific to repo level on Github
-    [ ] Make sure everything still work the same
 
 [ ] DynamoDB Table Design for User
 
