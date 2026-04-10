@@ -18,8 +18,8 @@ export default defineConfig({
     actionTimeout: 10_000,
     navigationTimeout: 60_000,
     trace: 'retain-on-failure',
-    video: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    video: 'on',
+    screenshot: 'on',
   },
   reporter: [['html', { open: 'never' }]],
   projects: [
