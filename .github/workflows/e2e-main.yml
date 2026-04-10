@@ -236,6 +236,7 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Run E2E tests
+        id: e2e-run
         working-directory: e2e
         env:
           E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
@@ -244,6 +245,22 @@ jobs:
           E2E_DEMO_USERNAME: demo@breadly.app
           E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
         run: npx playwright test
+
+      - name: Write E2E summary
+        if: always()
+        env:
+          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+        run: |
+          echo "**E2E Base URL:** \`$E2E_BASE_URL\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          RESULTS=e2e/test-results/results.json
+          if [ ! -f "$RESULTS" ]; then
+            echo "> **E2E tests did not produce results.** Check the workflow logs." >> "$GITHUB_STEP_SUMMARY"
+          else
+            jq -r '"| Test | Project | Status | Duration |", "|------|---------|--------|----------|", (.suites[].suites[]?.specs[] | .title as $title | .tests[] | "| \($title) | \(.projectName) | \(if .status == "expected" then "passed" elif .status == "skipped" then "skipped" else "**FAILED**" end) | \(((.results[0].duration // 0) / 1000 * 10 | floor / 10))s |")' "$RESULTS" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "> Could not parse test results." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "_Download the \`playwright-report-e2e-main\` artifact for the full HTML report with videos and traces._" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Playwright report
         if: always()
@@ -254,7 +271,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results-e2e-main

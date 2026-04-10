@@ -17,11 +17,11 @@ export default defineConfig({
     baseURL,
     actionTimeout: 10_000,
     navigationTimeout: 60_000,
-    trace: 'retain-on-failure',
+    trace: 'on',
     video: 'on',
     screenshot: 'on',
   },
-  reporter: [['html', { open: 'never' }]],
+  reporter: [['html', { open: 'never' }], ['github'], ['json', { outputFile: 'test-results/results.json' }]],
   projects: [
     {
       name: 'desktop',
