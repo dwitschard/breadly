@@ -7,7 +7,7 @@
     "build": "npm run generate-api && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "generate-api": "npm run --prefix ../breadly-api lint && openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript-angular -o src/app/generated/api --additional-properties=ngVersion=21,supportsES6=true,withInterfaces=true",
+    "generate-api": "npm run --prefix ../breadly-api lint && openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript-angular -o src/app/generated/api --additional-properties=ngVersion=21,supportsES6=true",
     "lint": "prettier --write \"src/**/*.{ts,html,css}\"",
     "test:ci": "npm run generate-api && ng test --no-watch"
   },

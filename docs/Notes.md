@@ -16,6 +16,7 @@
     [x] Delete Env once Branch is deleted
     [x] Check if Teardown of Preview Env works
     [x] Make deployments / Terraform Setup easier
+
 [x] Add a version in the backend and display it in the frontend (health status page)
     [x] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
     [x] For preview branches don't create a link to the non existent release -> use commit
@@ -25,7 +26,7 @@
 [x] Move Variables / Secrets that are not env specific to repo level on Github
     [x] Make sure everything still work the same
 
-[ ] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
+[x] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
 
 [ ] Build Open API Spec for FE and BE differently (if needed)
     [ ] Check Frontend
@@ -36,13 +37,17 @@
     [ ] Add Mock Data to it (Login, Recipe, etc.)
     [ ] Run Playwright Test against it
     [ ] Create Video to verify it
+
 [ ] Move Variables / Secrets that are not env specific to repo level on Github
     [ ] Make sure everything still work the same
+
 [ ] DynamoDB Table Design for User
+
 [ ] Add DynamoDB Connection 
     [ ] Terraform Setup
     [ ] Implement DB Connection in Backend
     [ ] Add it to /health Endpoint
+
 [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     [ ] Also remove ApplicationDatabase
 
