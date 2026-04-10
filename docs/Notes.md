@@ -30,7 +30,7 @@
 [x] Build Open API Spec for FE and BE differently (if needed)
 
 [ ] E2E Testing Setup
-    [ ] Deployment to a "CI" Environment (preview/ci) -> limit preview branches to 4
+    [ ] Run E2E-Tests on Preview Branch
     [ ] Add Mock Data to it (Login, Recipe, etc.)
     [ ] Run Playwright Test against it
     [ ] Create Video to verify it
