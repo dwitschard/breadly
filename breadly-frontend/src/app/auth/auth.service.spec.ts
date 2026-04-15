@@ -23,8 +23,11 @@ describe('AuthService', () => {
     });
 
     TestBed.inject(ConfigService).setConfig({
-      issuer: 'https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_abc123',
-      clientId: 'test-client-id',
+      environment: 'local',
+      idp: {
+        issuer: 'https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_abc123',
+        clientId: 'test-client-id',
+      },
     });
 
     oauthService = TestBed.inject(OAuthService);

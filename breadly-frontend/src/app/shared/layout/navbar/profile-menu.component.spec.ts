@@ -12,6 +12,7 @@ class FakeLoader implements TranslateLoader {
         LOGIN: 'Anmelden',
         LOGOUT: 'Abmelden',
         PROFILE: 'Profil anzeigen',
+        HEALTH: 'Systemstatus',
         ACCOUNT_MENU: 'Kontomenü für {{name}}',
         ACCOUNT_OPTIONS: 'Kontooptionen',
       },
@@ -33,18 +34,22 @@ const mockProfile: Profile = {
     <app-profile-menu
       [profile]="profile()"
       [isLoggedIn]="isLoggedIn()"
+      [isAdmin]="isAdmin()"
       (loginClick)="loginClicks.set(loginClicks() + 1)"
       (profileClick)="profileClicks.set(profileClicks() + 1)"
       (logoutClick)="logoutClicks.set(logoutClicks() + 1)"
+      (healthClick)="healthClicks.set(healthClicks() + 1)"
     />
   `,
 })
 class TestHostComponent {
   readonly profile = signal<Profile | null>(null);
   readonly isLoggedIn = signal(false);
+  readonly isAdmin = signal(false);
   readonly loginClicks = signal(0);
   readonly profileClicks = signal(0);
   readonly logoutClicks = signal(0);
+  readonly healthClicks = signal(0);
 }
 
 describe('ProfileMenuComponent', () => {
@@ -63,10 +68,12 @@ describe('ProfileMenuComponent', () => {
   function create(
     profile: Profile | null,
     isLoggedIn: boolean,
+    isAdmin = false,
   ): ComponentFixture<ProfileMenuComponent> {
     const fixture = TestBed.createComponent(ProfileMenuComponent);
     fixture.componentRef.setInput('profile', profile);
     fixture.componentRef.setInput('isLoggedIn', isLoggedIn);
+    fixture.componentRef.setInput('isAdmin', isAdmin);
     fixture.detectChanges();
     return fixture;
   }
@@ -198,6 +205,35 @@ describe('ProfileMenuComponent', () => {
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
       document.body.removeChild(outsideEl);
+    });
+
+    it('does not show health menu item when isAdmin is false', () => {
+      const fixture = create(mockProfile, true, false);
+      asAny(fixture.componentInstance).toggle();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[data-testid="nav-health-btn"]')).toBeNull();
+    });
+
+    it('shows health menu item when isAdmin is true', () => {
+      const fixture = create(mockProfile, true, true);
+      asAny(fixture.componentInstance).toggle();
+      fixture.detectChanges();
+      const btn = fixture.nativeElement.querySelector('[data-testid="nav-health-btn"]');
+      expect(btn).toBeTruthy();
+      expect(btn.textContent?.trim()).toBe('Systemstatus');
+    });
+
+    it('emits healthClick and closes dropdown', () => {
+      const fixture = create(mockProfile, true, true);
+      asAny(fixture.componentInstance).toggle();
+      fixture.detectChanges();
+
+      const healthEmitSpy = vi.spyOn(fixture.componentInstance.healthClick, 'emit');
+      asAny(fixture.componentInstance).onHealthClick();
+      fixture.detectChanges();
+
+      expect(healthEmitSpy).toHaveBeenCalledTimes(1);
+      expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
     });
   });
 });

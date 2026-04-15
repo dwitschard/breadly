@@ -6,6 +6,7 @@ const request = supertest(app);
 describe('Public Controller — /api/public', () => {
   const originalIssuer = process.env['COGNITO_ISSUER'];
   const originalClientId = process.env['COGNITO_CLIENT_ID'];
+  const originalEnvName = process.env['ENV_NAME'];
 
   afterEach(() => {
     if (originalIssuer !== undefined) {
@@ -17,6 +18,11 @@ describe('Public Controller — /api/public', () => {
       process.env['COGNITO_CLIENT_ID'] = originalClientId;
     } else {
       delete process.env['COGNITO_CLIENT_ID'];
+    }
+    if (originalEnvName !== undefined) {
+      process.env['ENV_NAME'] = originalEnvName;
+    } else {
+      delete process.env['ENV_NAME'];
     }
   });
 
@@ -37,10 +43,21 @@ describe('Public Controller — /api/public', () => {
     const res = await request.get('/api/public/config');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
+      environment: expect.any(String),
       idp: {
         issuer: 'https://cognito.example.com',
         clientId: 'test-client-id',
       },
     });
+  });
+
+  it('returns the ENV_NAME value as environment', async () => {
+    process.env['COGNITO_ISSUER'] = 'https://cognito.example.com';
+    process.env['COGNITO_CLIENT_ID'] = 'test-client-id';
+    process.env['ENV_NAME'] = 'preview-feature-x';
+
+    const res = await request.get('/api/public/config');
+    expect(res.status).toBe(200);
+    expect(res.body.environment).toBe('preview-feature-x');
   });
 });

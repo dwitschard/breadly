@@ -18,8 +18,11 @@ describe('App', () => {
     }).compileComponents();
 
     TestBed.inject(ConfigService).setConfig({
-      issuer: 'https://example.com',
-      clientId: 'test-client-id',
+      environment: 'local',
+      idp: {
+        issuer: 'https://example.com',
+        clientId: 'test-client-id',
+      },
     });
   });
 

@@ -16,4 +16,5 @@ export const env = {
   COGNITO_ISSUER: process.env['COGNITO_ISSUER'],
   COGNITO_CLIENT_ID: process.env['COGNITO_CLIENT_ID'],
   PREVIEW_PATH_PREFIX: process.env['PREVIEW_PATH_PREFIX'],
+  ENV_NAME: optional('ENV_NAME', 'local'),
 };

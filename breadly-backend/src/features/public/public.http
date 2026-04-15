@@ -1,2 +1,2 @@
-### Health
+### Get public configuration (environment, IDP)
 GET localhost:3000/api/public/config

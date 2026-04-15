@@ -7,5 +7,4 @@ export interface NavLink {
 
 export const NAV_LINKS: NavLink[] = [
   { labelKey: 'NAV.RECIPES', path: '/recipes', requiresAuth: true },
-  { labelKey: 'NAV.HEALTH', path: '/health', requiresAuth: true },
 ];

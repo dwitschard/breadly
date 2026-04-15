@@ -49,6 +49,17 @@
           >
             {{ 'NAV.PROFILE' | translate }}
           </button>
+          @if (isAdmin()) {
+            <button
+              type="button"
+              role="menuitem"
+              data-testid="nav-health-btn"
+              (click)="onHealthClick()"
+              class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none cursor-pointer"
+            >
+              {{ 'NAV.HEALTH' | translate }}
+            </button>
+          }
           <button
             type="button"
             role="menuitem"

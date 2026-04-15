@@ -102,9 +102,10 @@ module "backend_public" {
   mongodb_uri   = var.mongodb_uri
 
   extra_env_vars = {
-    COGNITO_ISSUER    = module.cognito.issuer_url
-    COGNITO_CLIENT_ID = module.cognito.client_id
+    COGNITO_ISSUER      = module.cognito.issuer_url
+    COGNITO_CLIENT_ID   = module.cognito.client_id
     PREVIEW_PATH_PREFIX = "/preview/${var.branch_slug}"
+    ENV_NAME            = "preview-${var.branch_slug}"
   }
 
   tags = {

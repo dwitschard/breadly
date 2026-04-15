@@ -9,7 +9,7 @@ export const routes: Routes = [
   },
   {
     path: 'health',
-    canActivate: [withAuth()],
+    canActivate: [withAuth({ roles: ['ADMIN'] })],
     loadChildren: () => import('./features/health/health.routes').then((m) => m.HEALTH_ROUTES),
   },
   {
