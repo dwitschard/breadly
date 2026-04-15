@@ -85,9 +85,14 @@ If any step fails, fix the issue before proceeding to the next step.
 
 ### Phase 4: E2E Tests (e2e/)
 
-Skip this phase **only** for pure refactoring, documentation-only changes, test-only changes, or lint/formatting fixes. All new user-facing features **must** include E2E coverage.
+Skip this phase **only** for pure refactoring, documentation-only changes, test-only changes, or lint/formatting fixes. All new user-facing features **must** include E2E coverage. All changes to user-facing behavior **must** update affected E2E tests.
 
-11. **Write E2E tests** for every new feature. Each new feature must include at least one happy-path user journey spec in `e2e/tests/<feature>/`.
+11. **Write or update E2E tests** as needed:
+    - **New features:** create at least one happy-path user journey spec in `e2e/tests/<feature>/`.
+    - **Changed behavior:** update existing Page Objects and specs to match the new UI (e.g., moved elements, renamed selectors, changed navigation flows).
+    - **Removed features:** remove or update specs that relied on the removed behavior.
+
+12. **Run E2E tests** (`npm test` in `e2e/`) to verify changes. E2E tests run against a deployed preview environment (configured via `E2E_BASE_URL` in `e2e/.env`). If the preview environment does not yet include the current changes, verify at minimum that the E2E test code is consistent with the frontend changes (Page Object selectors match `data-testid` attributes, navigation flows match the updated UI).
 
 #### What to test in E2E vs unit/integration tests
 

@@ -11,7 +11,6 @@ test.describe('Browse pages', () => {
 
     await navbar.expectLoggedIn();
     await navbar.expectRecipesLinkVisible();
-    await navbar.expectHealthLinkVisible();
 
     await navbar.navigateToRecipes();
     await expect(page.getByTestId('recipes-title')).toBeVisible();

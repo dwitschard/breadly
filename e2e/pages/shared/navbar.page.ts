@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 
 export class NavbarPage {
   readonly recipesLink: Locator;
-  readonly healthLink: Locator;
+  readonly healthButton: Locator;
   readonly profileButton: Locator;
   readonly loginButton: Locator;
   readonly logoutButton: Locator;
@@ -16,7 +16,7 @@ export class NavbarPage {
   constructor(private readonly page: Page) {
     this.homeLink = page.getByTestId('nav-home-link');
     this.recipesLink = page.getByTestId('nav-recipes-link');
-    this.healthLink = page.getByTestId('nav-health-link');
+    this.healthButton = page.getByTestId('nav-health-btn');
     this.profileMenuTrigger = page.getByTestId('nav-profile-trigger');
     this.profileMenuDropdown = page.getByRole('menu');
     this.profileButton = page.getByTestId('nav-profile-btn');
@@ -32,7 +32,8 @@ export class NavbarPage {
   }
 
   async navigateToHealth(): Promise<void> {
-    await this.healthLink.click();
+    await this.openProfileMenu();
+    await this.healthButton.click();
     await this.page.waitForURL('**/health**');
   }
 
@@ -69,7 +70,8 @@ export class NavbarPage {
     await expect(this.recipesLink).toBeVisible();
   }
 
-  async expectHealthLinkVisible(): Promise<void> {
-    await expect(this.healthLink).toBeVisible();
+  async expectHealthButtonVisible(): Promise<void> {
+    await this.openProfileMenu();
+    await expect(this.healthButton).toBeVisible();
   }
 }
