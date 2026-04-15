@@ -69,7 +69,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy to ${{ inputs.environment || github.event.inputs.environment }}
+    name: ${{ inputs.environment || github.event.inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || github.event.inputs.environment }}
     permissions:

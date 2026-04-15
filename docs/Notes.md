@@ -9,8 +9,8 @@
     - [x] Fix usage of Node 20 in Github Action
     - [x] Check if a github compound action might be useful to print out playwright results to GH-Variables for Summary / PR
     - [x] Check if E2E Tests are part of the dev cycle - each new feature should be covered in an E2E Test
-    - [ ] Validate if true: `dev`-Stage / `main`-Branch: Deploy preview branch during action to `preview/ci-dev`, if successful deploy to `dev`
     - [ ] Display Environment (`dev`, `preview-xyz` ) in navbar somewhere to verify easily in the e2e test
+    - [ ] Validate if true: `dev`-Stage / `main`-Branch: Deploy preview branch during action to `preview/ci-dev`, if successful deploy to `dev`
 
 
 - [ ] Switch Testing in Frontend to use TestingLibrary

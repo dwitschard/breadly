@@ -47,7 +47,7 @@ on:
 
 jobs:
   e2e:
-    name: Playwright E2E (${{ inputs.slug }})
+    name: Run Playwright
     runs-on: ubuntu-latest
     environment: preview
     permissions:

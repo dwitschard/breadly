@@ -100,7 +100,7 @@ jobs:
   # End-to-End Tests (Playwright — reusable workflow)
   # ---------------------------------------------------------------------------
   e2e:
-    name: Playwright E2E
+    name: E2E
     needs: [slugify, deploy-preview]
     uses: ./.github/workflows/_run-e2e.yml
     permissions:

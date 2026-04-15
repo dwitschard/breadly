@@ -51,7 +51,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy Preview (${{ inputs.slug }})
+    name: Deploy
     runs-on: ubuntu-latest
     environment: preview
     outputs:

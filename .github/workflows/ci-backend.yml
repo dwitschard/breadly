@@ -42,7 +42,7 @@ permissions:
 
 jobs:
   build:
-    name: Lint, Test & Build
+    name: Build
     runs-on: ubuntu-latest
     outputs:
       short_sha: ${{ steps.sha.outputs.short }}
@@ -130,7 +130,7 @@ jobs:
             --generate-notes
 
   deploy:
-    name: Deploy Dev
+    name: Deploy
     needs: [ build, release ]
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/_deploy.yml
