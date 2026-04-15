@@ -1,4 +1,4 @@
-# preview-cleanup.yml
+# feature-branch-cleanup.yml
 #
 # Tears down the preview environment for a deleted branch.
 # Triggered automatically when a branch is deleted.

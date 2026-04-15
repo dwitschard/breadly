@@ -1,4 +1,4 @@
-# feature-branches.yml
+# feature-branch.yml
 #
 # Deploys a full-stack preview environment for every non-main branch push.
 # Each preview environment runs under /preview/<branch-slug>/ on the dedicated
@@ -12,7 +12,7 @@
 #   slugify          Computes the branch slug.
 #   build-backend    Reuses _ci-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses _ci-frontend.yml with preview base-href.
-#   deploy-preview   Reuses _deploy-feature-branches.yml (gateway + stack + S3 + users + PR comment).
+#   deploy-preview   Reuses _deploy-feature-branch.yml (gateway + stack + S3 + users + PR comment).
 #   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the deployed preview).
 #
 # Triggers
