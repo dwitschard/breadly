@@ -9,7 +9,7 @@
 #   4. Delete the Terraform workspace.
 #
 # Used by:
-#   - preview-cleanup.yml  (single branch: branch deletion)
+#   - feature-branch-cleanup.yml  (single branch: branch deletion)
 #   - main.yml             (single branch: temporary preview teardown after E2E tests)
 #   - teardown-env.yml     (all branches: matrix-based parallel teardown)
 #

@@ -5,7 +5,7 @@
 #
 # This is a private/reusable workflow — it does not trigger on push.
 # It is called by main.yml (main branch pipeline) and
-# feature-branches.yml (preview environments).
+# feature-branch.yml (preview environments).
 #
 # Jobs
 #   build    Lint → test → build → upload dist artifact
