@@ -1,4 +1,4 @@
-# preview.yml
+# e2e-feature-branches.yml
 #
 # Deploys a full-stack preview environment for every non-main branch push.
 # Each preview environment runs under /preview/<branch-slug>/ on the dedicated
@@ -12,7 +12,7 @@
 #   slugify          Computes the branch slug.
 #   build-backend    Reuses ci-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses ci-frontend.yml with preview base-href.
-#   deploy-preview   Reuses _deploy-preview.yml (gateway + stack + S3 + users + PR comment).
+#   deploy-preview   Reuses _deploy-e2e-feature-branches.yml (gateway + stack + S3 + users + PR comment).
 #   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the deployed preview).
 #
 # Triggers
@@ -23,7 +23,7 @@
 #            PREVIEW_DEMO_PASSWORD, PREVIEW_ADMIN_PASSWORD
 #   Variables: AWS_REGION
 
-name: Preview
+name: E2E (Feature Branch)
 
 on:
   push:

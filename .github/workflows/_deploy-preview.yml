@@ -1,8 +1,8 @@
-# _deploy-preview.yml
+# _deploy-e2e-feature-branches.yml
 #
 # Reusable workflow — deploys a full preview stack for a given branch slug.
 #
-# Shared by preview.yml (feature branches) and e2e-main.yml (main
+# Shared by e2e-feature-branches.yml (feature branches) and e2e-main.yml (main
 # branch E2E validation). Callers provide the slug and control whether a
 # PR comment is posted.
 #

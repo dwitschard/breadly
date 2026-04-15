@@ -12,7 +12,7 @@
 # Jobs:
 #   build-backend    Reuses ci-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses ci-frontend.yml with e2e-main base-href.
-#   deploy-preview   Reuses _deploy-preview.yml with slug "e2e-main".
+#   deploy-preview   Reuses _deploy-e2e-feature-branches.yml with slug "e2e-main".
 #   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the temporary preview).
 #   teardown         Destroys the temporary stack via teardown-preview-stack action (always runs).
 #

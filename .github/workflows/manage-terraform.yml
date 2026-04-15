@@ -1,4 +1,4 @@
-# setup-terraform.yml
+# manage-terraform.yml
 #
 # One-time setup and teardown of the Terraform state backend for the frontend.
 # Creates (or destroys) the S3 state bucket and DynamoDB lock table that all
@@ -16,7 +16,7 @@
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
 #   Variables: AWS_REGION
 
-name: Setup Infrastructure
+name: Manage Terraform
 
 on:
   workflow_dispatch:

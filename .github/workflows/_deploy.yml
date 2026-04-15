@@ -13,7 +13,7 @@
 #
 # Prerequisites
 #   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
-#   Run setup-terraform.yml once per environment before the first deploy.
+#   Run manage-terraform.yml once per environment before the first deploy.
 #
 # Artifacts
 #   The workflow always needs both backend.zip and dist.zip. The caller passes
