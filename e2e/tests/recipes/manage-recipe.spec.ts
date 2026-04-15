@@ -5,6 +5,8 @@ import { uniqueName } from '../../helpers/test-data.helper';
 const TEST_NAME = 'manage-recipe';
 
 test.describe('Manage recipes', () => {
+  test.use({ role: 'user' });
+
   test('create a recipe via UI, verify it appears, then delete it', async ({
     page,
   }) => {

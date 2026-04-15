@@ -2,14 +2,13 @@ import { test, expect } from '../../fixtures/auth.fixture';
 import { NavbarPage } from '../../pages/shared/navbar.page';
 
 test.describe('Browse pages', () => {
+  test.use({ role: 'user' });
+
   test('navigate between recipes and profile via navbar', async ({
     page,
   }) => {
     const navbar = new NavbarPage(page);
 
-    await page.goto('.');
-
-    await navbar.expectLoggedIn();
     await navbar.expectRecipesLinkVisible();
 
     await navbar.navigateToRecipes();

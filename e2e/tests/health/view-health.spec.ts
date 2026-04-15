@@ -1,16 +1,13 @@
-import { test, ADMIN_STORAGE_STATE } from '../../fixtures/auth.fixture';
+import { test } from '../../fixtures/auth.fixture';
 import { NavbarPage } from '../../pages/shared/navbar.page';
 import { HealthPage } from '../../pages/health/health.page';
 
 test.describe('View health dashboard', () => {
-  test.use({ storageState: ADMIN_STORAGE_STATE });
+  test.use({ role: 'admin' });
 
   test('admin navigates to health page and sees all system data', async ({ page }) => {
     const navbar = new NavbarPage(page);
     const health = new HealthPage(page);
-
-    await page.goto('.');
-    await navbar.expectLoggedIn();
 
     await navbar.navigateToHealth();
     await health.expectLoaded();
