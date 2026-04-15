@@ -3,8 +3,8 @@
 # Reusable workflow — runs Playwright E2E tests against a deployed preview
 # environment.
 #
-# Shared by e2e-feature-branches.yml (feature branches) and e2e-main.yml (main
-# branch E2E validation). Callers provide the preview URL and control
+# Shared by main.yml (main branch pipeline) and e2e-feature-branches.yml
+# (feature branches). Callers provide the preview URL and control
 # whether results are posted to a PR comment.
 #
 # Steps:

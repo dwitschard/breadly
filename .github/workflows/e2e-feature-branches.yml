@@ -10,8 +10,8 @@
 #
 # Jobs:
 #   slugify          Computes the branch slug.
-#   build-backend    Reuses ci-backend.yml (lint -> test -> build -> artifact).
-#   build-frontend   Reuses ci-frontend.yml with preview base-href.
+#   build-backend    Reuses _ci-backend.yml (lint -> test -> build -> artifact).
+#   build-frontend   Reuses _ci-frontend.yml with preview base-href.
 #   deploy-preview   Reuses _deploy-e2e-feature-branches.yml (gateway + stack + S3 + users + PR comment).
 #   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the deployed preview).
 #
@@ -59,9 +59,9 @@ jobs:
   build-backend:
     name: CI Backend
     needs: [slugify]
-    uses: ./.github/workflows/ci-backend.yml
+    uses: ./.github/workflows/_ci-backend.yml
     permissions:
-      contents: write
+      contents: read
       id-token: write
     secrets: inherit
 
@@ -71,9 +71,9 @@ jobs:
   build-frontend:
     name: CI Frontend
     needs: [slugify]
-    uses: ./.github/workflows/ci-frontend.yml
+    uses: ./.github/workflows/_ci-frontend.yml
     permissions:
-      contents: write
+      contents: read
       id-token: write
     with:
       base_href: /preview/${{ needs.slugify.outputs.slug }}/

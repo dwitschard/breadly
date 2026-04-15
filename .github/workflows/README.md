@@ -1,16 +1,66 @@
 # GitHub Actions — Workflows
 
-## `ci-backend.yml`
+## `main.yml`
 
-Lints, tests, packages and produces a release artifact for the Express backend.
-On push to `main`, automatically triggers `_deploy.yml` to deploy to `dev`.
+Unified pipeline for the main branch. Builds, validates (E2E), releases, and deploys to the `dev` environment. Dev is only deployed when **all checks pass**: backend CI, frontend CI, E2E tests.
+
+### Triggers
+
+| Trigger | Target |
+|---|---|
+| Push to `main` | `dev` (automatic, after E2E passes) |
+
+### Jobs
+
+```
+build-backend ──────────┐
+build-frontend-preview ─┼──▶ deploy-preview ──▶ e2e ──▶ build-frontend-dev ──▶ release-frontend ─┐
+                        │                         └───▶ release-backend ──────────────────────────┼──▶ deploy-dev ──▶ teardown (always)
+                        └──────────────────────────────────────────────────────────────────────────────────────────▶ teardown (always)
+```
+
+### What it does
+
+1. Builds backend and frontend (for preview) in parallel via `_ci-backend.yml` and `_ci-frontend.yml`
+2. Deploys a temporary preview environment with slug `e2e-main`
+3. Runs Playwright E2E tests against the preview
+4. **Only if E2E passes:** rebuilds frontend for dev (`base_href=/`), creates GitHub Releases for backend + frontend, deploys to `dev`
+5. Tears down the temporary preview (always, even on failure)
+
+### Manual deploy of existing releases
+
+To redeploy existing releases without rebuilding, use `_deploy.yml` → Run workflow → select release tags + environment.
 
 ---
 
-## `ci-frontend.yml`
+## `_ci-backend.yml`
 
-Lints, tests, and produces a production build artifact for the Angular frontend.
-On push to `main`, automatically triggers `_deploy.yml` to deploy to `dev`.
+Reusable CI pipeline for the Breadly backend. Lints, tests, and produces a production build artifact (`backend.zip`). Does not trigger on push — called by `main.yml` and `e2e-feature-branches.yml`.
+
+### Outputs
+
+| Output | Description |
+|---|---|
+| `short_sha` | Short commit SHA (7 chars) for release tagging |
+
+---
+
+## `_ci-frontend.yml`
+
+Reusable CI pipeline for the Breadly frontend. Lints, tests, and produces a production build artifact. Does not trigger on push — called by `main.yml` and `e2e-feature-branches.yml`.
+
+### Inputs
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `base_href` | No | `/` | Base href for the Angular build |
+| `artifact_name` | No | `frontend-dist` | Name for the uploaded build artifact |
+
+### Outputs
+
+| Output | Description |
+|---|---|
+| `short_sha` | Short commit SHA (7 chars) for release tagging |
 
 ### What it does
 
@@ -18,7 +68,7 @@ On push to `main`, automatically triggers `_deploy.yml` to deploy to `dev`.
 2. `npm run lint` (Prettier)
 3. `npm run test:ci` (Vitest, no-watch)
 4. `npm run build` (generates API client, then `ng build`)
-5. Uploads `dist/breadly-frontend/browser/` as artifact `frontend-dist` (retained 1 day)
+5. Uploads `dist/breadly-frontend/browser/` as artifact (retained 1 day)
 
 ---
 
@@ -31,8 +81,7 @@ Deploys frontend (S3), backend (Lambda), Cognito, API Gateway, and CloudFront in
 
 | Trigger | Target environment |
 |---|---|
-| Called by `ci-backend.yml` on push to `main` | `dev` (automatic) |
-| Called by `ci-frontend.yml` on push to `main` | `dev` (automatic) |
+| Called by `main.yml` after E2E validation passes | `dev` (automatic) |
 | `workflow_dispatch` → select backend/frontend release tags + environment | chosen environment (manual) |
 
 Production is **never deployed automatically**. Use the GitHub Actions UI "Run workflow" button and select `prod`.
@@ -71,7 +120,7 @@ Navigate to **Settings → Secrets and variables → Actions → Environments** 
 
 ---
 
-## `preview.yml`
+## `e2e-feature-branches.yml`
 
 Deploys a full-stack preview environment for every non-main branch push.
 Each preview runs under `/preview/<branch-slug>/` on the dedicated preview CloudFront distribution.
@@ -105,28 +154,9 @@ https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/api/*   # Backend
 
 ---
 
-## `e2e-main.yml`
-
-Runs E2E tests on the main branch after every push. Deploys a temporary preview environment with a fixed slug (`e2e-main`), runs the Playwright E2E suite against it, and tears it down afterward.
-
-### Triggers
-
-| Trigger | Target |
-|---|---|
-| Push to `main` | Temporary `e2e-main` preview environment |
-
-### Jobs
-
-```
-build-backend ──┐
-build-frontend ─┼──▶ _deploy-preview.yml ──▶ _run-e2e.yml ──▶ teardown (always)
-```
-
----
-
 ## `_run-e2e.yml`
 
-Reusable workflow (`workflow_call`) that runs Playwright E2E tests against a deployed preview environment. Shared by `preview.yml` and `e2e-main.yml` to avoid duplication of E2E setup, execution, and reporting logic.
+Reusable workflow (`workflow_call`) that runs Playwright E2E tests against a deployed preview environment. Shared by `main.yml` and `e2e-feature-branches.yml` to avoid duplication of E2E setup, execution, and reporting logic.
 
 ### Inputs
 
@@ -149,7 +179,7 @@ Reusable workflow (`workflow_call`) that runs Playwright E2E tests against a dep
 
 ## `_deploy-preview.yml`
 
-Reusable workflow (`workflow_call`) that deploys a full preview stack for a given branch slug. Shared by `preview.yml` and `e2e-main.yml` to avoid duplication.
+Reusable workflow (`workflow_call`) that deploys a full preview stack for a given branch slug. Shared by `main.yml` and `e2e-feature-branches.yml` to avoid duplication.
 
 ### Inputs
 
@@ -158,6 +188,7 @@ Reusable workflow (`workflow_call`) that deploys a full preview stack for a give
 | `slug` | Yes | — | URL-safe branch slug for workspace and S3 prefix |
 | `post-pr-comment` | No | `false` | Whether to post preview URL as a PR comment |
 | `branch-name` | No | `""` | Git branch name for PR lookup |
+| `frontend_artifact_name` | No | `frontend-dist` | Name of the frontend build artifact to download |
 
 ### Outputs
 
@@ -240,7 +271,7 @@ Converts a branch name to a URL-safe slug (lowercase, special chars replaced wit
 
 ### `.github/actions/teardown-preview-stack/`
 
-Composite action that tears down a single preview branch stack. Encapsulates all steps needed to destroy one preview workspace: Terraform destroy, S3 asset cleanup (optional), and workspace deletion. Used by `preview-cleanup.yml`, `e2e-main.yml` (single branch) and `teardown-env.yml` (matrix over all branches).
+Composite action that tears down a single preview branch stack. Encapsulates all steps needed to destroy one preview workspace: Terraform destroy, S3 asset cleanup (optional), and workspace deletion. Used by `preview-cleanup.yml`, `main.yml` (single branch) and `teardown-env.yml` (matrix over all branches).
 
 | Input | Required | Default | Description |
 |---|---|---|---|
@@ -285,8 +316,8 @@ Parses Playwright JSON results, writes a summary table to the GitHub job summary
 | `AWS_OIDC_ROLE_ARN` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_ACCOUNT_ID` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_REGION` | Variable | Repository | All workflows |
-| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `_deploy.yml`, `_deploy-preview.yml`, `preview-cleanup.yml`, `e2e-main.yml` |
-| `PREVIEW_DEMO_PASSWORD` | Secret | Preview environment | `_deploy-preview.yml`, `preview.yml` (E2E), `e2e-main.yml` |
+| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `_deploy.yml`, `_deploy-preview.yml`, `preview-cleanup.yml`, `main.yml` |
+| `PREVIEW_DEMO_PASSWORD` | Secret | Preview environment | `_deploy-preview.yml`, `e2e-feature-branches.yml` (E2E), `main.yml` |
 | `PREVIEW_ADMIN_PASSWORD` | Secret | Preview environment | `_deploy-preview.yml` |
 
 ### One-time setup per environment

@@ -8,7 +8,7 @@
 #   deploy    Downloads both release assets and deploys via Terraform.
 #
 # Triggers
-#   workflow_call     Called by ci-backend.yml or ci-frontend.yml on main.
+#   workflow_call     Called by main.yml after E2E validation passes.
 #   workflow_dispatch Manually deploy a specific environment.
 #
 # Prerequisites

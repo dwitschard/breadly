@@ -10,7 +10,7 @@
 #
 # Used by:
 #   - preview-cleanup.yml  (single branch: branch deletion)
-#   - e2e-main.yml         (single branch: temporary preview teardown after E2E tests)
+#   - main.yml             (single branch: temporary preview teardown after E2E tests)
 #   - teardown-env.yml     (all branches: matrix-based parallel teardown)
 #
 # The calling job must:

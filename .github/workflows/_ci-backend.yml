@@ -1,34 +1,26 @@
-# ci-backend.yml
+# _ci-backend.yml
 #
-# CI pipeline for the Breadly backend.
-# Lints, tests, and produces a production build artifact.
-# On main, also creates a GitHub Release and triggers a dev deployment.
+# Reusable CI pipeline for the Breadly backend.
+# Lints, tests, and produces a production build artifact (backend.zip).
+#
+# This is a private/reusable workflow — it does not trigger on push.
+# It is called by main.yml (main branch pipeline) and
+# e2e-feature-branches.yml (preview environments).
 #
 # Jobs
 #   build    Lint → test → build → upload dist artifact
-#   release  (main only) Create GitHub Release with backend.zip asset
-#   deploy   (main only) Call _deploy.yml to deploy to dev
 #
-# Triggers
-#   push              Runs on main when backend source files change.
-#   workflow_call     Reusable entry point (used by preview).
-#   workflow_dispatch Manual trigger for re-running CI on demand.
+# Outputs
+#   short_sha   Short commit SHA (used for release tagging by the caller).
 
 name: CI Backend
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "breadly-backend/**"
-      - "infrastructure/aws/backend/**"
-      - "infrastructure/aws/deploy/**"
-      - ".github/workflows/ci-backend.yml"
-      - ".github/workflows/_deploy.yml"
-      - ".github/actions/**"
-
   workflow_call:
+    outputs:
+      short_sha:
+        description: "Short SHA of the commit (7 chars)"
+        value: ${{ jobs.build.outputs.short_sha }}
 
   workflow_dispatch:
 
@@ -37,7 +29,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
@@ -107,34 +99,3 @@ jobs:
           name: backend-dist
           path: backend.zip
           retention-days: 1
-
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: backend-dist
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh release create backend-${{ needs.build.outputs.short_sha }} backend.zip \
-            --title "backend-${{ needs.build.outputs.short_sha }}" \
-            --generate-notes
-
-  deploy:
-    name: Deploy
-    needs: [ build, release ]
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/_deploy.yml
-    with:
-      release_tag: backend-${{ needs.build.outputs.short_sha }}
-      environment: dev
-    secrets: inherit

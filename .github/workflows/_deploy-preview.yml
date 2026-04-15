@@ -1,10 +1,10 @@
-# _deploy-e2e-feature-branches.yml
+# _deploy-preview.yml
 #
 # Reusable workflow — deploys a full preview stack for a given branch slug.
 #
-# Shared by e2e-feature-branches.yml (feature branches) and e2e-main.yml (main
-# branch E2E validation). Callers provide the slug and control whether a
-# PR comment is posted.
+# Shared by main.yml (main branch E2E validation) and
+# e2e-feature-branches.yml (feature branches). Callers provide the slug
+# and control whether a PR comment is posted.
 #
 # Steps:
 #   1. Download backend + frontend artifacts.
@@ -38,6 +38,11 @@ on:
         required: false
         type: string
         default: ""
+      frontend_artifact_name:
+        description: Name of the frontend build artifact to download.
+        required: false
+        type: string
+        default: "frontend-dist"
     outputs:
       preview_url:
         description: Full URL to the deployed preview environment.
@@ -73,7 +78,7 @@ jobs:
       - name: Download frontend artifact
         uses: actions/download-artifact@v8
         with:
-          name: frontend-dist
+          name: ${{ inputs.frontend_artifact_name }}
           path: frontend-dist/
 
       # --- Shared preview gateway (API GW + S3 + CloudFront) ---
