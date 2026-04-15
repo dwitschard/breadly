@@ -40,15 +40,6 @@
           </p>
         </div>
         <div class="py-1" role="presentation">
-          <button
-            type="button"
-            role="menuitem"
-            data-testid="nav-profile-btn"
-            (click)="onProfileClick()"
-            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none cursor-pointer"
-          >
-            {{ 'NAV.PROFILE' | translate }}
-          </button>
           @if (isAdmin()) {
             <button
               type="button"
@@ -60,6 +51,15 @@
               {{ 'NAV.HEALTH' | translate }}
             </button>
           }
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="nav-profile-btn"
+            (click)="onProfileClick()"
+            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none cursor-pointer"
+          >
+            {{ 'NAV.PROFILE' | translate }}
+          </button>
           <button
             type="button"
             role="menuitem"
