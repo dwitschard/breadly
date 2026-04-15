@@ -9,8 +9,9 @@
 #   4. Delete the Terraform workspace.
 #
 # Used by:
-#   - _teardown-preview.yml  (single branch: branch deletion, e2e cleanup, manual)
-#   - teardown-env.yml       (all branches: matrix-based parallel teardown)
+#   - preview-cleanup.yml  (single branch: branch deletion)
+#   - e2e-main.yml         (single branch: temporary preview teardown after E2E tests)
+#   - teardown-env.yml     (all branches: matrix-based parallel teardown)
 #
 # The calling job must:
 #   - Run on ubuntu-latest with id-token: write + contents: read permissions

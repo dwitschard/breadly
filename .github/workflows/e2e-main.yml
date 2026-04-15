@@ -14,7 +14,7 @@
 #   build-frontend   Reuses ci-frontend.yml with e2e-main base-href.
 #   deploy-preview   Reuses _deploy-preview.yml with slug "e2e-main".
 #   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the temporary preview).
-#   teardown         Reuses _teardown-preview.yml to destroy the temporary stack (always runs).
+#   teardown         Destroys the temporary stack via teardown-preview-stack action (always runs).
 #
 # Required GitHub environment: preview
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID, MONGODB_URI,
@@ -31,6 +31,9 @@ on:
 concurrency:
   group: e2e-main
   cancel-in-progress: true
+
+env:
+  PROJECT_NAME: breadly
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -91,16 +94,32 @@ jobs:
     secrets: inherit
 
   # ---------------------------------------------------------------------------
-  # Teardown temporary preview environment (reusable workflow)
+  # Teardown temporary preview environment
   # ---------------------------------------------------------------------------
   teardown:
     name: Teardown Temporary Preview
     needs: [deploy-preview, e2e]
     if: always()
-    uses: ./.github/workflows/_teardown-preview.yml
+    runs-on: ubuntu-latest
+    environment: preview
     permissions:
       id-token: write
       contents: read
-    with:
-      slug: e2e-main
-    secrets: inherit
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set MongoDB URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          echo "TF_VAR_mongodb_uri=${MONGODB_URI:-placeholder}" >> "$GITHUB_ENV"
+
+      - name: Teardown preview stack
+        uses: ./.github/actions/teardown-preview-stack
+        with:
+          slug: e2e-main
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}

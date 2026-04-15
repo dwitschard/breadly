@@ -10,8 +10,8 @@
     - [x] Check if a github compound action might be useful to print out playwright results to GH-Variables for Summary / PR
     - [x] Check if E2E Tests are part of the dev cycle - each new feature should be covered in an E2E Test
     - [x] Display Environment (`dev`, `preview-xyz` ) in navbar somewhere to verify easily in the e2e test
-    - [ ] Cleanup Teardown Actions in Github -> `teardown_env` vs. `preview-cleanup` vs. `_teardown-preview` -> merge?
-      - [ ] it should still be possible to manually teardown an entire stack -> if preview env could be passed even better
+    - [x] Cleanup Teardown Actions in Github
+      - [x] it should still be possible to manually teardown an entire stack -> if preview env could be passed even better
     - [ ] Validate if true: `dev`-Stage / `main`-Branch: Deploy preview branch during action to `preview/ci-dev`, if successful deploy to `dev`
 
 

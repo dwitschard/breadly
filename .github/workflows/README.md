@@ -119,7 +119,7 @@ Runs E2E tests on the main branch after every push. Deploys a temporary preview 
 
 ```
 build-backend ──┐
-build-frontend ─┼──▶ _deploy-preview.yml ──▶ _run-e2e.yml ──▶ _teardown-preview.yml (always)
+build-frontend ─┼──▶ _deploy-preview.yml ──▶ _run-e2e.yml ──▶ teardown (always)
 ```
 
 ---
@@ -178,45 +178,9 @@ Reusable workflow (`workflow_call`) that deploys a full preview stack for a give
 
 ---
 
-## `_teardown-preview.yml`
-
-Reusable workflow that tears down a single preview branch stack. Delegates all teardown logic to the `teardown-preview-stack` composite action.
-
-Shared by `preview-cleanup.yml` (branch deletion) and `e2e-main.yml` (temporary preview teardown). Also supports manual trigger from the GitHub Actions UI to tear down a single branch.
-
-### Triggers
-
-| Trigger | Use case |
-|---|---|
-| `workflow_call` | Called by `preview-cleanup.yml` and `e2e-main.yml` |
-| `workflow_dispatch` | Manual teardown of a single preview branch from the Actions UI |
-
-### Inputs
-
-| Input | Required | Description |
-|---|---|---|
-| `slug` | Yes | URL-safe branch slug identifying the preview stack to destroy |
-
-### Secrets
-
-| Secret | Required | Description |
-|---|---|---|
-| `MONGODB_URI` | No | MongoDB connection string. Falls back to a placeholder if not provided. |
-
-### What it does
-
-Delegates to the `teardown-preview-stack` composite action, which:
-
-1. Selects the `preview-<slug>` Terraform workspace (skips gracefully if not found)
-2. Runs `terraform destroy` (removes Cognito, Lambda, API GW routes)
-3. Deletes frontend assets from the shared S3 bucket (`aws s3 rm`)
-4. Deletes the Terraform workspace
-
----
-
 ## `preview-cleanup.yml`
 
-Tears down the preview environment when a branch is deleted. Computes the branch slug, then delegates to `_teardown-preview.yml`.
+Tears down the preview environment when a branch is deleted. Computes the branch slug, then runs the `teardown-preview-stack` composite action directly.
 
 ### Triggers
 
@@ -227,7 +191,7 @@ Tears down the preview environment when a branch is deleted. Computes the branch
 ### Jobs
 
 ```
-slugify ──▶ _teardown-preview.yml
+slugify ──▶ cleanup (teardown-preview-stack action)
 ```
 
 ---
@@ -276,7 +240,7 @@ Converts a branch name to a URL-safe slug (lowercase, special chars replaced wit
 
 ### `.github/actions/teardown-preview-stack/`
 
-Composite action that tears down a single preview branch stack. Encapsulates all steps needed to destroy one preview workspace: Terraform destroy, S3 asset cleanup (optional), and workspace deletion. Used by `_teardown-preview.yml` (single branch) and `teardown-env.yml` (matrix over all branches).
+Composite action that tears down a single preview branch stack. Encapsulates all steps needed to destroy one preview workspace: Terraform destroy, S3 asset cleanup (optional), and workspace deletion. Used by `preview-cleanup.yml`, `e2e-main.yml` (single branch) and `teardown-env.yml` (matrix over all branches).
 
 | Input | Required | Default | Description |
 |---|---|---|---|
@@ -321,7 +285,7 @@ Parses Playwright JSON results, writes a summary table to the GitHub job summary
 | `AWS_OIDC_ROLE_ARN` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_ACCOUNT_ID` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_REGION` | Variable | Repository | All workflows |
-| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `_deploy.yml`, `_deploy-preview.yml`, `_teardown-preview.yml` |
+| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `_deploy.yml`, `_deploy-preview.yml`, `preview-cleanup.yml`, `e2e-main.yml` |
 | `PREVIEW_DEMO_PASSWORD` | Secret | Preview environment | `_deploy-preview.yml`, `preview.yml` (E2E), `e2e-main.yml` |
 | `PREVIEW_ADMIN_PASSWORD` | Secret | Preview environment | `_deploy-preview.yml` |
 

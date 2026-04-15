@@ -3,8 +3,8 @@
 # Tears down the preview environment for a deleted branch.
 # Triggered automatically when a branch is deleted.
 #
-# Computes the branch slug, then delegates to _teardown-preview.yml
-# for the actual teardown (terraform destroy + S3 cleanup + workspace deletion).
+# Computes the branch slug, then runs terraform destroy + S3 cleanup +
+# workspace deletion via the teardown-preview-stack composite action.
 #
 # Required GitHub environment: preview
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID
@@ -19,6 +19,9 @@ concurrency:
 on:
   delete:
     # Filters are not supported for delete events — we check ref_type in the job.
+
+env:
+  PROJECT_NAME: breadly
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -41,15 +44,31 @@ jobs:
           branch: ${{ github.event.ref }}
 
   # ---------------------------------------------------------------------------
-  # Teardown preview stack (reusable workflow)
+  # Teardown preview stack
   # ---------------------------------------------------------------------------
   cleanup:
     name: Cleanup Preview (${{ needs.slugify.outputs.slug }})
     needs: [slugify]
-    uses: ./.github/workflows/_teardown-preview.yml
+    runs-on: ubuntu-latest
+    environment: preview
     permissions:
       id-token: write
       contents: read
-    with:
-      slug: ${{ needs.slugify.outputs.slug }}
-    secrets: inherit
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set MongoDB URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          echo "TF_VAR_mongodb_uri=${MONGODB_URI:-placeholder}" >> "$GITHUB_ENV"
+
+      - name: Teardown preview stack
+        uses: ./.github/actions/teardown-preview-stack
+        with:
+          slug: ${{ needs.slugify.outputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
