@@ -38,7 +38,11 @@ export class AuthService {
         const { issuer, clientId } = this.configService.getConfig();
         this.oauthService.configure(buildAuthConfig(issuer, clientId));
         this.oauthService.loadDiscoveryDocumentAndTryLogin().then(() => {
-          this._isLoggedIn.set(this.oauthService.hasValidAccessToken());
+          const loggedIn = this.oauthService.hasValidAccessToken();
+          this._isLoggedIn.set(loggedIn);
+          if (loggedIn) {
+            this.profileService.load();
+          }
           this.oauthService.setupAutomaticSilentRefresh();
         });
       });
