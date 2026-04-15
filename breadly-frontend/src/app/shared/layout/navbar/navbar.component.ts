@@ -12,11 +12,11 @@ import { ProfileMenuComponent } from './profile-menu.component';
   template: `
     <header class="flex items-center justify-between px-6 py-3 border-b border-gray-200">
       <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2">
+        <div class="flex flex-col items-start">
           <a
             routerLink="/"
             data-testid="nav-home-link"
-            class="text-lg font-bold text-gray-900 hover:text-blue-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            class="text-lg font-bold leading-tight text-gray-900 hover:text-blue-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
             [attr.aria-label]="'NAV.HOME' | translate"
           >
             breadly

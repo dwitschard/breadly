@@ -893,7 +893,7 @@ recipe-name-input        # The recipe name input field
 recipe-add-btn           # The add recipe button
 recipe-delete-btn        # A delete button on a recipe
 nav-recipes-link         # Navbar link to recipes
-nav-health-link          # Navbar link to health
+nav-health-btn           # Health button in profile menu (admin-only)
 profile-email            # Email display on profile page
 profile-title            # Profile page title
 ```
