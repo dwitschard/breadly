@@ -3,13 +3,15 @@
 # Manual workflow to destroy all resources for a chosen environment.
 #
 # For dev/prod: destroys the merged deploy root module.
-# For preview: destroys all per-branch preview stacks, then the shared
-# preview gateway (API Gateway + S3 bucket + CloudFront).
+# For preview: discovers all per-branch preview stacks, destroys them in
+# parallel via the teardown-preview-stack composite action, then destroys
+# the shared preview gateway (API Gateway + S3 bucket + CloudFront).
 #
 # Jobs:
-#   teardown-preview-branches    Destroys all preview workspaces (preview only).
-#   teardown-deploy              Destroys the application stack (dev/prod only).
-#   teardown-preview-gateway     Destroys the shared preview gateway (preview only).
+#   list-preview-workspaces  Lists all preview workspaces (preview only).
+#   teardown-preview-branch  Matrix job: destroys each preview stack in parallel (preview only).
+#   teardown-preview-gateway Destroys the shared preview gateway (preview only, after branches).
+#   teardown-deploy          Destroys the application stack (dev/prod only).
 #
 # Triggers
 #   workflow_dispatch  Manual trigger only.
@@ -43,16 +45,19 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Teardown all per-branch preview workspaces (preview env only)
+  # List all preview workspaces (preview env only)
   # ---------------------------------------------------------------------------
-  teardown-preview-branches:
-    name: Destroy All Preview Stacks
+  list-preview-workspaces:
+    name: List Preview Workspaces
     if: inputs.environment == 'preview'
     runs-on: ubuntu-latest
     environment: preview
     permissions:
       id-token: write
       contents: read
+    outputs:
+      slugs: ${{ steps.list.outputs.slugs }}
+      has_workspaces: ${{ steps.list.outputs.has_workspaces }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -62,30 +67,66 @@ jobs:
         with:
           working_dir: infrastructure/aws/preview/deploy
           environment: preview
-          session_name: github-teardown-preview-branches
+          session_name: github-teardown-list-workspaces
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Set Terraform variables (destroy placeholders)
-        run: |
-          echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
-          echo "TF_VAR_mongodb_uri=placeholder" >> "$GITHUB_ENV"
-          echo "TF_VAR_cloudfront_url=https://placeholder.cloudfront.net" >> "$GITHUB_ENV"
-
-      - name: Destroy all preview workspaces (loop)
+      - name: List preview workspaces
+        id: list
         working-directory: infrastructure/aws/preview/deploy
         run: |
-          WORKSPACES=$(terraform workspace list | grep -E '^\s+preview-' | sed 's/^[[:space:]]*//' || true)
-          for WS in $WORKSPACES; do
-            SLUG="${WS#preview-}"
-            echo "Destroying workspace: $WS (slug: $SLUG)"
-            terraform workspace select "$WS"
-            TF_VAR_branch_slug="$SLUG" terraform destroy -auto-approve || true
-            terraform workspace select default
-            terraform workspace delete "$WS" || true
-          done
+          # Extract slugs from workspace names (preview-<slug> -> <slug>)
+          # Note: `terraform workspace list` prefixes the current workspace with
+          # "* " and others with "  ". Strip both markers before matching.
+          SLUGS=$(terraform workspace list \
+            | sed 's/^[* ]*//' \
+            | grep -E '^preview-' \
+            | sed 's/^preview-//' \
+            || true)
+
+          if [ -z "$SLUGS" ]; then
+            echo "No preview workspaces found."
+            echo 'slugs=[]' >> "$GITHUB_OUTPUT"
+            echo "has_workspaces=false" >> "$GITHUB_OUTPUT"
+          else
+            # Convert newline-separated slugs to JSON array
+            JSON=$(echo "$SLUGS" | jq -R -s -c 'split("\n") | map(select(. != ""))')
+            echo "Found workspaces: $JSON"
+            echo "slugs=$JSON" >> "$GITHUB_OUTPUT"
+            echo "has_workspaces=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Teardown each preview branch stack in parallel (preview env only)
+  # ---------------------------------------------------------------------------
+  teardown-preview-branch:
+    name: Destroy Preview (${{ matrix.slug }})
+    if: inputs.environment == 'preview' && needs.list-preview-workspaces.outputs.has_workspaces == 'true'
+    needs: [list-preview-workspaces]
+    runs-on: ubuntu-latest
+    environment: preview
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      matrix:
+        slug: ${{ fromJSON(needs.list-preview-workspaces.outputs.slugs) }}
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Teardown preview stack
+        uses: ./.github/actions/teardown-preview-stack
+        with:
+          slug: ${{ matrix.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+          skip_s3_cleanup: "true"
 
   # ---------------------------------------------------------------------------
   # Teardown Deploy — merged root module (dev/prod only)
@@ -128,12 +169,14 @@ jobs:
           terraform destroy -auto-approve
 
   # ---------------------------------------------------------------------------
-  # Teardown Preview Gateway (preview only, after preview branches)
+  # Teardown Preview Gateway (preview only, after all branch stacks)
   # ---------------------------------------------------------------------------
   teardown-preview-gateway:
     name: Destroy Preview Gateway
-    if: inputs.environment == 'preview'
-    needs: [teardown-preview-branches]
+    needs: [list-preview-workspaces, teardown-preview-branch]
+    # Run even if teardown-preview-branch was skipped (no workspaces) or failed
+    # on some branches — we still want to destroy the shared gateway.
+    if: inputs.environment == 'preview' && !cancelled()
     runs-on: ubuntu-latest
     environment: preview
     permissions:

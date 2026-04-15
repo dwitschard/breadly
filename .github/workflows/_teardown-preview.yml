@@ -2,14 +2,13 @@
 #
 # Reusable workflow — tears down a single preview branch stack.
 #
-# Shared by preview-cleanup.yml (branch deletion) and e2e-main.yml (temporary
-# preview teardown after E2E tests). Callers provide the branch slug.
+# Delegates all teardown logic to the teardown-preview-stack composite action.
 #
-# Steps:
-#   1. Select the Terraform workspace (skip gracefully if not found).
-#   2. Terraform destroy the per-branch preview stack.
-#   3. Delete frontend assets from the shared S3 bucket.
-#   4. Delete the Terraform workspace.
+# Triggers:
+#   workflow_call   — Called by preview-cleanup.yml (branch deletion) and
+#                     e2e-main.yml (temporary preview teardown after E2E tests).
+#   workflow_dispatch — Manual trigger from the GitHub Actions UI to tear down
+#                       a single preview branch by slug.
 #
 # Required GitHub environment: preview
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID
@@ -29,6 +28,13 @@ on:
         description: MongoDB connection string. Falls back to a placeholder if not provided.
         required: false
 
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "URL-safe branch slug to tear down (e.g. feat-my-branch)"
+        required: true
+        type: string
+
 env:
   PROJECT_NAME: breadly
 
@@ -44,77 +50,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # --- Destroy per-branch preview stack ---
+      - name: Set MongoDB URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          echo "TF_VAR_mongodb_uri=${MONGODB_URI:-placeholder}" >> "$GITHUB_ENV"
 
-      - name: Setup Terraform (branch stack)
-        uses: ./.github/actions/terraform-setup
+      - name: Teardown preview stack
+        uses: ./.github/actions/teardown-preview-stack
         with:
-          working_dir: infrastructure/aws/preview/deploy
-          environment: preview
-          session_name: github-teardown-preview-${{ inputs.slug }}
+          slug: ${{ inputs.slug }}
           aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Select Terraform workspace
-        id: workspace
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          SLUG="${{ inputs.slug }}"
-          if terraform workspace list | grep -q "preview-${SLUG}"; then
-            terraform workspace select "preview-${SLUG}"
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Workspace preview-${SLUG} not found — nothing to clean up."
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Set Terraform variables (destroy placeholders)
-        if: steps.workspace.outputs.exists == 'true'
-        run: |
-          echo "TF_VAR_branch_slug=${{ inputs.slug }}" >> "$GITHUB_ENV"
-          echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
-          echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI || 'placeholder' }}" >> "$GITHUB_ENV"
-          echo "TF_VAR_cloudfront_url=https://placeholder.cloudfront.net" >> "$GITHUB_ENV"
-
-      - name: Terraform destroy (branch stack)
-        if: steps.workspace.outputs.exists == 'true'
-        working-directory: infrastructure/aws/preview/deploy
-        run: terraform destroy -auto-approve
-
-      # --- Remove frontend assets from shared S3 bucket ---
-
-      - name: Setup Terraform (shared gateway)
-        if: steps.workspace.outputs.exists == 'true'
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/gateway
-          environment: preview
-          session_name: github-teardown-preview-gw-${{ inputs.slug }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Read shared S3 bucket ID
-        if: steps.workspace.outputs.exists == 'true'
-        id: gw
-        working-directory: infrastructure/aws/preview/gateway
-        run: |
-          terraform workspace select preview
-          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
-
-      - name: Delete frontend assets from S3
-        if: steps.workspace.outputs.exists == 'true'
-        run: |
-          aws s3 rm "s3://${{ steps.gw.outputs.preview_bucket }}/${{ inputs.slug }}/" --recursive
-
-      # --- Delete Terraform workspace ---
-
-      - name: Delete Terraform workspace
-        if: steps.workspace.outputs.exists == 'true'
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          terraform workspace select default
-          terraform workspace delete "preview-${{ inputs.slug }}"

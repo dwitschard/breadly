@@ -28,6 +28,7 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
           {{ 'HEALTH.TITLE' | translate }}
         </h1>
         <button
+          data-testid="health-reload-btn"
           type="button"
           (click)="healthService.reload()"
           [disabled]="healthService.healthResource.isLoading()"

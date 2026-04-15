@@ -9,7 +9,9 @@
     - [x] Fix usage of Node 20 in Github Action
     - [x] Check if a github compound action might be useful to print out playwright results to GH-Variables for Summary / PR
     - [x] Check if E2E Tests are part of the dev cycle - each new feature should be covered in an E2E Test
-    - [ ] Display Environment (`dev`, `preview-xyz` ) in navbar somewhere to verify easily in the e2e test
+    - [x] Display Environment (`dev`, `preview-xyz` ) in navbar somewhere to verify easily in the e2e test
+    - [ ] Cleanup Teardown Actions in Github -> `teardown_env` vs. `preview-cleanup` vs. `_teardown-preview` -> merge?
+      - [ ] it should still be possible to manually teardown an entire stack -> if preview env could be passed even better
     - [ ] Validate if true: `dev`-Stage / `main`-Branch: Deploy preview branch during action to `preview/ci-dev`, if successful deploy to `dev`
 
 
@@ -36,8 +38,8 @@
     - [ ] Also remove ApplicationDatabase
 
 ## UI
-- [ ] Switch `Systemstatus` to Menu-Item in the Profile itself, only available for `ADMIN`
-- [ ] Add general User-Information into Dropdown Header
+- [ ] Add general User-Information into Dropdown Header <- currently empty because of not available name/email
+- [x] Switch `Systemstatus` to Menu-Item in the Profile itself, only available for `ADMIN`
 - [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
@@ -52,6 +54,9 @@
 - [ ] decide on ui library / elements
 - [ ] Think about how to split different applications (or later potentially even domains) into different Lambda's
   - [ ] Impact on Terraform probably quite large, gain? 
+- [ ] Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
+    - Not easily possible, requires loop through BFF
+    - Probably not relevant for now
 
 ## Questions
 Deploy setup:
@@ -72,36 +77,9 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
-- [x] Create Skills / Agents for Coding itself
-    - [x] Architecture Description Backend
-    - [x] Architecture Description Frontend
-    - [x] Architecture Description API Module
-    - [x] Coding Agent -> Create API Spec, Implement BE & FE, Write Tests + E2E
-
-
-- [x] Deploy Application from Feature Branch
-    - [x] Terraform Setup (GW remains for all features, separate Stack for BE and FE - cognito if easily possible)
-    - [x] Setup Dummy Data
-    - [x] Delete Env once Branch is deleted
-    - [x] Check if Teardown of Preview Env works
-    - [x] Make deployments / Terraform Setup easier
-
-
-- [x] Add a version in the backend and display it in the frontend (health status page)
-    - [x] Git Short SHA from CI Pipeline plus prefix (backend-xxxx | frontend-xxxx) as Version
-    - [x] For preview branches don't create a link to the non existent release -> use commit
-    - [x] Translations don't work on preview branches
-    - [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
-
-
+- [x] Build Open API Spec for FE and BE differently
+- [x] Cleanup `breadly-api/` -> frontend / backend link the file anyway and create the dto's
 - [x] Move Variables / Secrets that are not env specific to repo level on Github
-    - [x] Make sure everything still work the same
-
-
-- [x] Check if `package.json` is still necessary in `breadly-api/` -> frontend / backend link the file anyway and create the dto's
-- [x] Build Open API Spec for FE and BE differently (if needed)
-
-
-- [x] Store Auth Token as HttpOnly Cookie to prevent XSS Attacks 
-    - Not easily possible, requires loop through BFF
-    - Probably not relevant for now
+- [x] Add a version in the backend and display it in the frontend (health status page)
+- [x] Deploy Application from Feature Branch
+- [x] Create Skills / Agents for Coding itself

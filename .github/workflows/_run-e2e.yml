@@ -14,7 +14,7 @@
 #   4. Optionally post/update a PR comment with results.
 #
 # Required GitHub environment: preview
-#   Secrets: PREVIEW_DEMO_PASSWORD
+#   Secrets: PREVIEW_DEMO_PASSWORD, PREVIEW_ADMIN_PASSWORD
 #   Variables: AWS_REGION
 
 name: Run E2E Tests
@@ -70,6 +70,8 @@ jobs:
           E2E_AWS_REGION: ${{ vars.AWS_REGION }}
           E2E_DEMO_USERNAME: demo@breadly.app
           E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
+          E2E_ADMIN_USERNAME: admin@breadly.app
+          E2E_ADMIN_PASSWORD: ${{ secrets.PREVIEW_ADMIN_PASSWORD }}
         run: npx playwright test
 
       - name: Upload report & post results

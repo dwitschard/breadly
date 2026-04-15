@@ -180,7 +180,16 @@ Reusable workflow (`workflow_call`) that deploys a full preview stack for a give
 
 ## `_teardown-preview.yml`
 
-Reusable workflow (`workflow_call`) that tears down a single preview branch stack. Shared by `preview-cleanup.yml` (branch deletion) and `e2e-main.yml` (temporary preview teardown) to avoid duplication.
+Reusable workflow that tears down a single preview branch stack. Delegates all teardown logic to the `teardown-preview-stack` composite action.
+
+Shared by `preview-cleanup.yml` (branch deletion) and `e2e-main.yml` (temporary preview teardown). Also supports manual trigger from the GitHub Actions UI to tear down a single branch.
+
+### Triggers
+
+| Trigger | Use case |
+|---|---|
+| `workflow_call` | Called by `preview-cleanup.yml` and `e2e-main.yml` |
+| `workflow_dispatch` | Manual teardown of a single preview branch from the Actions UI |
 
 ### Inputs
 
@@ -195,6 +204,8 @@ Reusable workflow (`workflow_call`) that tears down a single preview branch stac
 | `MONGODB_URI` | No | MongoDB connection string. Falls back to a placeholder if not provided. |
 
 ### What it does
+
+Delegates to the `teardown-preview-stack` composite action, which:
 
 1. Selects the `preview-<slug>` Terraform workspace (skips gracefully if not found)
 2. Runs `terraform destroy` (removes Cognito, Lambda, API GW routes)
@@ -237,13 +248,13 @@ Manual workflow to destroy all resources for a chosen environment.
 - Runs `terraform destroy` against the merged `deploy/` root module
 
 **For preview:**
-1. Destroys all per-branch preview workspaces (Cognito, Lambda, API GW routes per branch)
-2. Destroys the preview CDN (CloudFront distribution)
-3. Destroys the preview gateway (API Gateway + shared S3 bucket — `force_destroy` deletes all files)
+1. Lists all `preview-*` Terraform workspaces
+2. Destroys each per-branch preview stack **in parallel** via a matrix strategy using the `teardown-preview-stack` composite action (with `skip_s3_cleanup: true` since the gateway destroy handles file deletion)
+3. Destroys the shared preview gateway (API Gateway + S3 bucket + CloudFront) — runs even if some branch teardowns failed
 
 ---
 
-## `setup-infra.yml`
+## `setup-terraform.yml`
 
 One-time setup workflow to create the S3 state bucket and DynamoDB lock table for an environment.
 
@@ -262,6 +273,23 @@ Runs `terraform workspace select -or-create`, `terraform plan`, and `terraform a
 ### `.github/actions/slugify-branch/`
 
 Converts a branch name to a URL-safe slug (lowercase, special chars replaced with hyphens, max 40 chars).
+
+### `.github/actions/teardown-preview-stack/`
+
+Composite action that tears down a single preview branch stack. Encapsulates all steps needed to destroy one preview workspace: Terraform destroy, S3 asset cleanup (optional), and workspace deletion. Used by `_teardown-preview.yml` (single branch) and `teardown-env.yml` (matrix over all branches).
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `slug` | Yes | — | URL-safe branch slug identifying the preview stack |
+| `aws_oidc_role_arn` | Yes | — | IAM role ARN for OIDC |
+| `aws_account_id` | Yes | — | 12-digit AWS account ID |
+| `aws_region` | Yes | — | AWS region |
+| `project_name` | Yes | — | Project name for state bucket naming |
+| `skip_s3_cleanup` | No | `false` | Skip S3 cleanup (when gateway destroy handles it) |
+
+| Output | Description |
+|---|---|
+| `existed` | Whether the workspace existed and was torn down (`true`/`false`) |
 
 ### `.github/actions/setup-playwright/`
 
@@ -299,7 +327,7 @@ Parses Playwright JSON results, writes a summary table to the GitHub job summary
 
 ### One-time setup per environment
 
-The S3 state bucket and DynamoDB lock table are created by `setup-infra.yml`.
+The S3 state bucket and DynamoDB lock table are created by `setup-terraform.yml`.
 For the very first deployment, trigger it manually:
 
 ```
