@@ -3,7 +3,7 @@
 # Reusable workflow — deploys a full preview stack for a given branch slug.
 #
 # Shared by main.yml (main branch E2E validation) and
-# e2e-feature-branches.yml (feature branches). Callers provide the slug
+# feature-branches.yml (feature branches). Callers provide the slug
 # and control whether a PR comment is posted.
 #
 # Steps:
