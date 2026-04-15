@@ -20,9 +20,10 @@ test.describe('View health dashboard', () => {
   });
 
   test('admin can reload health data', async ({ page }) => {
+    const navbar = new NavbarPage(page);
     const health = new HealthPage(page);
 
-    await health.goto();
+    await navbar.navigateToHealth();
     await health.expectLoaded();
 
     await health.reload();

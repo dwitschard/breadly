@@ -57,8 +57,8 @@ export class HealthPage {
   }
 
   async expectResponseTimesVisible(): Promise<void> {
-    await expect(this.apiResponseTime).not.toBeEmpty();
-    await expect(this.dbResponseTime).not.toBeEmpty();
+    await expect(this.apiResponseTime).toBeAttached();
+    await expect(this.dbResponseTime).toBeAttached();
   }
 
   async expectVersionsVisible(): Promise<void> {

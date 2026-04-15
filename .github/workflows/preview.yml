@@ -83,7 +83,7 @@ jobs:
   # Deploy preview environment (reusable workflow)
   # ---------------------------------------------------------------------------
   deploy-preview:
-    name: Setup Preview
+    name: Preview Env
     needs: [slugify, build-backend, build-frontend]
     uses: ./.github/workflows/_deploy-preview.yml
     permissions:
