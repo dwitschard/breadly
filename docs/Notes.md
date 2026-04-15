@@ -1,20 +1,11 @@
 # Notes
 
+## AI Stuff
+- [ ] UI Design Skill?
+- [ ] TDD Skill for Implementation -> Combination with Angular Testing Library
+- [ ] How to continuously update AGENTS.md Files? In Dev Cycle Loop?
+
 ## Next Tasks
-- [x] E2E Testing Setup
-    - [x] Run E2E-Tests on Preview Branch
-    - [x] Create Video to verify it
-    - [x] Add Summary of Tests to Step Summary of Build Step in Github Actions
-    - [x] Add Summary of Tests to PRs
-    - [x] Fix usage of Node 20 in Github Action
-    - [x] Check if a github compound action might be useful to print out playwright results to GH-Variables for Summary / PR
-    - [x] Check if E2E Tests are part of the dev cycle - each new feature should be covered in an E2E Test
-    - [x] Display Environment (`dev`, `preview-xyz` ) in navbar somewhere to verify easily in the e2e test
-    - [x] Cleanup Teardown Actions in Github
-      - [x] it should still be possible to manually teardown an entire stack -> if preview env could be passed even better
-    - [ ] Validate if true: `dev`-Stage / `main`-Branch: Deploy preview branch during action to `preview/ci-dev`, if successful deploy to `dev`
-
-
 - [ ] Switch Testing in Frontend to use TestingLibrary
     - [ ] Adjust instructions in AGENTS.md Files for FE-Testing
 
@@ -34,6 +25,7 @@
   - [ ] Add it to /health Endpoint
   - [ ] Create Dummy Data for preview branches
 
+
 - [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase
 
@@ -43,6 +35,10 @@
 - [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
+- [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
+- [ ] Time missing when reloading `Systemstatus`
+- [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
+- [ ] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
 - [ ] In Profile also add email address of user (not only verification status). Include E-Mail in JWT Token
 - [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
     - [ ] if necessary -> implement custom error code in valid range
@@ -77,6 +73,7 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
+- [x] E2E Testing Setup
 - [x] Build Open API Spec for FE and BE differently
 - [x] Cleanup `breadly-api/` -> frontend / backend link the file anyway and create the dto's
 - [x] Move Variables / Secrets that are not env specific to repo level on Github

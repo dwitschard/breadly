@@ -10,7 +10,7 @@
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID
 #   Variables: AWS_REGION
 
-name: Preview Cleanup
+name: Feature Branch Cleanup
 
 concurrency:
   group: preview-cleanup
