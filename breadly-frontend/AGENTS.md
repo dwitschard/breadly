@@ -918,13 +918,24 @@ profile-title            # Profile page title
 
 ### Adding E2E Tests for New Features
 
-When a new user-facing feature is implemented, the following E2E artifacts must be created in `e2e/`:
+Every new user-facing feature **must** include E2E coverage. This is not optional. When a new feature is implemented, the following E2E artifacts must be created in `e2e/`:
 
 1. **Page Object** (`e2e/pages/<feature>/<name>.page.ts`): Encapsulates all selectors and user actions for the feature. References `data-testid` attributes. Exposes methods named after user actions (e.g., `createRecipe()`, `expectRecipeVisible()`).
 
-2. **Spec file** (`e2e/tests/<feature>/<verb>-<noun>.spec.ts`): Describes the user journey. Uses Page Object methods exclusively — never references selectors directly. Each spec file covers one complete user journey.
+2. **Spec file** (`e2e/tests/<feature>/<verb>-<noun>.spec.ts`): Describes the happy-path user journey. Uses Page Object methods exclusively — never references selectors directly. Each spec file covers one complete user journey.
 
-3. **Test data**: Use `[E2E-<test-name>]` prefix pattern for created data. Clean up in `afterAll`/`afterEach` via API calls.
+3. **`data-testid` attributes** on key interactive and structural elements in the frontend templates.
+
+4. **Test data**: Use `[E2E-<test-name>]` prefix pattern for created data. Clean up in `afterAll`/`afterEach` via API calls.
+
+#### What belongs in E2E vs unit/integration tests
+
+| Test Level | Scope | Examples |
+|-----------|-------|---------|
+| **E2E (Playwright)** | Happy-path user journeys, core workflows end-to-end | Create a recipe, navigate between pages, sign in/out |
+| **Unit / Integration** | Edge cases, validation errors, error handling, boundary conditions | Empty form submission, 404 responses, malformed input, permission denied |
+
+E2E tests cover the **most common user journeys** across the full stack. They are not the place for exhaustive error-case testing — that belongs in unit and integration tests.
 
 ### Page Object Pattern
 

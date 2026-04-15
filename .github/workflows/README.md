@@ -75,6 +75,7 @@ Navigate to **Settings → Secrets and variables → Actions → Environments** 
 
 Deploys a full-stack preview environment for every non-main branch push.
 Each preview runs under `/preview/<branch-slug>/` on the dedicated preview CloudFront distribution.
+Runs E2E tests against the deployed preview and posts results to the PR.
 
 ### Triggers
 
@@ -86,19 +87,15 @@ Each preview runs under `/preview/<branch-slug>/` on the dedicated preview Cloud
 
 ```
 slugify ──────┐
-build-backend ┼──▶ deploy-preview
+build-backend ┼──▶ deploy-preview-stack.yml ──▶ e2e
 build-frontend┘
 ```
 
 ### What it does
 
-1. Ensures shared preview gateway (API Gateway + S3 bucket) is deployed
-2. Ensures preview CDN (CloudFront distribution) exists
-3. Creates/updates per-branch Terraform workspace (`preview-<slug>`): Cognito, Lambda x2, API GW routes
-4. Uploads frontend assets to the shared S3 bucket via `aws s3 sync` under `/<slug>/` key prefix
-5. Creates Cognito demo users (demo + admin)
-6. Invalidates CloudFront cache for the preview path
-7. Posts a PR comment with the preview URL
+1. Delegates to `deploy-preview-stack.yml` (see below) for deployment
+2. Runs Playwright E2E tests via `setup-playwright` + `playwright-report` actions
+3. Posts E2E results to the PR comment and job summary
 
 ### Preview URLs
 
@@ -106,6 +103,56 @@ build-frontend┘
 https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/        # Frontend
 https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/api/*   # Backend
 ```
+
+---
+
+## `e2e-main.yml`
+
+Runs E2E tests on the main branch after every push. Deploys a temporary preview environment with a fixed slug (`e2e-main`), runs the Playwright E2E suite against it, and tears it down afterward.
+
+### Triggers
+
+| Trigger | Target |
+|---|---|
+| Push to `main` | Temporary `e2e-main` preview environment |
+
+### Jobs
+
+```
+build-backend ──┐
+build-frontend ─┼──▶ deploy-preview-stack.yml ──▶ e2e ──▶ teardown (always)
+```
+
+---
+
+## `deploy-preview-stack.yml`
+
+Reusable workflow (`workflow_call`) that deploys a full preview stack for a given branch slug. Shared by `preview-deploy.yml` and `e2e-main.yml` to avoid duplication.
+
+### Inputs
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `slug` | Yes | — | URL-safe branch slug for workspace and S3 prefix |
+| `post-pr-comment` | No | `false` | Whether to post preview URL as a PR comment |
+| `branch-name` | No | `""` | Git branch name for PR lookup |
+
+### Outputs
+
+| Output | Description |
+|---|---|
+| `preview_url` | Full URL to the deployed preview |
+| `cognito_client_id` | Cognito User Pool Client ID for E2E auth |
+
+### What it does
+
+1. Downloads backend + frontend build artifacts
+2. Deploys shared preview gateway (API Gateway + S3 bucket + CloudFront)
+3. Deploys per-branch preview stack (Cognito, Lambda x2, API GW routes)
+4. Uploads frontend to S3 under `<slug>/` prefix
+5. Creates Cognito user groups and demo users
+6. Invalidates CloudFront cache for `/preview/<slug>/*`
+7. Optionally posts a PR comment with preview URL and credentials
 
 ---
 
@@ -170,6 +217,27 @@ Runs `terraform workspace select -or-create`, `terraform plan`, and `terraform a
 
 Converts a branch name to a URL-safe slug (lowercase, special chars replaced with hyphens, max 40 chars).
 
+### `.github/actions/setup-playwright/`
+
+Installs Node.js, E2E npm dependencies, and Playwright Chromium browser with caching for both npm and browser binaries. Used by both `preview-deploy.yml` and `e2e-main.yml` E2E jobs.
+
+| Input | Default | Description |
+|---|---|---|
+| `working-directory` | `e2e` | Path to the E2E project directory |
+| `node-version` | `24` | Node.js version to install |
+
+### `.github/actions/playwright-report/`
+
+Parses Playwright JSON results, writes a summary table to the GitHub job summary, uploads the HTML report + test artifacts, and optionally posts/updates a PR comment with the E2E results.
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `working-directory` | No | `e2e` | Path to E2E project |
+| `artifact-name` | Yes | — | Name for the uploaded report artifact |
+| `base-url` | Yes | — | E2E base URL to display in summary |
+| `post-to-pr` | No | `false` | Whether to post results as a PR comment |
+| `branch-name` | No | `""` | Branch name for PR lookup |
+
 ---
 
 ## Required GitHub Secrets and Variables (complete list)
@@ -179,9 +247,9 @@ Converts a branch name to a URL-safe slug (lowercase, special chars replaced wit
 | `AWS_OIDC_ROLE_ARN` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_ACCOUNT_ID` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_REGION` | Variable | Repository | All workflows |
-| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `deploy.yml`, `preview-deploy.yml` |
-| `PREVIEW_DEMO_PASSWORD` | Secret | Preview environment | `preview-deploy.yml` |
-| `PREVIEW_ADMIN_PASSWORD` | Secret | Preview environment | `preview-deploy.yml` |
+| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `deploy.yml`, `deploy-preview-stack.yml` |
+| `PREVIEW_DEMO_PASSWORD` | Secret | Preview environment | `deploy-preview-stack.yml`, `preview-deploy.yml` (E2E), `e2e-main.yml` |
+| `PREVIEW_ADMIN_PASSWORD` | Secret | Preview environment | `deploy-preview-stack.yml` |
 
 ### One-time setup per environment
 

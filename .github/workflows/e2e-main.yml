@@ -12,7 +12,7 @@
 # Jobs:
 #   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses build-frontend.yml with e2e-main base-href.
-#   deploy-preview   Deploys a temporary preview stack with slug "e2e-main".
+#   deploy-preview   Reuses deploy-preview-stack.yml with slug "e2e-main".
 #   e2e              Runs Playwright E2E tests against the temporary preview.
 #   teardown         Destroys the temporary preview stack (always runs).
 #
@@ -62,135 +62,20 @@ jobs:
     secrets: inherit
 
   # ---------------------------------------------------------------------------
-  # Deploy temporary preview environment
+  # Deploy temporary preview environment (reusable workflow)
   # ---------------------------------------------------------------------------
   deploy-preview:
     name: Deploy Preview (e2e-main)
     needs: [build-backend, build-frontend]
-    runs-on: ubuntu-latest
-    environment: preview
-    outputs:
-      preview_url: ${{ steps.gw.outputs.cloudfront_url }}/preview/e2e-main/
-      cognito_client_id: ${{ steps.cognito.outputs.client_id }}
+    uses: ./.github/workflows/deploy-preview-stack.yml
     permissions:
       id-token: write
       contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download backend artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: backend-dist
-
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: frontend-dist
-          path: frontend-dist/
-
-      - name: Setup Terraform (gateway)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/gateway
-          environment: preview
-          session_name: github-e2e-main-gateway
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Deploy preview gateway
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/preview/gateway
-
-      - name: Get gateway outputs
-        id: gw
-        working-directory: infrastructure/aws/preview/gateway
-        run: |
-          echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
-          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
-          echo "cloudfront_url=$(terraform output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
-          echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
-
-      - name: Setup Terraform (preview)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/deploy
-          environment: preview
-          session_name: github-e2e-main-deploy
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Export Terraform secrets
-        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
-
-      - name: Deploy preview stack
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/preview/deploy
-          workspace: preview-e2e-main
-          extra_tf_vars: >-
-            -var="branch_slug=e2e-main"
-            -var="dist_zip_path=${{ github.workspace }}/backend.zip"
-            -var="cloudfront_url=${{ steps.gw.outputs.cloudfront_url }}"
-
-      - name: Upload frontend to shared S3 bucket
-        run: |
-          aws s3 sync frontend-dist/ \
-            "s3://${{ steps.gw.outputs.preview_bucket }}/e2e-main/" \
-            --delete \
-            --cache-control "public, max-age=31536000, immutable" \
-            --exclude "*.html" \
-            --exclude "*.json"
-          aws s3 sync frontend-dist/ \
-            "s3://${{ steps.gw.outputs.preview_bucket }}/e2e-main/" \
-            --exclude "*" \
-            --include "*.html" \
-            --include "*.json" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-      - name: Get Cognito outputs
-        id: cognito
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
-          echo "client_id=$(terraform output -raw cognito_user_pool_client_id)" >> "$GITHUB_OUTPUT"
-
-      - name: Create user groups
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
-          aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "ADMIN" --description "Full administrative access" || true
-          aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "USER" --description "Standard user access" || true
-          aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "PREMIUM_USER" --description "Premium tier user access" || true
-
-      - name: Create demo users and assign groups
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
-
-          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --message-action SUPPRESS || true
-          aws cognito-idp admin-set-user-password --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" --permanent
-          aws cognito-idp admin-add-user-to-group --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --group-name "USER"
-
-          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --message-action SUPPRESS || true
-          aws cognito-idp admin-set-user-password --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" --permanent
-          aws cognito-idp admin-add-user-to-group --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --group-name "ADMIN"
-
-      - name: Invalidate CloudFront cache
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id "${{ steps.gw.outputs.distribution_id }}" \
-            --paths "/preview/e2e-main/*"
+      pull-requests: write
+    with:
+      slug: e2e-main
+      post-pr-comment: false
+    secrets: inherit
 
   # ---------------------------------------------------------------------------
   # End-to-End Tests (Playwright)
@@ -207,33 +92,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
-
-      - name: Install E2E dependencies
-        working-directory: e2e
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
-
-      - name: Install Playwright Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        working-directory: e2e
-        run: npx playwright install-deps chromium
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
 
       - name: Run E2E tests
         id: e2e-run
@@ -246,31 +106,12 @@ jobs:
           E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
         run: npx playwright test
 
-      - name: Write E2E summary
+      - name: Report E2E results
         if: always()
-        env:
-          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-        run: |
-          echo "**E2E Base URL:** \`$E2E_BASE_URL\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          RESULTS=e2e/test-results/results.json
-          if [ ! -f "$RESULTS" ]; then
-            echo "> **E2E tests did not produce results.** Check the workflow logs." >> "$GITHUB_STEP_SUMMARY"
-          else
-            jq -r '"| Test | Project | Status | Duration |", "|------|---------|--------|----------|", (.suites[].suites[]?.specs[] | .title as $title | .tests[] | "| \($title) | \(.projectName) | \(if .status == "expected" then "passed" elif .status == "skipped" then "skipped" else "**FAILED**" end) | \(((.results[0].duration // 0) / 1000 * 10 | floor / 10))s |")' "$RESULTS" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "> Could not parse test results." >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "_Download the \`playwright-report-e2e-main\` artifact for the full HTML report with videos and traces._" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v6
+        uses: ./.github/actions/playwright-report
         with:
-          name: playwright-report-e2e-main
-          path: |
-            e2e/playwright-report/
-            e2e/test-results/
-          retention-days: 7
+          artifact-name: playwright-report-e2e-main
+          base-url: ${{ needs.deploy-preview.outputs.preview_url }}
 
   # ---------------------------------------------------------------------------
   # Teardown temporary preview environment

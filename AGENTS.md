@@ -85,9 +85,25 @@ If any step fails, fix the issue before proceeding to the next step.
 
 ### Phase 4: E2E Tests (e2e/)
 
-Skip this phase if the task does not affect user-facing behavior (e.g., pure refactoring, documentation, backend-only internal changes with no API surface changes).
+Skip this phase **only** for pure refactoring, documentation-only changes, test-only changes, or lint/formatting fixes. All new user-facing features **must** include E2E coverage.
 
-11. **Write E2E tests** for new user-facing features or flows. Each new feature should include at least one user journey spec in `e2e/tests/<feature>/`.
+11. **Write E2E tests** for every new feature. Each new feature must include at least one happy-path user journey spec in `e2e/tests/<feature>/`.
+
+#### What to test in E2E vs unit/integration tests
+
+| Test Level | Scope | Examples |
+|-----------|-------|---------|
+| **E2E (Playwright)** | Happy-path user journeys, core workflows end-to-end | Create a recipe, navigate between pages, sign in/out |
+| **Unit / Integration** | Edge cases, validation errors, error handling, boundary conditions | Empty form submission, 404 responses, malformed input, permission denied |
+
+E2E tests validate that the **most common user journeys** work correctly across the full stack (frontend + backend + infrastructure). They are not the place for exhaustive error-case coverage — that belongs in unit and integration tests.
+
+#### E2E artifacts required per feature
+
+1. **Page Object** in `e2e/pages/<feature>/` — encapsulates selectors (`data-testid`) and user actions.
+2. **Spec file** in `e2e/tests/<feature>/<verb>-<noun>.spec.ts` — describes the happy-path user journey.
+3. **`data-testid` attributes** on key interactive and structural elements in the frontend (see `breadly-frontend/AGENTS.md` section 23).
+4. **Test data cleanup** — use the `[E2E-<test-name>]` prefix pattern and clean up created data in `afterAll`/`afterEach`.
 
 E2E tests (`npm test` in `e2e/`) run against deployed preview environments in CI. They are not run locally as part of the development pipeline unless the developer has a local environment running.
 
@@ -104,7 +120,8 @@ E2E tests (`npm test` in `e2e/`) run against deployed preview environments in CI
 - **Documentation-only changes:** skip all phases, no review needed
 - **Test-only changes:** skip Phase 1, run only test-related verification
 - **Lint/formatting fixes:** skip Phase 1, skip Phase 4 (E2E), skip Phase 5 (no review needed for formatting)
-- **No user-facing behavior changes:** skip Phase 4 (E2E)
+- **No user-facing behavior changes (e.g., backend internals, config changes):** skip Phase 4 (E2E)
+- **New user-facing feature:** Phase 4 (E2E) is **mandatory** — at least one happy-path spec required
 
 ## Code Review
 

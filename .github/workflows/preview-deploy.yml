@@ -12,7 +12,7 @@
 #   slugify          Computes the branch slug.
 #   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend   Reuses build-frontend.yml with preview base-href.
-#   deploy-preview   terraform apply (gateway + preview) -> s3 sync -> users -> PR comment.
+#   deploy-preview   Reuses deploy-preview-stack.yml (gateway + stack + S3 + users + PR comment).
 #   e2e              Runs Playwright E2E tests against the deployed preview.
 #
 # Triggers
@@ -33,9 +33,6 @@ on:
 concurrency:
   group: preview-${{ github.ref_name }}
   cancel-in-progress: true
-
-env:
-  PROJECT_NAME: breadly
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -83,237 +80,21 @@ jobs:
     secrets: inherit
 
   # ---------------------------------------------------------------------------
-  # Deploy preview environment
+  # Deploy preview environment (reusable workflow)
   # ---------------------------------------------------------------------------
   deploy-preview:
     name: Deploy Preview
     needs: [slugify, build-backend, build-frontend]
-    runs-on: ubuntu-latest
-    environment: preview
-    outputs:
-      preview_url: ${{ steps.gw.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/
-      cognito_client_id: ${{ steps.cognito.outputs.client_id }}
+    uses: ./.github/workflows/deploy-preview-stack.yml
     permissions:
       id-token: write
       contents: read
       pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download backend artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: backend-dist
-
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: frontend-dist
-          path: frontend-dist/
-
-      # --- Step 1: Deploy shared preview API Gateway + S3 bucket + CDN ---
-
-      - name: Setup Terraform (gateway)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/gateway
-          environment: preview
-          session_name: github-preview-gateway-${{ needs.slugify.outputs.slug }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Deploy preview gateway
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/preview/gateway
-
-      - name: Get gateway outputs
-        id: gw
-        working-directory: infrastructure/aws/preview/gateway
-        run: |
-          echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
-          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
-          echo "cloudfront_url=$(terraform output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
-          echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
-
-      # --- Step 2: Deploy per-branch preview stack ---
-
-      - name: Setup Terraform (preview)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/deploy
-          environment: preview
-          session_name: github-preview-deploy-${{ needs.slugify.outputs.slug }}
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Export Terraform secrets
-        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
-
-      - name: Deploy preview stack
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/preview/deploy
-          workspace: preview-${{ needs.slugify.outputs.slug }}
-          extra_tf_vars: >-
-            -var="branch_slug=${{ needs.slugify.outputs.slug }}"
-            -var="dist_zip_path=${{ github.workspace }}/backend.zip"
-            -var="cloudfront_url=${{ steps.gw.outputs.cloudfront_url }}"
-
-      # --- Step 3: Upload frontend assets to shared S3 bucket ---
-
-      - name: Upload frontend to shared S3 bucket
-        run: |
-          aws s3 sync frontend-dist/ \
-            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ needs.slugify.outputs.slug }}/" \
-            --delete \
-            --cache-control "public, max-age=31536000, immutable" \
-            --exclude "*.html" \
-            --exclude "*.json"
-          # Upload HTML and JSON with no-cache headers
-          aws s3 sync frontend-dist/ \
-            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ needs.slugify.outputs.slug }}/" \
-            --exclude "*" \
-            --include "*.html" \
-            --include "*.json" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-      # --- Step 4: Create Cognito users ---
-
-      - name: Get Cognito outputs
-        id: cognito
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
-          echo "client_id=$(terraform output -raw cognito_user_pool_client_id)" >> "$GITHUB_OUTPUT"
-
-      - name: Create user groups
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
-
-          # Create groups matching roles.config.ts (idempotent — ignores if already exists)
-          aws cognito-idp create-group \
-            --user-pool-id "$USER_POOL_ID" \
-            --group-name "ADMIN" \
-            --description "Full administrative access" || true
-
-          aws cognito-idp create-group \
-            --user-pool-id "$USER_POOL_ID" \
-            --group-name "USER" \
-            --description "Standard user access" || true
-
-          aws cognito-idp create-group \
-            --user-pool-id "$USER_POOL_ID" \
-            --group-name "PREMIUM_USER" \
-            --description "Premium tier user access" || true
-
-      - name: Create demo users and assign groups
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
-
-          # --- Demo user (USER group) ---
-          aws cognito-idp admin-create-user \
-            --user-pool-id "$USER_POOL_ID" \
-            --username "demo@breadly.app" \
-            --message-action SUPPRESS || true
-
-          aws cognito-idp admin-set-user-password \
-            --user-pool-id "$USER_POOL_ID" \
-            --username "demo@breadly.app" \
-            --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" \
-            --permanent
-
-          aws cognito-idp admin-add-user-to-group \
-            --user-pool-id "$USER_POOL_ID" \
-            --username "demo@breadly.app" \
-            --group-name "USER"
-
-          # --- Admin user (ADMIN group) ---
-          aws cognito-idp admin-create-user \
-            --user-pool-id "$USER_POOL_ID" \
-            --username "admin@breadly.app" \
-            --message-action SUPPRESS || true
-
-          aws cognito-idp admin-set-user-password \
-            --user-pool-id "$USER_POOL_ID" \
-            --username "admin@breadly.app" \
-            --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" \
-            --permanent
-
-          aws cognito-idp admin-add-user-to-group \
-            --user-pool-id "$USER_POOL_ID" \
-            --username "admin@breadly.app" \
-            --group-name "ADMIN"
-
-      # --- Step 5: Invalidate, seed, and comment ---
-
-      - name: Invalidate CloudFront cache for preview path
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id "${{ steps.gw.outputs.distribution_id }}" \
-            --paths "/preview/${{ needs.slugify.outputs.slug }}/*"
-
-      - name: Seed data (placeholder)
-        run: |
-          echo "Seed data step — logic to be implemented."
-          echo "When implemented, this step will POST seed data to the preview API."
-
-      - name: Post PR comment
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
-          BODY="## Preview Environment
-
-          Branch \`${{ github.ref_name }}\` has been deployed to a preview environment.
-
-          **URL:** $PREVIEW_URL
-
-          **Demo credentials:**
-          | User | Email | Password |
-          |------|-------|----------|
-          | Demo | \`demo@breadly.app\` | See \`PREVIEW_DEMO_PASSWORD\` secret |
-          | Admin | \`admin@breadly.app\` | See \`PREVIEW_ADMIN_PASSWORD\` secret |
-
-          _Updated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
-
-          # Find the open PR for this branch (if any) and post/update a comment
-          PR_NUMBER=$(gh pr list --head "${{ github.ref_name }}" --json number --jq '.[0].number // empty')
-          if [ -n "$PR_NUMBER" ]; then
-            # Update existing preview comment or create a new one
-            EXISTING=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("## Preview Environment")) | .databaseId' | head -1)
-            if [ -n "$EXISTING" ]; then
-              gh api "repos/${{ github.repository }}/issues/comments/$EXISTING" -X PATCH -f body="$BODY"
-            else
-              gh pr comment "$PR_NUMBER" --body "$BODY"
-            fi
-          fi
-
-      - name: Write preview URL to job summary
-        run: |
-          PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ needs.slugify.outputs.slug }}/"
-          echo "## Preview Environment" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Branch \`${{ github.ref_name }}\` deployed to:" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**$PREVIEW_URL**" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| User | Email | Group |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|------|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Demo | \`demo@breadly.app\` | USER |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Admin | \`admin@breadly.app\` | ADMIN |" >> "$GITHUB_STEP_SUMMARY"
+    with:
+      slug: ${{ needs.slugify.outputs.slug }}
+      post-pr-comment: true
+      branch-name: ${{ github.ref_name }}
+    secrets: inherit
 
   # ---------------------------------------------------------------------------
   # End-to-End Tests (Playwright)
@@ -331,33 +112,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
-
-      - name: Install E2E dependencies
-        working-directory: e2e
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
-
-      - name: Install Playwright Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        working-directory: e2e
-        run: npx playwright install-deps chromium
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
 
       - name: Run E2E tests
         id: e2e-run
@@ -370,64 +126,11 @@ jobs:
           E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
         run: npx playwright test
 
-      - name: Write E2E summary
+      - name: Report E2E results
         if: always()
-        env:
-          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-        run: |
-          echo "**E2E Base URL:** \`$E2E_BASE_URL\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          RESULTS=e2e/test-results/results.json
-          if [ ! -f "$RESULTS" ]; then
-            echo "> **E2E tests did not produce results.** Check the workflow logs." >> "$GITHUB_STEP_SUMMARY"
-          else
-            jq -r '"| Test | Project | Status | Duration |", "|------|---------|--------|----------|", (.suites[].suites[]?.specs[] | .title as $title | .tests[] | "| \($title) | \(.projectName) | \(if .status == "expected" then "passed" elif .status == "skipped" then "skipped" else "**FAILED**" end) | \(((.results[0].duration // 0) / 1000 * 10 | floor / 10))s |")' "$RESULTS" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "> Could not parse test results." >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "_Download the \`playwright-report-${{ needs.slugify.outputs.slug }}\` artifact for the full HTML report with videos and traces._" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v6
+        uses: ./.github/actions/playwright-report
         with:
-          name: playwright-report-${{ needs.slugify.outputs.slug }}
-          path: |
-            e2e/playwright-report/
-            e2e/test-results/
-          retention-days: 7
-
-      - name: Post E2E results to PR
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-        run: |
-          PR_NUMBER=$(gh pr list --head "${{ github.ref_name }}" --json number --jq '.[0].number // empty')
-          if [ -z "$PR_NUMBER" ]; then
-            echo "No open PR found for branch ${{ github.ref_name }}, skipping comment."
-            exit 0
-          fi
-
-          RESULTS=e2e/test-results/results.json
-          {
-            echo "## E2E Test Results"
-            echo ""
-            echo "**Base URL:** \`$E2E_BASE_URL\`"
-            echo ""
-            if [ ! -f "$RESULTS" ]; then
-              echo "> **E2E tests did not produce results.** Check the workflow logs."
-            else
-              jq -r '"| Test | Project | Status | Duration |", "|------|---------|--------|----------|", (.suites[].suites[]?.specs[] | .title as $title | .tests[] | "| \($title) | \(.projectName) | \(if .status == "expected" then "passed" elif .status == "skipped" then "skipped" else "**FAILED**" end) | \(((.results[0].duration // 0) / 1000 * 10 | floor / 10))s |")' "$RESULTS" 2>/dev/null || echo "> Could not parse test results."
-            fi
-            echo ""
-            echo "_Download the \`playwright-report-${{ needs.slugify.outputs.slug }}\` artifact for the full HTML report with videos and traces._"
-            echo ""
-            echo "_Updated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
-          } > /tmp/e2e-comment.md
-
-          EXISTING=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("## E2E Test Results")) | .databaseId' | head -1)
-          if [ -n "$EXISTING" ]; then
-            gh api "repos/${{ github.repository }}/issues/comments/$EXISTING" -X PATCH -f body="$(cat /tmp/e2e-comment.md)"
-          else
-            gh pr comment "$PR_NUMBER" --body-file /tmp/e2e-comment.md
-          fi
+          artifact-name: playwright-report-${{ needs.slugify.outputs.slug }}
+          base-url: ${{ needs.deploy-preview.outputs.preview_url }}
+          post-to-pr: "true"
+          branch-name: ${{ github.ref_name }}

@@ -1,0 +1,235 @@
+# deploy-preview-stack.yml
+#
+# Reusable workflow — deploys a full preview stack for a given branch slug.
+#
+# Shared by preview-deploy.yml (feature branches) and e2e-main.yml (main
+# branch E2E validation). Callers provide the slug and control whether a
+# PR comment is posted.
+#
+# Steps:
+#   1. Download backend + frontend artifacts.
+#   2. Deploy shared preview gateway (API GW + S3 + CloudFront).
+#   3. Deploy per-branch preview stack (Cognito + Lambda x2 + API GW routes).
+#   4. Upload frontend to S3 under <slug>/ prefix.
+#   5. Create Cognito user groups and demo users.
+#   6. Invalidate CloudFront cache for /preview/<slug>/*.
+#   7. Optionally post a PR comment with preview URL + credentials.
+#
+# Outputs:
+#   preview_url        Full URL to the deployed preview.
+#   cognito_client_id  Cognito User Pool Client ID for E2E auth.
+
+name: Deploy Preview Stack
+
+on:
+  workflow_call:
+    inputs:
+      slug:
+        description: URL-safe branch slug used as workspace and S3 key prefix.
+        required: true
+        type: string
+      post-pr-comment:
+        description: Whether to post a PR comment with the preview URL.
+        required: false
+        type: boolean
+        default: false
+      branch-name:
+        description: Git branch name (used for PR lookup when posting comments).
+        required: false
+        type: string
+        default: ""
+    outputs:
+      preview_url:
+        description: Full URL to the deployed preview environment.
+        value: ${{ jobs.deploy.outputs.preview_url }}
+      cognito_client_id:
+        description: Cognito User Pool Client ID for E2E auth.
+        value: ${{ jobs.deploy.outputs.cognito_client_id }}
+
+env:
+  PROJECT_NAME: breadly
+
+jobs:
+  deploy:
+    name: Deploy Preview (${{ inputs.slug }})
+    runs-on: ubuntu-latest
+    environment: preview
+    outputs:
+      preview_url: ${{ steps.gw.outputs.cloudfront_url }}/preview/${{ inputs.slug }}/
+      cognito_client_id: ${{ steps.cognito.outputs.client_id }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: backend-dist
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-dist
+          path: frontend-dist/
+
+      # --- Shared preview gateway (API GW + S3 + CloudFront) ---
+
+      - name: Setup Terraform (gateway)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
+          session_name: github-preview-gateway-${{ inputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Deploy preview gateway
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+
+      - name: Get gateway outputs
+        id: gw
+        working-directory: infrastructure/aws/preview/gateway
+        run: |
+          echo "api_gateway_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "preview_bucket=$(terraform output -raw preview_bucket_id)" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_url=$(terraform output -raw cloudfront_url)" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+
+      # --- Per-branch preview stack (Cognito + Lambda + API GW routes) ---
+
+      - name: Setup Terraform (preview)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/deploy
+          environment: preview
+          session_name: github-preview-deploy-${{ inputs.slug }}
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Export Terraform secrets
+        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
+
+      - name: Deploy preview stack
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/preview/deploy
+          workspace: preview-${{ inputs.slug }}
+          extra_tf_vars: >-
+            -var="branch_slug=${{ inputs.slug }}"
+            -var="dist_zip_path=${{ github.workspace }}/backend.zip"
+            -var="cloudfront_url=${{ steps.gw.outputs.cloudfront_url }}"
+
+      # --- Upload frontend assets to shared S3 bucket ---
+
+      - name: Upload frontend to shared S3 bucket
+        run: |
+          aws s3 sync frontend-dist/ \
+            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ inputs.slug }}/" \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          aws s3 sync frontend-dist/ \
+            "s3://${{ steps.gw.outputs.preview_bucket }}/${{ inputs.slug }}/" \
+            --exclude "*" \
+            --include "*.html" \
+            --include "*.json" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      # --- Cognito users ---
+
+      - name: Get Cognito outputs
+        id: cognito
+        working-directory: infrastructure/aws/preview/deploy
+        run: |
+          echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
+          echo "client_id=$(terraform output -raw cognito_user_pool_client_id)" >> "$GITHUB_OUTPUT"
+
+      - name: Create user groups
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
+          aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "ADMIN" --description "Full administrative access" || true
+          aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "USER" --description "Standard user access" || true
+          aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "PREMIUM_USER" --description "Premium tier user access" || true
+
+      - name: Create demo users and assign groups
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
+
+          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --message-action SUPPRESS || true
+          aws cognito-idp admin-set-user-password --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" --permanent
+          aws cognito-idp admin-add-user-to-group --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --group-name "USER"
+
+          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --message-action SUPPRESS || true
+          aws cognito-idp admin-set-user-password --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" --permanent
+          aws cognito-idp admin-add-user-to-group --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --group-name "ADMIN"
+
+      # --- Invalidate CDN cache ---
+
+      - name: Invalidate CloudFront cache for preview path
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.gw.outputs.distribution_id }}" \
+            --paths "/preview/${{ inputs.slug }}/*"
+
+      # --- Optional: post PR comment + job summary ---
+
+      - name: Post PR comment
+        if: inputs.post-pr-comment && inputs.branch-name != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ inputs.slug }}/"
+          BODY="## Preview Environment
+
+          Branch \`${{ inputs.branch-name }}\` has been deployed to a preview environment.
+
+          **URL:** $PREVIEW_URL
+
+          **Demo credentials:**
+          | User | Email | Password |
+          |------|-------|----------|
+          | Demo | \`demo@breadly.app\` | See \`PREVIEW_DEMO_PASSWORD\` secret |
+          | Admin | \`admin@breadly.app\` | See \`PREVIEW_ADMIN_PASSWORD\` secret |
+
+          _Updated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
+
+          PR_NUMBER=$(gh pr list --head "${{ inputs.branch-name }}" --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            EXISTING=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("## Preview Environment")) | .databaseId' | head -1)
+            if [ -n "$EXISTING" ]; then
+              gh api "repos/${{ github.repository }}/issues/comments/$EXISTING" -X PATCH -f body="$BODY"
+            else
+              gh pr comment "$PR_NUMBER" --body "$BODY"
+            fi
+          fi
+
+      - name: Write preview URL to job summary
+        run: |
+          PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ inputs.slug }}/"
+          echo "## Preview Environment" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Slug \`${{ inputs.slug }}\` deployed to:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**$PREVIEW_URL**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| User | Email | Group |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Demo | \`demo@breadly.app\` | USER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Admin | \`admin@breadly.app\` | ADMIN |" >> "$GITHUB_STEP_SUMMARY"
