@@ -1,4 +1,4 @@
-# deploy.yml
+# _deploy.yml
 #
 # Unified deployment pipeline for the Breadly application (dev/prod).
 # Deploys the Angular SPA (S3), Express API (Lambda), Cognito, API Gateway,
@@ -8,12 +8,12 @@
 #   deploy    Downloads both release assets and deploys via Terraform.
 #
 # Triggers
-#   workflow_call     Called by build-backend.yml or build-frontend.yml on main.
+#   workflow_call     Called by ci-backend.yml or ci-frontend.yml on main.
 #   workflow_dispatch Manually deploy a specific environment.
 #
 # Prerequisites
 #   The Terraform state backend (S3 bucket + DynamoDB table) must already exist.
-#   Run setup-deployment-infrastructure.yml once per environment before the first deploy.
+#   Run setup-infra.yml once per environment before the first deploy.
 #
 # Artifacts
 #   The workflow always needs both backend.zip and dist.zip. The caller passes
@@ -25,7 +25,7 @@
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID   MONGODB_URI
 #   Variables: AWS_REGION
 
-name: Deploy
+name: Deploy (Dev / Prod)
 
 on:
   workflow_call:
@@ -69,7 +69,7 @@ env:
 
 jobs:
   deploy:
-    name: ${{ inputs.environment || github.event.inputs.environment }}
+    name: Deploy to ${{ inputs.environment || github.event.inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || github.event.inputs.environment }}
     permissions:
@@ -127,12 +127,12 @@ jobs:
               $(gh release list --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("frontend-"))][0].tagName')
           fi
 
-      - name: Unzip frontend dist
+      - name: Unpack frontend artifact
         run: |
           mkdir -p breadly-frontend/dist/browser/
           unzip dist.zip -d breadly-frontend/dist/browser/
 
-      - name: Setup Terraform
+      - name: Setup Terraform (deploy)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/deploy
@@ -146,7 +146,7 @@ jobs:
       - name: Export Terraform secrets
         run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
 
-      - name: Deploy stack
+      - name: Terraform apply
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/deploy
@@ -162,7 +162,7 @@ jobs:
             --distribution-id "$DIST_ID" \
             --paths "/*"
 
-      - name: Print outputs
+      - name: Print deployment URLs
         working-directory: infrastructure/aws/deploy
         run: |
           echo "CloudFront URL: $(terraform output -raw cloudfront_url)"

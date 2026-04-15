@@ -10,18 +10,18 @@
 # provides a required status check for PR merges via branch protection.
 #
 # Jobs:
-#   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
-#   build-frontend   Reuses build-frontend.yml with e2e-main base-href.
-#   deploy-preview   Reuses deploy-preview-stack.yml with slug "e2e-main".
-#   e2e              Runs Playwright E2E tests against the temporary preview.
-#   teardown         Destroys the temporary preview stack (always runs).
+#   build-backend    Reuses ci-backend.yml (lint -> test -> build -> artifact).
+#   build-frontend   Reuses ci-frontend.yml with e2e-main base-href.
+#   deploy-preview   Reuses _deploy-preview.yml with slug "e2e-main".
+#   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the temporary preview).
+#   teardown         Reuses _teardown-preview.yml to destroy the temporary stack (always runs).
 #
 # Required GitHub environment: preview
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID, MONGODB_URI,
 #            PREVIEW_DEMO_PASSWORD, PREVIEW_ADMIN_PASSWORD
 #   Variables: AWS_REGION
 
-name: E2E (main)
+name: E2E (Main Branch)
 
 on:
   push:
@@ -32,17 +32,13 @@ concurrency:
   group: e2e-main
   cancel-in-progress: true
 
-env:
-  PROJECT_NAME: breadly
-  E2E_SLUG: e2e-main
-
 jobs:
   # ---------------------------------------------------------------------------
   # Build backend (reuses CI workflow)
   # ---------------------------------------------------------------------------
   build-backend:
-    name: Build Backend
-    uses: ./.github/workflows/build-backend.yml
+    name: CI Backend
+    uses: ./.github/workflows/ci-backend.yml
     permissions:
       contents: write
       id-token: write
@@ -52,8 +48,8 @@ jobs:
   # Build frontend (reuses CI workflow with e2e-main base-href)
   # ---------------------------------------------------------------------------
   build-frontend:
-    name: Build Frontend
-    uses: ./.github/workflows/build-frontend.yml
+    name: CI Frontend
+    uses: ./.github/workflows/ci-frontend.yml
     permissions:
       contents: write
       id-token: write
@@ -65,9 +61,9 @@ jobs:
   # Deploy temporary preview environment (reusable workflow)
   # ---------------------------------------------------------------------------
   deploy-preview:
-    name: Deploy Preview (e2e-main)
+    name: Deploy Temporary Preview
     needs: [build-backend, build-frontend]
-    uses: ./.github/workflows/deploy-preview-stack.yml
+    uses: ./.github/workflows/_deploy-preview.yml
     permissions:
       id-token: write
       contents: read
@@ -78,106 +74,33 @@ jobs:
     secrets: inherit
 
   # ---------------------------------------------------------------------------
-  # End-to-End Tests (Playwright)
+  # End-to-End Tests (Playwright — reusable workflow)
   # ---------------------------------------------------------------------------
   e2e:
-    name: E2E Tests
+    name: Playwright E2E
     needs: [deploy-preview]
-    runs-on: ubuntu-latest
-    environment: preview
+    uses: ./.github/workflows/_run-e2e.yml
     permissions:
       id-token: write
       contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
-      - name: Run E2E tests
-        id: e2e-run
-        working-directory: e2e
-        env:
-          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-          E2E_COGNITO_CLIENT_ID: ${{ needs.deploy-preview.outputs.cognito_client_id }}
-          E2E_AWS_REGION: ${{ vars.AWS_REGION }}
-          E2E_DEMO_USERNAME: demo@breadly.app
-          E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
-        run: npx playwright test
-
-      - name: Report E2E results
-        if: always()
-        uses: ./.github/actions/playwright-report
-        with:
-          artifact-name: playwright-report-e2e-main
-          base-url: ${{ needs.deploy-preview.outputs.preview_url }}
+      pull-requests: write
+    with:
+      slug: e2e-main
+      preview_url: ${{ needs.deploy-preview.outputs.preview_url }}
+      cognito_client_id: ${{ needs.deploy-preview.outputs.cognito_client_id }}
+    secrets: inherit
 
   # ---------------------------------------------------------------------------
-  # Teardown temporary preview environment
+  # Teardown temporary preview environment (reusable workflow)
   # ---------------------------------------------------------------------------
   teardown:
-    name: Teardown Preview (e2e-main)
+    name: Teardown Temporary Preview
     needs: [deploy-preview, e2e]
     if: always()
-    runs-on: ubuntu-latest
-    environment: preview
+    uses: ./.github/workflows/_teardown-preview.yml
     permissions:
       id-token: write
       contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Terraform (preview)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/deploy
-          environment: preview
-          session_name: github-e2e-main-teardown
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Export Terraform secrets
-        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
-
-      - name: Select workspace
-        working-directory: infrastructure/aws/preview/deploy
-        run: terraform workspace select preview-e2e-main
-
-      - name: Destroy preview stack
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          terraform destroy -auto-approve \
-            -var="branch_slug=e2e-main" \
-            -var="dist_zip_path=/dev/null" \
-            -var="cloudfront_url=https://placeholder"
-
-      - name: Delete workspace
-        working-directory: infrastructure/aws/preview/deploy
-        run: |
-          terraform workspace select default
-          terraform workspace delete preview-e2e-main || true
-
-      - name: Setup Terraform (gateway)
-        uses: ./.github/actions/terraform-setup
-        with:
-          working_dir: infrastructure/aws/preview/gateway
-          environment: preview
-          session_name: github-e2e-main-teardown-gw
-          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-          aws_region: ${{ vars.AWS_REGION }}
-          project_name: ${{ env.PROJECT_NAME }}
-
-      - name: Clean up S3 assets
-        env:
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          cd infrastructure/aws/preview/gateway
-          BUCKET=$(terraform output -raw preview_bucket_id 2>/dev/null || echo "")
-          if [ -n "$BUCKET" ]; then
-            aws s3 rm "s3://$BUCKET/e2e-main/" --recursive || true
-          fi
+    with:
+      slug: e2e-main
+    secrets: inherit

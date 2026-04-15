@@ -1,4 +1,4 @@
-# preview-deploy.yml
+# preview.yml
 #
 # Deploys a full-stack preview environment for every non-main branch push.
 # Each preview environment runs under /preview/<branch-slug>/ on the dedicated
@@ -10,10 +10,10 @@
 #
 # Jobs:
 #   slugify          Computes the branch slug.
-#   build-backend    Reuses build-backend.yml (lint -> test -> build -> artifact).
-#   build-frontend   Reuses build-frontend.yml with preview base-href.
-#   deploy-preview   Reuses deploy-preview-stack.yml (gateway + stack + S3 + users + PR comment).
-#   e2e              Runs Playwright E2E tests against the deployed preview.
+#   build-backend    Reuses ci-backend.yml (lint -> test -> build -> artifact).
+#   build-frontend   Reuses ci-frontend.yml with preview base-href.
+#   deploy-preview   Reuses _deploy-preview.yml (gateway + stack + S3 + users + PR comment).
+#   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the deployed preview).
 #
 # Triggers
 #   push to any branch except main.
@@ -23,7 +23,7 @@
 #            PREVIEW_DEMO_PASSWORD, PREVIEW_ADMIN_PASSWORD
 #   Variables: AWS_REGION
 
-name: Preview Deploy
+name: Preview
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
   # Slugify branch name
   # ---------------------------------------------------------------------------
   slugify:
-    name: Slugify
+    name: Compute Branch Slug
     runs-on: ubuntu-latest
     outputs:
       slug: ${{ steps.slug.outputs.slug }}
@@ -57,9 +57,9 @@ jobs:
   # Build backend (reuses CI workflow)
   # ---------------------------------------------------------------------------
   build-backend:
-    name: Build Backend
+    name: CI Backend
     needs: [slugify]
-    uses: ./.github/workflows/build-backend.yml
+    uses: ./.github/workflows/ci-backend.yml
     permissions:
       contents: write
       id-token: write
@@ -69,9 +69,9 @@ jobs:
   # Build frontend (reuses CI workflow with preview base-href)
   # ---------------------------------------------------------------------------
   build-frontend:
-    name: Build Frontend
+    name: CI Frontend
     needs: [slugify]
-    uses: ./.github/workflows/build-frontend.yml
+    uses: ./.github/workflows/ci-frontend.yml
     permissions:
       contents: write
       id-token: write
@@ -83,9 +83,9 @@ jobs:
   # Deploy preview environment (reusable workflow)
   # ---------------------------------------------------------------------------
   deploy-preview:
-    name: Deploy Preview
+    name: Deploy Preview Stack
     needs: [slugify, build-backend, build-frontend]
-    uses: ./.github/workflows/deploy-preview-stack.yml
+    uses: ./.github/workflows/_deploy-preview.yml
     permissions:
       id-token: write
       contents: read
@@ -97,40 +97,20 @@ jobs:
     secrets: inherit
 
   # ---------------------------------------------------------------------------
-  # End-to-End Tests (Playwright)
+  # End-to-End Tests (Playwright — reusable workflow)
   # ---------------------------------------------------------------------------
   e2e:
-    name: E2E Tests
+    name: Playwright E2E
     needs: [slugify, deploy-preview]
-    runs-on: ubuntu-latest
-    environment: preview
+    uses: ./.github/workflows/_run-e2e.yml
     permissions:
       id-token: write
       contents: read
       pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
-      - name: Run E2E tests
-        id: e2e-run
-        working-directory: e2e
-        env:
-          E2E_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-          E2E_COGNITO_CLIENT_ID: ${{ needs.deploy-preview.outputs.cognito_client_id }}
-          E2E_AWS_REGION: ${{ vars.AWS_REGION }}
-          E2E_DEMO_USERNAME: demo@breadly.app
-          E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
-        run: npx playwright test
-
-      - name: Report E2E results
-        if: always()
-        uses: ./.github/actions/playwright-report
-        with:
-          artifact-name: playwright-report-${{ needs.slugify.outputs.slug }}
-          base-url: ${{ needs.deploy-preview.outputs.preview_url }}
-          post-to-pr: "true"
-          branch-name: ${{ github.ref_name }}
+    with:
+      slug: ${{ needs.slugify.outputs.slug }}
+      preview_url: ${{ needs.deploy-preview.outputs.preview_url }}
+      cognito_client_id: ${{ needs.deploy-preview.outputs.cognito_client_id }}
+      post-to-pr: true
+      branch-name: ${{ github.ref_name }}
+    secrets: inherit

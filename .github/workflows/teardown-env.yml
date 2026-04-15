@@ -1,5 +1,24 @@
+# teardown-env.yml
+#
+# Manual workflow to destroy all resources for a chosen environment.
+#
+# For dev/prod: destroys the merged deploy root module.
+# For preview: destroys all per-branch preview stacks, then the shared
+# preview gateway (API Gateway + S3 bucket + CloudFront).
+#
+# Jobs:
+#   teardown-preview-branches    Destroys all preview workspaces (preview only).
+#   teardown-deploy              Destroys the application stack (dev/prod only).
+#   teardown-preview-gateway     Destroys the shared preview gateway (preview only).
+#
+# Triggers
+#   workflow_dispatch  Manual trigger only.
+#
+# Required secrets/variables — see .github/workflows/README.md.
+#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
+#   Variables: AWS_REGION
 
-name: Teardown Application
+name: Teardown Environment
 
 on:
   workflow_dispatch:
@@ -27,7 +46,7 @@ jobs:
   # Teardown all per-branch preview workspaces (preview env only)
   # ---------------------------------------------------------------------------
   teardown-preview-branches:
-    name: Teardown Preview Branches
+    name: Destroy All Preview Stacks
     if: inputs.environment == 'preview'
     runs-on: ubuntu-latest
     environment: preview
@@ -38,7 +57,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Terraform (preview module)
+      - name: Setup Terraform (branch stack)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/preview/deploy
@@ -49,13 +68,13 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Set Terraform variables
+      - name: Set Terraform variables (destroy placeholders)
         run: |
           echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
           echo "TF_VAR_mongodb_uri=placeholder" >> "$GITHUB_ENV"
           echo "TF_VAR_cloudfront_url=https://placeholder.cloudfront.net" >> "$GITHUB_ENV"
 
-      - name: Destroy all preview workspaces
+      - name: Destroy all preview workspaces (loop)
         working-directory: infrastructure/aws/preview/deploy
         run: |
           WORKSPACES=$(terraform workspace list | grep -E '^\s+preview-' | sed 's/^[[:space:]]*//' || true)
@@ -72,7 +91,7 @@ jobs:
   # Teardown Deploy — merged root module (dev/prod only)
   # ---------------------------------------------------------------------------
   teardown-deploy:
-    name: Teardown Deploy (${{ inputs.environment }})
+    name: Destroy Application (${{ inputs.environment }})
     if: inputs.environment != 'preview'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -83,7 +102,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Terraform
+      - name: Setup Terraform (deploy)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/deploy
@@ -94,14 +113,14 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Set dummy Terraform variables
+      - name: Set Terraform variables (destroy placeholders)
         run: |
           echo "TF_VAR_mongodb_uri=placeholder" >> "$GITHUB_ENV"
           echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
           mkdir -p /tmp/empty-dist
           echo "TF_VAR_frontend_dist_path=/tmp/empty-dist" >> "$GITHUB_ENV"
 
-      - name: Terraform destroy
+      - name: Terraform destroy (application)
         working-directory: infrastructure/aws/deploy
         shell: bash
         run: |
@@ -112,7 +131,7 @@ jobs:
   # Teardown Preview Gateway (preview only, after preview branches)
   # ---------------------------------------------------------------------------
   teardown-preview-gateway:
-    name: Teardown Preview Gateway
+    name: Destroy Preview Gateway
     if: inputs.environment == 'preview'
     needs: [teardown-preview-branches]
     runs-on: ubuntu-latest
@@ -124,7 +143,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Terraform
+      - name: Setup Terraform (shared gateway)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/preview/gateway
@@ -135,7 +154,7 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Terraform destroy
+      - name: Terraform destroy (shared gateway)
         working-directory: infrastructure/aws/preview/gateway
         shell: bash
         run: |

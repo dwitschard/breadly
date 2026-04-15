@@ -1,4 +1,4 @@
-# build-frontend.yml
+# ci-frontend.yml
 #
 # CI pipeline for the Breadly frontend.
 # Lints, tests, and produces a production build artifact.
@@ -7,14 +7,14 @@
 # Jobs
 #   build    Lint → test → build → upload dist artifact
 #   release  (main only) Create GitHub Release with dist.zip asset
-#   deploy   (main only) Call deploy.yml to deploy to dev
+#   deploy   (main only) Call _deploy.yml to deploy to dev
 #
 # Triggers
 #   push              Runs on main when frontend source files change.
-#   workflow_call     Reusable entry point (used by preview-deploy).
+#   workflow_call     Reusable entry point (used by preview).
 #   workflow_dispatch Manual trigger for re-running CI on demand.
 
-name: Build Frontend
+name: CI Frontend
 
 on:
   push:
@@ -25,8 +25,8 @@ on:
       - "infrastructure/aws/frontend/**"
       - "infrastructure/aws/cdn/**"
       - "infrastructure/aws/deploy/**"
-      - ".github/workflows/build-frontend.yml"
-      - ".github/workflows/deploy.yml"
+      - ".github/workflows/ci-frontend.yml"
+      - ".github/workflows/_deploy.yml"
       - ".github/actions/**"
 
   workflow_call:
@@ -49,7 +49,7 @@ permissions:
 
 jobs:
   build:
-    name: Build
+    name: Lint, Test & Build
     runs-on: ubuntu-latest
     outputs:
       short_sha: ${{ steps.sha.outputs.short }}
@@ -72,11 +72,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: breadly-frontend/package-lock.json
 
-      - name: Install API spec dependencies
+      - name: Install API spec dependencies (breadly-api)
         run: npm ci
         working-directory: breadly-api
 
-      - name: Install dependencies
+      - name: Install dependencies (breadly-frontend)
         run: npm ci
 
       - name: Generate API types
@@ -102,7 +102,7 @@ jobs:
           {"version":"${{ steps.sha.outputs.short }}","releaseUrl":"$URL"}
           EOF
 
-      - name: Upload dist artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
@@ -110,19 +110,19 @@ jobs:
           retention-days: 1
 
   release:
-    name: Release
+    name: Create Release
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Download dist artifact
+      - name: Download build artifact
         uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: dist/
 
-      - name: Zip dist
+      - name: Package dist as zip
         working-directory: dist/
         run: zip -r ../dist.zip .
 
@@ -139,7 +139,7 @@ jobs:
     name: Deploy Dev
     needs: [ build, release ]
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/deploy.yml
+    uses: ./.github/workflows/_deploy.yml
     with:
       release_tag: frontend-${{ needs.build.outputs.short_sha }}
       environment: dev

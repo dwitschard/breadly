@@ -1,8 +1,8 @@
-# deploy-preview-stack.yml
+# _deploy-preview.yml
 #
 # Reusable workflow — deploys a full preview stack for a given branch slug.
 #
-# Shared by preview-deploy.yml (feature branches) and e2e-main.yml (main
+# Shared by preview.yml (feature branches) and e2e-main.yml (main
 # branch E2E validation). Callers provide the slug and control whether a
 # PR comment is posted.
 #
@@ -78,7 +78,7 @@ jobs:
 
       # --- Shared preview gateway (API GW + S3 + CloudFront) ---
 
-      - name: Setup Terraform (gateway)
+      - name: Setup Terraform (shared gateway)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/preview/gateway
@@ -89,12 +89,12 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Deploy preview gateway
+      - name: Terraform apply (shared gateway)
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/preview/gateway
 
-      - name: Get gateway outputs
+      - name: Read gateway outputs
         id: gw
         working-directory: infrastructure/aws/preview/gateway
         run: |
@@ -105,7 +105,7 @@ jobs:
 
       # --- Per-branch preview stack (Cognito + Lambda + API GW routes) ---
 
-      - name: Setup Terraform (preview)
+      - name: Setup Terraform (branch stack)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/preview/deploy
@@ -119,7 +119,7 @@ jobs:
       - name: Export Terraform secrets
         run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
 
-      - name: Deploy preview stack
+      - name: Terraform apply (branch stack)
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/preview/deploy
@@ -131,7 +131,7 @@ jobs:
 
       # --- Upload frontend assets to shared S3 bucket ---
 
-      - name: Upload frontend to shared S3 bucket
+      - name: Upload frontend assets to S3
         run: |
           aws s3 sync frontend-dist/ \
             "s3://${{ steps.gw.outputs.preview_bucket }}/${{ inputs.slug }}/" \
@@ -148,14 +148,14 @@ jobs:
 
       # --- Cognito users ---
 
-      - name: Get Cognito outputs
+      - name: Read Cognito outputs
         id: cognito
         working-directory: infrastructure/aws/preview/deploy
         run: |
           echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
           echo "client_id=$(terraform output -raw cognito_user_pool_client_id)" >> "$GITHUB_OUTPUT"
 
-      - name: Create user groups
+      - name: Create Cognito user groups
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
@@ -164,7 +164,7 @@ jobs:
           aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "USER" --description "Standard user access" || true
           aws cognito-idp create-group --user-pool-id "$USER_POOL_ID" --group-name "PREMIUM_USER" --description "Premium tier user access" || true
 
-      - name: Create demo users and assign groups
+      - name: Create demo users
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
@@ -180,7 +180,7 @@ jobs:
 
       # --- Invalidate CDN cache ---
 
-      - name: Invalidate CloudFront cache for preview path
+      - name: Invalidate CloudFront cache
         env:
           AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: |
@@ -190,7 +190,7 @@ jobs:
 
       # --- Optional: post PR comment + job summary ---
 
-      - name: Post PR comment
+      - name: Post preview URL to PR
         if: inputs.post-pr-comment && inputs.branch-name != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -220,7 +220,7 @@ jobs:
             fi
           fi
 
-      - name: Write preview URL to job summary
+      - name: Write job summary
         run: |
           PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ inputs.slug }}/"
           echo "## Preview Environment" >> "$GITHUB_STEP_SUMMARY"
