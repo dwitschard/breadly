@@ -1,4 +1,4 @@
-# build-backend.yml
+# ci-backend.yml
 #
 # CI pipeline for the Breadly backend.
 # Lints, tests, and produces a production build artifact.
@@ -7,14 +7,14 @@
 # Jobs
 #   build    Lint → test → build → upload dist artifact
 #   release  (main only) Create GitHub Release with backend.zip asset
-#   deploy   (main only) Call deploy.yml to deploy to dev
+#   deploy   (main only) Call _deploy.yml to deploy to dev
 #
 # Triggers
 #   push              Runs on main when backend source files change.
-#   workflow_call     Reusable entry point (used by preview-deploy).
+#   workflow_call     Reusable entry point (used by preview).
 #   workflow_dispatch Manual trigger for re-running CI on demand.
 
-name: Build Backend
+name: CI Backend
 
 on:
   push:
@@ -24,8 +24,8 @@ on:
       - "breadly-backend/**"
       - "infrastructure/aws/backend/**"
       - "infrastructure/aws/deploy/**"
-      - ".github/workflows/build-backend.yml"
-      - ".github/workflows/deploy.yml"
+      - ".github/workflows/ci-backend.yml"
+      - ".github/workflows/_deploy.yml"
       - ".github/actions/**"
 
   workflow_call:
@@ -65,11 +65,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: breadly-backend/package-lock.json
 
-      - name: Install API spec dependencies
+      - name: Install API spec dependencies (breadly-api)
         run: npm ci
         working-directory: breadly-api
 
-      - name: Install dependencies
+      - name: Install dependencies (breadly-backend)
         run: npm ci
 
       - name: Generate API types
@@ -95,13 +95,13 @@ jobs:
           {"version":"${{ steps.sha.outputs.short }}","releaseUrl":"$URL"}
           EOF
 
-      - name: Install production dependencies only
+      - name: Reinstall production dependencies only
         run: npm ci --omit=dev
 
-      - name: Create deployment zip
+      - name: Package deployment artifact
         run: zip -r ../backend.zip dist/ node_modules/ package.json run.sh
 
-      - name: Upload dist artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v6
         with:
           name: backend-dist
@@ -109,13 +109,13 @@ jobs:
           retention-days: 1
 
   release:
-    name: Release
+    name: Create Release
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Download dist artifact
+      - name: Download build artifact
         uses: actions/download-artifact@v8
         with:
           name: backend-dist
@@ -130,10 +130,10 @@ jobs:
             --generate-notes
 
   deploy:
-    name: Deploy Dev
+    name: Deploy
     needs: [ build, release ]
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/deploy.yml
+    uses: ./.github/workflows/_deploy.yml
     with:
       release_tag: backend-${{ needs.build.outputs.short_sha }}
       environment: dev

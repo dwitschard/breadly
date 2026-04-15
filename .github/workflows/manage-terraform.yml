@@ -1,4 +1,4 @@
-# setup-deployment-infrastructure.yml
+# manage-terraform.yml
 #
 # One-time setup and teardown of the Terraform state backend for the frontend.
 # Creates (or destroys) the S3 state bucket and DynamoDB lock table that all
@@ -16,7 +16,7 @@
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
 #   Variables: AWS_REGION
 
-name: Setup Deployment Infrastructure
+name: Manage Terraform
 
 on:
   workflow_dispatch:
@@ -44,7 +44,7 @@ env:
 
 jobs:
   setup:
-    name: Setup (${{ inputs.environment }})
+    name: Create State Backend (${{ inputs.environment }})
     if: inputs.action == 'create'
     runs-on: ubuntu-latest
     permissions:
@@ -54,7 +54,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Terraform
+      - name: Setup Terraform (bootstrap)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/frontend/setup
@@ -66,14 +66,14 @@ jobs:
           local_backend: "true"
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Frontend Deployment State
+      - name: Terraform apply (state backend)
         uses: ./.github/actions/terraform-action
         with:
           working_dir: infrastructure/aws/frontend/setup
           local_backend: "true"
 
   teardown:
-    name: Teardown (${{ inputs.environment }})
+    name: Destroy State Backend (${{ inputs.environment }})
     if: inputs.action == 'destroy'
     runs-on: ubuntu-latest
     permissions:
@@ -85,7 +85,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Terraform
+      - name: Setup Terraform (bootstrap)
         uses: ./.github/actions/terraform-setup
         with:
           working_dir: infrastructure/aws/frontend/setup
@@ -97,14 +97,14 @@ jobs:
           local_backend: "true"
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Import State Resources
+      - name: Import existing state resources
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
         run: |
           terraform import aws_s3_bucket.tfstate ${{ env.PROJECT_NAME }}-${{ inputs.environment }}-tfstate
           terraform import aws_dynamodb_table.tfstate_lock ${{ env.PROJECT_NAME }}-${{ inputs.environment }}-tfstate-lock
 
-      - name: Terraform destroy
+      - name: Terraform destroy (state backend)
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
         run: terraform destroy -auto-approve

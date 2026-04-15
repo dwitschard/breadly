@@ -5,6 +5,7 @@
 **/generated/**
 **/node_modules/**
 **/cloudfront/node_modules/**
+**/*.env
 
 # ── Terraform ─────────────────────────────────────────────────────────────────
 
@@ -40,3 +41,8 @@ infrastructure/aws/frontend/bootstrap/terraform.tfstate.backup
 *.swp
 *.swo
 /infrastructure/aws/frontend/deploy/modules/cloudfront/node_modules/
+
+# ── E2E ───────────────────────────────────────────────────────────────────────
+e2e/.auth/
+e2e/test-results/
+e2e/playwright-report/

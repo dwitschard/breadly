@@ -24,8 +24,11 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
   template: `
     <main class="p-6">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">{{ 'HEALTH.TITLE' | translate }}</h1>
+        <h1 data-testid="health-title" class="text-2xl font-bold">
+          {{ 'HEALTH.TITLE' | translate }}
+        </h1>
         <button
+          data-testid="health-reload-btn"
           type="button"
           (click)="healthService.reload()"
           [disabled]="healthService.healthResource.isLoading()"

@@ -87,11 +87,10 @@ module "backend_public" {
   aws_region    = var.aws_region
   mongodb_uri   = var.mongodb_uri
 
-  # Cognito values are injected as plain env vars — identical to how local dev
-  # reads them from .env. No SSM calls, no AWS SDK needed in the application.
   extra_env_vars = {
     COGNITO_ISSUER    = module.cognito.issuer_url
     COGNITO_CLIENT_ID = module.cognito.client_id
+    ENV_NAME          = terraform.workspace
   }
 
   tags = {

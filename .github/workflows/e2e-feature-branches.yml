@@ -1,0 +1,116 @@
+# e2e-feature-branches.yml
+#
+# Deploys a full-stack preview environment for every non-main branch push.
+# Each preview environment runs under /preview/<branch-slug>/ on the dedicated
+# preview CloudFront distribution, with frontend assets in the shared S3 bucket
+# under a /<branch-slug>/ key prefix.
+#
+# Shared preview infrastructure (API Gateway + S3 bucket + CloudFront) is fully
+# isolated from dev. State lives in breadly-preview-tfstate.
+#
+# Jobs:
+#   slugify          Computes the branch slug.
+#   build-backend    Reuses ci-backend.yml (lint -> test -> build -> artifact).
+#   build-frontend   Reuses ci-frontend.yml with preview base-href.
+#   deploy-preview   Reuses _deploy-e2e-feature-branches.yml (gateway + stack + S3 + users + PR comment).
+#   e2e              Reuses _run-e2e.yml (Playwright E2E tests against the deployed preview).
+#
+# Triggers
+#   push to any branch except main.
+#
+# Required GitHub environment: preview
+#   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID, MONGODB_URI,
+#            PREVIEW_DEMO_PASSWORD, PREVIEW_ADMIN_PASSWORD
+#   Variables: AWS_REGION
+
+name: E2E (Feature Branch)
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+concurrency:
+  group: preview-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Slugify branch name
+  # ---------------------------------------------------------------------------
+  slugify:
+    name: Compute Branch Slug
+    runs-on: ubuntu-latest
+    outputs:
+      slug: ${{ steps.slug.outputs.slug }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Compute branch slug
+        id: slug
+        uses: ./.github/actions/slugify-branch
+        with:
+          branch: ${{ github.ref_name }}
+
+  # ---------------------------------------------------------------------------
+  # Build backend (reuses CI workflow)
+  # ---------------------------------------------------------------------------
+  build-backend:
+    name: CI Backend
+    needs: [slugify]
+    uses: ./.github/workflows/ci-backend.yml
+    permissions:
+      contents: write
+      id-token: write
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Build frontend (reuses CI workflow with preview base-href)
+  # ---------------------------------------------------------------------------
+  build-frontend:
+    name: CI Frontend
+    needs: [slugify]
+    uses: ./.github/workflows/ci-frontend.yml
+    permissions:
+      contents: write
+      id-token: write
+    with:
+      base_href: /preview/${{ needs.slugify.outputs.slug }}/
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Deploy preview environment (reusable workflow)
+  # ---------------------------------------------------------------------------
+  deploy-preview:
+    name: Preview Env
+    needs: [slugify, build-backend, build-frontend]
+    uses: ./.github/workflows/_deploy-preview.yml
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    with:
+      slug: ${{ needs.slugify.outputs.slug }}
+      post-pr-comment: true
+      branch-name: ${{ github.ref_name }}
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # End-to-End Tests (Playwright — reusable workflow)
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: E2E
+    needs: [slugify, deploy-preview]
+    uses: ./.github/workflows/_run-e2e.yml
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    with:
+      slug: ${{ needs.slugify.outputs.slug }}
+      preview_url: ${{ needs.deploy-preview.outputs.preview_url }}
+      cognito_client_id: ${{ needs.deploy-preview.outputs.cognito_client_id }}
+      post-to-pr: true
+      branch-name: ${{ github.ref_name }}
+    secrets: inherit

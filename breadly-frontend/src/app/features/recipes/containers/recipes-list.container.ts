@@ -19,7 +19,9 @@ import { CreateRecipeDto, Recipe } from '../../../generated/api';
   ],
   template: `
     <main class="p-6">
-      <h1 class="text-2xl font-bold mb-6">{{ 'RECIPES.TITLE' | translate }}</h1>
+      <h1 data-testid="recipes-title" class="text-2xl font-bold mb-6">
+        {{ 'RECIPES.TITLE' | translate }}
+      </h1>
 
       <section [attr.aria-label]="'RECIPES.ADD_TITLE' | translate" class="mb-8">
         <h2 class="text-lg font-semibold mb-3">{{ 'RECIPES.ADD_TITLE' | translate }}</h2>

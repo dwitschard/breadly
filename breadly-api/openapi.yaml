@@ -379,7 +379,11 @@ components:
       type: object
       required:
         - idp
+        - environment
       properties:
+        environment:
+          type: string
+          description: Deployment environment name (e.g. 'local', 'dev', 'preview-feature-x'). Value is 'prod' in production.
         idp:
           type: object
           required:

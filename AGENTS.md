@@ -9,6 +9,7 @@ Breadly is a recipe management application built as a monorepo with an API-first
 | `breadly-api/` | OpenAPI spec — single source of truth for all API types | OpenAPI 3.1, Redocly |
 | `breadly-backend/` | REST API server | Express 5, TypeScript, MongoDB, Jest |
 | `breadly-frontend/` | Single-page application | Angular 21, TypeScript, Tailwind CSS v4, Vitest |
+| `e2e/` | End-to-end tests against deployed preview environments | Playwright, TypeScript, Vitest |
 | `infrastructure/` | Deployment infrastructure | Terraform (AWS), Docker Compose (local) |
 | `docs/` | Project documentation | Markdown |
 
@@ -36,6 +37,7 @@ These documents are the authoritative source for coding conventions within each 
 | `breadly-api/` | `npm run lint` | — | — | — |
 | `breadly-frontend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
 | `breadly-backend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
+| `e2e/` | — | — | `npm test` (Playwright) | — |
 
 ## Development Pipeline
 
@@ -81,10 +83,39 @@ Run verification commands in each affected project separately. Skip projects tha
 
 If any step fails, fix the issue before proceeding to the next step.
 
-### Phase 4: Code Review
+### Phase 4: E2E Tests (e2e/)
 
-11. After all verification passes, invoke the `code-reviewer` sub-agent via the Task tool to review all changes made in phases 1-3. Pass it a description of what was changed and which files were affected.
-12. If the code-reviewer applied fixes, re-run Phase 3 verification (lint, build, test) on the affected projects to ensure the fixes did not introduce regressions.
+Skip this phase **only** for pure refactoring, documentation-only changes, test-only changes, or lint/formatting fixes. All new user-facing features **must** include E2E coverage. All changes to user-facing behavior **must** update affected E2E tests.
+
+11. **Write or update E2E tests** as needed:
+    - **New features:** create at least one happy-path user journey spec in `e2e/tests/<feature>/`.
+    - **Changed behavior:** update existing Page Objects and specs to match the new UI (e.g., moved elements, renamed selectors, changed navigation flows).
+    - **Removed features:** remove or update specs that relied on the removed behavior.
+
+12. **Run E2E tests** (`npm test` in `e2e/`) to verify changes. E2E tests run against a deployed preview environment (configured via `E2E_BASE_URL` in `e2e/.env`). If the preview environment does not yet include the current changes, verify at minimum that the E2E test code is consistent with the frontend changes (Page Object selectors match `data-testid` attributes, navigation flows match the updated UI).
+
+#### What to test in E2E vs unit/integration tests
+
+| Test Level | Scope | Examples |
+|-----------|-------|---------|
+| **E2E (Playwright)** | Happy-path user journeys, core workflows end-to-end | Create a recipe, navigate between pages, sign in/out |
+| **Unit / Integration** | Edge cases, validation errors, error handling, boundary conditions | Empty form submission, 404 responses, malformed input, permission denied |
+
+E2E tests validate that the **most common user journeys** work correctly across the full stack (frontend + backend + infrastructure). They are not the place for exhaustive error-case coverage — that belongs in unit and integration tests.
+
+#### E2E artifacts required per feature
+
+1. **Page Object** in `e2e/pages/<feature>/` — encapsulates selectors (`data-testid`) and user actions.
+2. **Spec file** in `e2e/tests/<feature>/<verb>-<noun>.spec.ts` — describes the happy-path user journey.
+3. **`data-testid` attributes** on key interactive and structural elements in the frontend (see `breadly-frontend/AGENTS.md` section 23).
+4. **Test data cleanup** — use the `[E2E-<test-name>]` prefix pattern and clean up created data in `afterAll`/`afterEach`.
+
+E2E tests (`npm test` in `e2e/`) run against deployed preview environments in CI. They are not run locally as part of the development pipeline unless the developer has a local environment running.
+
+### Phase 5: Code Review
+
+13. After all verification passes, invoke the `code-reviewer` sub-agent via the Task tool to review all changes made in phases 1-4. Pass it a description of what was changed and which files were affected.
+14. If the code-reviewer applied fixes, re-run Phase 3 verification (lint, build, test) on the affected projects to ensure the fixes did not introduce regressions.
 
 ### Smart Skipping Rules
 
@@ -93,7 +124,9 @@ If any step fails, fix the issue before proceeding to the next step.
 - **No API changes:** skip Phase 1 entirely
 - **Documentation-only changes:** skip all phases, no review needed
 - **Test-only changes:** skip Phase 1, run only test-related verification
-- **Lint/formatting fixes:** skip Phase 1, skip Phase 4 (no review needed for formatting)
+- **Lint/formatting fixes:** skip Phase 1, skip Phase 4 (E2E), skip Phase 5 (no review needed for formatting)
+- **No user-facing behavior changes (e.g., backend internals, config changes):** skip Phase 4 (E2E)
+- **New user-facing feature:** Phase 4 (E2E) is **mandatory** — at least one happy-path spec required
 
 ## Code Review
 

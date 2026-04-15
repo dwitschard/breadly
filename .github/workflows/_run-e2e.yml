@@ -1,0 +1,84 @@
+# _run-e2e.yml
+#
+# Reusable workflow — runs Playwright E2E tests against a deployed preview
+# environment.
+#
+# Shared by e2e-feature-branches.yml (feature branches) and e2e-main.yml (main
+# branch E2E validation). Callers provide the preview URL and control
+# whether results are posted to a PR comment.
+#
+# Steps:
+#   1. Setup Playwright (Node, npm deps, Chromium).
+#   2. Run the Playwright E2E suite.
+#   3. Upload HTML report artifact and write job summary.
+#   4. Optionally post/update a PR comment with results.
+#
+# Required GitHub environment: preview
+#   Secrets: PREVIEW_DEMO_PASSWORD, PREVIEW_ADMIN_PASSWORD
+#   Variables: AWS_REGION
+
+name: Run E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      slug:
+        description: Branch slug — used for artifact naming.
+        required: true
+        type: string
+      preview_url:
+        description: Full URL of the deployed preview environment.
+        required: true
+        type: string
+      cognito_client_id:
+        description: Cognito User Pool Client ID for E2E auth.
+        required: true
+        type: string
+      post-to-pr:
+        description: Whether to post E2E results as a PR comment.
+        required: false
+        type: boolean
+        default: false
+      branch-name:
+        description: Git branch name (used for PR lookup when posting comments).
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  e2e:
+    name: Run Playwright
+    runs-on: ubuntu-latest
+    environment: preview
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Playwright (Node + Chromium)
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run Playwright tests
+        id: e2e-run
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: ${{ inputs.preview_url }}
+          E2E_COGNITO_CLIENT_ID: ${{ inputs.cognito_client_id }}
+          E2E_AWS_REGION: ${{ vars.AWS_REGION }}
+          E2E_DEMO_USERNAME: demo@breadly.app
+          E2E_DEMO_PASSWORD: ${{ secrets.PREVIEW_DEMO_PASSWORD }}
+          E2E_ADMIN_USERNAME: admin@breadly.app
+          E2E_ADMIN_PASSWORD: ${{ secrets.PREVIEW_ADMIN_PASSWORD }}
+        run: npx playwright test
+
+      - name: Upload report & post results
+        if: always()
+        uses: ./.github/actions/playwright-report
+        with:
+          artifact-name: playwright-report-${{ inputs.slug }}
+          base-url: ${{ inputs.preview_url }}
+          post-to-pr: ${{ inputs.post-to-pr && 'true' || 'false' }}
+          branch-name: ${{ inputs.branch-name }}

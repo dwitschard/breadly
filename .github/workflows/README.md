@@ -1,16 +1,16 @@
 # GitHub Actions — Workflows
 
-## `build-backend.yml`
+## `ci-backend.yml`
 
 Lints, tests, packages and produces a release artifact for the Express backend.
-On push to `main`, automatically triggers `deploy.yml` to deploy to `dev`.
+On push to `main`, automatically triggers `_deploy.yml` to deploy to `dev`.
 
 ---
 
-## `build-frontend.yml`
+## `ci-frontend.yml`
 
 Lints, tests, and produces a production build artifact for the Angular frontend.
-On push to `main`, automatically triggers `deploy.yml` to deploy to `dev`.
+On push to `main`, automatically triggers `_deploy.yml` to deploy to `dev`.
 
 ### What it does
 
@@ -22,7 +22,7 @@ On push to `main`, automatically triggers `deploy.yml` to deploy to `dev`.
 
 ---
 
-## `deploy.yml`
+## `_deploy.yml`
 
 Unified deployment workflow for the merged dev/prod root module (`infrastructure/aws/deploy/`).
 Deploys frontend (S3), backend (Lambda), Cognito, API Gateway, and CloudFront in a single Terraform apply.
@@ -31,8 +31,8 @@ Deploys frontend (S3), backend (Lambda), Cognito, API Gateway, and CloudFront in
 
 | Trigger | Target environment |
 |---|---|
-| Called by `build-backend.yml` on push to `main` | `dev` (automatic) |
-| Called by `build-frontend.yml` on push to `main` | `dev` (automatic) |
+| Called by `ci-backend.yml` on push to `main` | `dev` (automatic) |
+| Called by `ci-frontend.yml` on push to `main` | `dev` (automatic) |
 | `workflow_dispatch` → select backend/frontend release tags + environment | chosen environment (manual) |
 
 Production is **never deployed automatically**. Use the GitHub Actions UI "Run workflow" button and select `prod`.
@@ -71,10 +71,11 @@ Navigate to **Settings → Secrets and variables → Actions → Environments** 
 
 ---
 
-## `preview-deploy.yml`
+## `preview.yml`
 
 Deploys a full-stack preview environment for every non-main branch push.
 Each preview runs under `/preview/<branch-slug>/` on the dedicated preview CloudFront distribution.
+Runs E2E tests against the deployed preview and posts results to the PR.
 
 ### Triggers
 
@@ -86,19 +87,14 @@ Each preview runs under `/preview/<branch-slug>/` on the dedicated preview Cloud
 
 ```
 slugify ──────┐
-build-backend ┼──▶ deploy-preview
+build-backend ┼──▶ _deploy-preview.yml ──▶ _run-e2e.yml
 build-frontend┘
 ```
 
 ### What it does
 
-1. Ensures shared preview gateway (API Gateway + S3 bucket) is deployed
-2. Ensures preview CDN (CloudFront distribution) exists
-3. Creates/updates per-branch Terraform workspace (`preview-<slug>`): Cognito, Lambda x2, API GW routes
-4. Uploads frontend assets to the shared S3 bucket via `aws s3 sync` under `/<slug>/` key prefix
-5. Creates Cognito demo users (demo + admin)
-6. Invalidates CloudFront cache for the preview path
-7. Posts a PR comment with the preview URL
+1. Delegates to `_deploy-preview.yml` (see below) for deployment
+2. Delegates to `_run-e2e.yml` for E2E testing with PR comment posting enabled
 
 ### Preview URLs
 
@@ -109,9 +105,82 @@ https://<cloudfront-id>.cloudfront.net/preview/<branch-slug>/api/*   # Backend
 
 ---
 
+## `e2e-main.yml`
+
+Runs E2E tests on the main branch after every push. Deploys a temporary preview environment with a fixed slug (`e2e-main`), runs the Playwright E2E suite against it, and tears it down afterward.
+
+### Triggers
+
+| Trigger | Target |
+|---|---|
+| Push to `main` | Temporary `e2e-main` preview environment |
+
+### Jobs
+
+```
+build-backend ──┐
+build-frontend ─┼──▶ _deploy-preview.yml ──▶ _run-e2e.yml ──▶ teardown (always)
+```
+
+---
+
+## `_run-e2e.yml`
+
+Reusable workflow (`workflow_call`) that runs Playwright E2E tests against a deployed preview environment. Shared by `preview.yml` and `e2e-main.yml` to avoid duplication of E2E setup, execution, and reporting logic.
+
+### Inputs
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `slug` | Yes | — | Branch slug for artifact naming |
+| `preview_url` | Yes | — | Full URL of the deployed preview environment |
+| `cognito_client_id` | Yes | — | Cognito User Pool Client ID for E2E auth |
+| `post-to-pr` | No | `false` | Whether to post E2E results as a PR comment |
+| `branch-name` | No | `""` | Git branch name for PR lookup |
+
+### What it does
+
+1. Sets up Playwright (Node, npm deps, Chromium) via `setup-playwright` action
+2. Runs `npx playwright test` against the preview URL
+3. Uploads HTML report artifact and writes job summary via `playwright-report` action
+4. Optionally posts/updates a PR comment with E2E results
+
+---
+
+## `_deploy-preview.yml`
+
+Reusable workflow (`workflow_call`) that deploys a full preview stack for a given branch slug. Shared by `preview.yml` and `e2e-main.yml` to avoid duplication.
+
+### Inputs
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `slug` | Yes | — | URL-safe branch slug for workspace and S3 prefix |
+| `post-pr-comment` | No | `false` | Whether to post preview URL as a PR comment |
+| `branch-name` | No | `""` | Git branch name for PR lookup |
+
+### Outputs
+
+| Output | Description |
+|---|---|
+| `preview_url` | Full URL to the deployed preview |
+| `cognito_client_id` | Cognito User Pool Client ID for E2E auth |
+
+### What it does
+
+1. Downloads backend + frontend build artifacts
+2. Deploys shared preview gateway (API Gateway + S3 bucket + CloudFront)
+3. Deploys per-branch preview stack (Cognito, Lambda x2, API GW routes)
+4. Uploads frontend to S3 under `<slug>/` prefix
+5. Creates Cognito user groups and demo users
+6. Invalidates CloudFront cache for `/preview/<slug>/*`
+7. Optionally posts a PR comment with preview URL and credentials
+
+---
+
 ## `preview-cleanup.yml`
 
-Tears down the preview environment when a branch is deleted.
+Tears down the preview environment when a branch is deleted. Computes the branch slug, then runs the `teardown-preview-stack` composite action directly.
 
 ### Triggers
 
@@ -119,16 +188,15 @@ Tears down the preview environment when a branch is deleted.
 |---|---|
 | Branch deletion | Any branch except `main` |
 
-### What it does
+### Jobs
 
-1. Selects the `preview-<slug>` Terraform workspace (skips if not found)
-2. Runs `terraform destroy` (removes Cognito, Lambda, API GW routes)
-3. Deletes frontend assets from the shared S3 bucket (`aws s3 rm`)
-4. Deletes the Terraform workspace
+```
+slugify ──▶ cleanup (teardown-preview-stack action)
+```
 
 ---
 
-## `teardown-application.yml`
+## `teardown-env.yml`
 
 Manual workflow to destroy all resources for a chosen environment.
 
@@ -144,13 +212,13 @@ Manual workflow to destroy all resources for a chosen environment.
 - Runs `terraform destroy` against the merged `deploy/` root module
 
 **For preview:**
-1. Destroys all per-branch preview workspaces (Cognito, Lambda, API GW routes per branch)
-2. Destroys the preview CDN (CloudFront distribution)
-3. Destroys the preview gateway (API Gateway + shared S3 bucket — `force_destroy` deletes all files)
+1. Lists all `preview-*` Terraform workspaces
+2. Destroys each per-branch preview stack **in parallel** via a matrix strategy using the `teardown-preview-stack` composite action (with `skip_s3_cleanup: true` since the gateway destroy handles file deletion)
+3. Destroys the shared preview gateway (API Gateway + S3 bucket + CloudFront) — runs even if some branch teardowns failed
 
 ---
 
-## `setup-deployment-infrastructure.yml`
+## `setup-terraform.yml`
 
 One-time setup workflow to create the S3 state bucket and DynamoDB lock table for an environment.
 
@@ -170,6 +238,44 @@ Runs `terraform workspace select -or-create`, `terraform plan`, and `terraform a
 
 Converts a branch name to a URL-safe slug (lowercase, special chars replaced with hyphens, max 40 chars).
 
+### `.github/actions/teardown-preview-stack/`
+
+Composite action that tears down a single preview branch stack. Encapsulates all steps needed to destroy one preview workspace: Terraform destroy, S3 asset cleanup (optional), and workspace deletion. Used by `preview-cleanup.yml`, `e2e-main.yml` (single branch) and `teardown-env.yml` (matrix over all branches).
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `slug` | Yes | — | URL-safe branch slug identifying the preview stack |
+| `aws_oidc_role_arn` | Yes | — | IAM role ARN for OIDC |
+| `aws_account_id` | Yes | — | 12-digit AWS account ID |
+| `aws_region` | Yes | — | AWS region |
+| `project_name` | Yes | — | Project name for state bucket naming |
+| `skip_s3_cleanup` | No | `false` | Skip S3 cleanup (when gateway destroy handles it) |
+
+| Output | Description |
+|---|---|
+| `existed` | Whether the workspace existed and was torn down (`true`/`false`) |
+
+### `.github/actions/setup-playwright/`
+
+Installs Node.js, E2E npm dependencies, and Playwright Chromium browser with caching for both npm and browser binaries. Used by `_run-e2e.yml`.
+
+| Input | Default | Description |
+|---|---|---|
+| `working-directory` | `e2e` | Path to the E2E project directory |
+| `node-version` | `24` | Node.js version to install |
+
+### `.github/actions/playwright-report/`
+
+Parses Playwright JSON results, writes a summary table to the GitHub job summary, uploads the HTML report + test artifacts, and optionally posts/updates a PR comment with the E2E results.
+
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `working-directory` | No | `e2e` | Path to E2E project |
+| `artifact-name` | Yes | — | Name for the uploaded report artifact |
+| `base-url` | Yes | — | E2E base URL to display in summary |
+| `post-to-pr` | No | `false` | Whether to post results as a PR comment |
+| `branch-name` | No | `""` | Branch name for PR lookup |
+
 ---
 
 ## Required GitHub Secrets and Variables (complete list)
@@ -179,17 +285,17 @@ Converts a branch name to a URL-safe slug (lowercase, special chars replaced wit
 | `AWS_OIDC_ROLE_ARN` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_ACCOUNT_ID` | Secret | Repository | All deploy/teardown workflows |
 | `AWS_REGION` | Variable | Repository | All workflows |
-| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `deploy.yml`, `preview-deploy.yml` |
-| `PREVIEW_DEMO_PASSWORD` | Secret | Preview environment | `preview-deploy.yml` |
-| `PREVIEW_ADMIN_PASSWORD` | Secret | Preview environment | `preview-deploy.yml` |
+| `MONGODB_URI` | Secret | Per-environment (dev, prod, preview) | `_deploy.yml`, `_deploy-preview.yml`, `preview-cleanup.yml`, `e2e-main.yml` |
+| `PREVIEW_DEMO_PASSWORD` | Secret | Preview environment | `_deploy-preview.yml`, `preview.yml` (E2E), `e2e-main.yml` |
+| `PREVIEW_ADMIN_PASSWORD` | Secret | Preview environment | `_deploy-preview.yml` |
 
 ### One-time setup per environment
 
-The S3 state bucket and DynamoDB lock table are created by `setup-deployment-infrastructure.yml`.
+The S3 state bucket and DynamoDB lock table are created by `setup-terraform.yml`.
 For the very first deployment, trigger it manually:
 
 ```
-GitHub UI: Actions → Setup Deployment Infrastructure → Run workflow → select environment
+GitHub UI: Actions → Setup Infrastructure → Run workflow → select environment
 ```
 
 The OIDC identity provider and IAM deployment role must be created separately in IAM

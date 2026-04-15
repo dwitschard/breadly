@@ -9,10 +9,14 @@ import { VersionInfo } from '../../../generated/api';
   template: `
     <h2 class="mb-3 text-lg font-semibold">{{ 'HEALTH.VERSIONS' | translate }}</h2>
     <ul class="space-y-3" [attr.aria-label]="'HEALTH.VERSIONS_LABEL' | translate">
-      <li class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+      <li
+        data-testid="health-version-frontend"
+        class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+      >
         <span class="font-medium">{{ 'HEALTH.FRONTEND' | translate }}</span>
         @if (frontendVersion().releaseUrl) {
           <a
+            data-testid="health-version-frontend-value"
             [href]="frontendVersion().releaseUrl"
             target="_blank"
             rel="noopener"
@@ -21,13 +25,19 @@ import { VersionInfo } from '../../../generated/api';
             {{ frontendVersion().version }}
           </a>
         } @else {
-          <span class="text-sm font-mono text-gray-600">{{ frontendVersion().version }}</span>
+          <span data-testid="health-version-frontend-value" class="text-sm font-mono text-gray-600">
+            {{ frontendVersion().version }}
+          </span>
         }
       </li>
-      <li class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+      <li
+        data-testid="health-version-backend"
+        class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+      >
         <span class="font-medium">{{ 'HEALTH.BACKEND' | translate }}</span>
         @if (backendVersion().releaseUrl) {
           <a
+            data-testid="health-version-backend-value"
             [href]="backendVersion().releaseUrl"
             target="_blank"
             rel="noopener"
@@ -36,7 +46,9 @@ import { VersionInfo } from '../../../generated/api';
             {{ backendVersion().version }}
           </a>
         } @else {
-          <span class="text-sm font-mono text-gray-600">{{ backendVersion().version }}</span>
+          <span data-testid="health-version-backend-value" class="text-sm font-mono text-gray-600">
+            {{ backendVersion().version }}
+          </span>
         }
       </li>
     </ul>

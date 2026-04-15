@@ -1,0 +1,51 @@
+# setup-playwright — Composite action for Playwright E2E test setup.
+#
+# Installs Node.js, E2E npm dependencies, and Playwright Chromium browser
+# with caching for both npm and browser binaries.
+
+name: Setup Playwright
+description: Install Node.js, E2E dependencies, and Playwright Chromium (with caching).
+
+inputs:
+  working-directory:
+    description: Path to the E2E project directory.
+    required: false
+    default: e2e
+  node-version:
+    description: Node.js version to install.
+    required: false
+    default: "24"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+    - name: Install E2E dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npm ci
+
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@v5
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles(format('{0}/package-lock.json', inputs.working-directory)) }}
+
+    - name: Install Playwright Chromium
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npx playwright install --with-deps chromium
+
+    - name: Install Playwright system deps
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npx playwright install-deps chromium

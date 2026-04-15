@@ -2,7 +2,7 @@
 # domain for the Breadly application.
 #
 # Used by both the main backend and preview environments. Preview environments
-# set enable_admin_password_auth = true to allow programmatic test user creation.
+# set enable_admin_password_auth = true to allow programmatic E2E authentication
 
 locals {
   # OIDC issuer URL — used by the JWT authorizer and injected into the public Lambda.
@@ -46,14 +46,15 @@ resource "aws_cognito_user_pool_client" "this" {
   generate_secret = false
 
   # Allow the standard auth flows used by Amplify / hosted UI.
-  # Preview environments additionally enable ALLOW_ADMIN_USER_PASSWORD_AUTH
-  # so that test users can be created programmatically via admin-set-user-password.
+  # Preview environments additionally enable ALLOW_USER_PASSWORD_AUTH (for E2E
+  # programmatic login via InitiateAuth) and ALLOW_ADMIN_USER_PASSWORD_AUTH
+  # (for admin-set-user-password).
   explicit_auth_flows = concat(
     [
       "ALLOW_USER_SRP_AUTH",
       "ALLOW_REFRESH_TOKEN_AUTH",
     ],
-    var.enable_admin_password_auth ? ["ALLOW_ADMIN_USER_PASSWORD_AUTH"] : []
+    var.enable_admin_password_auth ? ["ALLOW_ADMIN_USER_PASSWORD_AUTH", "ALLOW_USER_PASSWORD_AUTH"] : []
   )
 
   # Token validity.

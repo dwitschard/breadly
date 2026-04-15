@@ -9,7 +9,8 @@
     "test": "ng test",
     "generate-api": "npm run --prefix ../breadly-api lint && openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript-angular -o src/app/generated/api --additional-properties=ngVersion=21,supportsES6=true",
     "lint": "prettier --write \"src/**/*.{ts,html,css}\"",
-    "test:ci": "ng test --no-watch"
+    "test:ci": "ng test --no-watch",
+    "e2e": "npm run --prefix ../e2e test"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
