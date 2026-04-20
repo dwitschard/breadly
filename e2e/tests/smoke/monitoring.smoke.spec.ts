@@ -7,7 +7,7 @@ test.describe('Smoke: Cube Aletsch booking monitor', () => {
   test('booking is NOT yet available', async ({ page }) => {
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded' });
 
-    const content = page.locator('body').filter({ hasNot: page.locator('nav') });
+    const content = page.locator('main');
 
     // Collect all signals — if ANY condition flips, booking may be live.
     const signals: string[] = [];
@@ -29,11 +29,22 @@ test.describe('Smoke: Cube Aletsch booking monitor', () => {
     }
 
     // --- Group B: no booking CTAs outside navbar ---
-    if (await content.getByText('Jetzt buchen').isVisible().catch(() => false)) {
+    if (await content.getByText('Jetzt buchen').first().isVisible().catch(() => false)) {
       signals.push('"Jetzt buchen" appeared in content area');
     }
 
-    if (await content.getByText(/^buchen$/i).isVisible().catch(() => false)) {
+    if (await content.locator('.btn--conversion').isVisible().catch(() => false)) {
+      signals.push('A .btn--conversion button appeared in content area');
+    }
+
+    if (
+      await content
+        .locator('*.btn')
+        .filter({ hasText: /buchen/i })
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       signals.push('"buchen" (exact) appeared in content area');
     }
 
@@ -49,12 +60,6 @@ test.describe('Smoke: Cube Aletsch booking monitor', () => {
     // --- Group C: no booking infrastructure ---
     if (await content.locator('iframe').isVisible().catch(() => false)) {
       signals.push('An <iframe> appeared in the content area');
-    }
-
-    if (
-      await content.locator('.btn--conversion').isVisible().catch(() => false)
-    ) {
-      signals.push('A .btn--conversion button appeared in content area');
     }
 
     // Check JSON-LD for availability / date fields
