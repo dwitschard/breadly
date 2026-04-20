@@ -16,6 +16,8 @@ name: Smoke Test
 
 on:
   schedule:
+    - cron: '*/5 * * * *'                 # Every 5 minutes
+      timezone: "Europe/Zurich"
     - cron: '* 6-18 * * *'              # Every minute,  06:00–18:00 Swiss (CEST)
       timezone: "Europe/Zurich"
     - cron: '*/10 0-6,18-23 * * *'      # Every 10 min, 18:00–23:59
