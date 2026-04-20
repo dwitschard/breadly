@@ -24,7 +24,6 @@ jobs:
   smoke:
     name: Cube Aletsch Monitor
     runs-on: ubuntu-latest
-    environment: monitoring
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
