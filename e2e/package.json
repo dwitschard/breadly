@@ -9,6 +9,8 @@
     "test:preview:ui": "playwright test --ui",
     "test:ui" : "playwright test --ui",
     "test:headed": "playwright test --headed",
+    "test:smoke": "playwright test --config playwright.smoke.config.ts",
+    "test:smoke:ui": "playwright test --ui --config playwright.smoke.config.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {

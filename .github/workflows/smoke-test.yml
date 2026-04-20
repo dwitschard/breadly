@@ -1,0 +1,45 @@
+# smoke-test.yml
+#
+# Scheduled smoke test — monitors the Cube Aletsch booking page.
+# When booking dates are published (warning notices removed or booking CTAs appear),
+# the test fails and GitHub sends a workflow failure email notification.
+#
+# Schedule (Swiss summer time / CEST, UTC+2):
+#   06:00–16:00 Swiss  →  every minute
+#   16:00–06:00 Swiss  →  every 10 minutes
+#
+# Manual trigger via workflow_dispatch is also supported.
+#
+# Required GitHub environment: monitoring (no secrets needed — public page)
+
+name: Smoke Test
+
+on:
+  schedule:
+    - cron: '* 4-15 * * *'          # Every minute,  06:00–15:59 Swiss (CEST)
+    - cron: '*/10 0-3,16-23 * * *'  # Every 10 min,  16:00–05:59 Swiss (CEST)
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Cube Aletsch Monitor
+    runs-on: ubuntu-latest
+    environment: monitoring
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Playwright (Node + Chromium)
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run smoke test
+        working-directory: e2e
+        run: npm run test:smoke
+
+      - name: Upload report
+        if: always()
+        uses: ./.github/actions/playwright-report
+        with:
+          artifact-name: smoke-report
+          base-url: https://www.aletscharena.ch
+          post-to-pr: 'false'
