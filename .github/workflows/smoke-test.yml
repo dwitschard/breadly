@@ -16,7 +16,7 @@ name: Smoke Test
 
 on:
   schedule:
-    - cron: '* 6-18 * * *'          # Every minute,  06:00–18:00 Swiss (CEST)
+    - cron: '* 6-18 * * *'              # Every minute,  06:00–18:00 Swiss (CEST)
       timezone: "Europe/Zurich"
     - cron: '*/10 0-6,18-23 * * *'      # Every 10 min, 18:00–23:59
       timezone: "Europe/Zurich"
@@ -24,7 +24,7 @@ on:
 
 jobs:
   smoke:
-    name: Cube Aletsch Monitor
+    name: Cube Monitor
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
