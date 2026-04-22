@@ -203,6 +203,137 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /reminders:
+    get:
+      operationId: getReminders
+      summary: List active reminders
+      description: Returns all active reminders for the authenticated user. Supports cursor-based pagination via nextToken.
+      tags:
+        - Reminders
+      parameters:
+        - name: nextToken
+          in: query
+          required: false
+          description: Cursor token for pagination (from a previous response)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of reminders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReminderList'
+
+    post:
+      operationId: createReminder
+      summary: Create a new reminder
+      description: Schedules a one-time reminder for a recipe at the specified date and time. Enforces a soft limit of 10 active reminders per user.
+      tags:
+        - Reminders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReminderDto'
+      responses:
+        '201':
+          description: Reminder created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminder'
+        '400':
+          description: Invalid request body or scheduledAt is in the past
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Per-user reminder limit reached (max 10)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reminders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The reminder ID (EventBridge schedule name)
+        schema:
+          type: string
+
+    delete:
+      operationId: deleteReminder
+      summary: Cancel a reminder
+      description: Cancels and deletes a reminder. Only the owner can delete their reminders.
+      tags:
+        - Reminders
+      responses:
+        '204':
+          description: Reminder deleted successfully
+        '403':
+          description: Not authorized to delete this reminder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Reminder not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /internal/reminders/send:
+    post:
+      operationId: sendReminder
+      summary: Send a single reminder email
+      description: Internal endpoint called by EventBridge Scheduler to send a one-time reminder email. Secured by API Gateway IAM auth.
+      tags:
+        - Internal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendReminderPayload'
+      responses:
+        '200':
+          description: Reminder email sent successfully
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /internal/reminders/batch:
+    post:
+      operationId: sendBatchReminders
+      summary: Send batch reminder emails
+      description: Internal endpoint called by EventBridge Scheduler for recurring batch jobs (e.g. daily greeting). Secured by API Gateway IAM auth.
+      tags:
+        - Internal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchReminderPayload'
+      responses:
+        '200':
+          description: Batch emails sent successfully
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /health:
     get:
       operationId: getHealth
@@ -349,6 +480,102 @@ components:
         responseTime:
           type: string
           description: Response time of the check
+
+    CreateReminderDto:
+      type: object
+      required:
+        - recipeId
+        - scheduledAt
+      properties:
+        recipeId:
+          type: string
+          description: ID of the recipe this reminder is for
+        scheduledAt:
+          type: string
+          description: ISO 8601 datetime with UTC offset (e.g. 2026-04-25T15:00:00+02:00)
+        title:
+          type: string
+          description: Optional title for the reminder
+        message:
+          type: string
+          description: Optional message for the reminder
+
+    Reminder:
+      type: object
+      required:
+        - id
+        - recipeId
+        - scheduledAt
+      properties:
+        id:
+          type: string
+          description: The EventBridge schedule name (unique identifier)
+        recipeId:
+          type: string
+          description: ID of the recipe this reminder is for
+        scheduledAt:
+          type: string
+          description: ISO 8601 datetime when the reminder will fire
+        title:
+          type: string
+          description: Optional title for the reminder
+        message:
+          type: string
+          description: Optional message for the reminder
+
+    ReminderList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reminder'
+        nextToken:
+          type: string
+          description: Cursor token for fetching the next page of results
+
+    SendReminderPayload:
+      type: object
+      required:
+        - recipientEmail
+        - recipeId
+        - recipeName
+      properties:
+        recipientEmail:
+          type: string
+          description: Email address of the recipient
+        recipeId:
+          type: string
+          description: ID of the recipe
+        recipeName:
+          type: string
+          description: Name of the recipe for the email content
+        title:
+          type: string
+          description: Optional reminder title
+        message:
+          type: string
+          description: Optional reminder message
+        appUrl:
+          type: string
+          description: Base URL of the application for links in the email
+
+    BatchReminderPayload:
+      type: object
+      required:
+        - type
+        - userIds
+      properties:
+        type:
+          type: string
+          description: Type of batch job (e.g. "greeting")
+        userIds:
+          type: array
+          items:
+            type: string
+          description: Explicit list of user IDs to target
 
     ErrorResponse:
       type: object

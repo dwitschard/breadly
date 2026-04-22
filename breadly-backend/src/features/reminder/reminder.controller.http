@@ -1,0 +1,38 @@
+### List reminders
+GET http://localhost:3000/api/reminders
+
+### Create reminder
+POST http://localhost:3000/api/reminders
+Content-Type: application/json
+
+{
+  "recipeId": "{{recipeId}}",
+  "scheduledAt": "2026-04-25T15:00:00+02:00",
+  "title": "Time to bake bread",
+  "message": "Don't forget to start the sourdough!"
+}
+
+### Delete reminder
+DELETE http://localhost:3000/api/reminders/{{reminderId}}
+
+### Internal: Send single reminder
+POST http://localhost:3000/api/internal/reminders/send
+Content-Type: application/json
+
+{
+  "recipientEmail": "test@example.com",
+  "recipeId": "abc123",
+  "recipeName": "Sourdough Bread",
+  "title": "Recipe Reminder",
+  "message": "Time to bake your sourdough bread!",
+  "appUrl": "http://localhost:4200"
+}
+
+### Internal: Send batch reminders
+POST http://localhost:3000/api/internal/reminders/batch
+Content-Type: application/json
+
+{
+  "type": "greeting",
+  "userIds": ["user1@example.com", "user2@example.com"]
+}

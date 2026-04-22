@@ -74,6 +74,20 @@ module "backend" {
   aws_region    = var.aws_region
   mongodb_uri   = var.mongodb_uri
 
+  extra_env_vars = {
+    SCHEDULER_GROUP_NAME  = module.scheduler.schedule_group_name
+    SCHEDULER_ROLE_ARN    = module.scheduler.scheduler_role_arn
+    API_GATEWAY_ENDPOINT  = module.api_gateway.api_arn
+    SES_SENDER_EMAIL      = var.ses_sender_email
+    APP_URL               = local.cloudfront_url
+    ENV_NAME              = terraform.workspace
+  }
+
+  extra_policy_arns = [
+    module.ses.ses_send_policy_arn,
+    module.scheduler.lambda_manage_schedules_policy_arn,
+  ]
+
   tags = {
     Component = "backend"
   }
@@ -114,6 +128,39 @@ module "api_gateway" {
 
   tags = {
     Component = "backend"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Scheduler — EventBridge Scheduler for recurring and one-time schedules
+# ---------------------------------------------------------------------------
+
+module "scheduler" {
+  source = "../modules/scheduler"
+
+  name                      = local.name_prefix
+  group_name                = "${local.name_prefix}-schedules"
+  config_path               = "${path.module}/../../breadly-backend/config/schedules.json"
+  api_gateway_arn           = module.api_gateway.api_arn
+  api_gateway_execution_arn = module.api_gateway.api_execution_arn
+
+  tags = {
+    Component = "scheduler"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# SES — Email sending identity and permissions
+# ---------------------------------------------------------------------------
+
+module "ses" {
+  source = "../modules/ses"
+
+  name         = local.name_prefix
+  sender_email = var.ses_sender_email
+
+  tags = {
+    Component = "ses"
   }
 }
 

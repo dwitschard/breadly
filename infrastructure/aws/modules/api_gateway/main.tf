@@ -126,3 +126,17 @@ resource "aws_apigatewayv2_route" "public" {
 
   # No authorization_type — unauthenticated by design.
 }
+
+# ---------------------------------------------------------------------------
+# Internal route — IAM-authenticated /api/internal/* for EventBridge Scheduler
+# ---------------------------------------------------------------------------
+
+# Internal routes use the private Lambda (same integration as authenticated routes).
+# API Gateway IAM auth ensures only AWS principals with execute-api:Invoke can call these.
+resource "aws_apigatewayv2_route" "internal" {
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = "ANY /api/internal/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+
+  authorization_type = "AWS_IAM"
+}

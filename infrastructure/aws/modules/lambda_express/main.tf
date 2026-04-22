@@ -95,3 +95,14 @@ resource "aws_lambda_function" "this" {
     aws_iam_role_policy_attachment.basic_execution,
   ]
 }
+
+# ---------------------------------------------------------------------------
+# Optional extra IAM policy attachments (e.g. EventBridge Scheduler, SES)
+# ---------------------------------------------------------------------------
+
+resource "aws_iam_role_policy_attachment" "extra" {
+  for_each = toset(var.extra_policy_arns)
+
+  role       = aws_iam_role.lambda.name
+  policy_arn = each.value
+}

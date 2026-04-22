@@ -1,4 +1,4 @@
-const required = (key: string): string => {
+const lazy = (key: string): string => {
   const value = process.env[key];
   if (!value) {
     throw new Error(`Missing required environment variable: ${key}`);
@@ -12,9 +12,15 @@ const optional = (key: string, fallback: string): string => {
 
 export const env = {
   PORT: optional('PORT', '3000'),
-  MONGODB_CONNECTION_STRING: required('MONGODB_CONNECTION_STRING'),
+  get MONGODB_CONNECTION_STRING(): string { return lazy('MONGODB_CONNECTION_STRING'); },
   COGNITO_ISSUER: process.env['COGNITO_ISSUER'],
   COGNITO_CLIENT_ID: process.env['COGNITO_CLIENT_ID'],
   PREVIEW_PATH_PREFIX: process.env['PREVIEW_PATH_PREFIX'],
   ENV_NAME: optional('ENV_NAME', 'local'),
+  AWS_REGION: optional('AWS_REGION', 'eu-central-1'),
+  SCHEDULER_GROUP_NAME: optional('SCHEDULER_GROUP_NAME', 'breadly-schedules'),
+  SCHEDULER_ROLE_ARN: optional('SCHEDULER_ROLE_ARN', ''),
+  API_GATEWAY_ENDPOINT: optional('API_GATEWAY_ENDPOINT', ''),
+  SES_SENDER_EMAIL: optional('SES_SENDER_EMAIL', 'noreply@breadly.app'),
+  APP_URL: optional('APP_URL', 'http://localhost:4200'),
 };

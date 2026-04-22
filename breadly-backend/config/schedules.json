@@ -1,0 +1,31 @@
+{
+  "defaults": {
+    "retry_policy": {
+      "maximum_retry_attempts": 3,
+      "maximum_event_age_in_seconds": 3600
+    },
+    "sender_email": "noreply@breadly.app"
+  },
+  "schedules": [
+    {
+      "name": "daily-greeting",
+      "description": "Daily greeting email sent to all users at 7am Zurich time",
+      "enabled": true,
+      "schedule_expression": "cron(0 7 * * ? *)",
+      "timezone": "Europe/Zurich",
+      "target": {
+        "method": "POST",
+        "path": "/api/internal/reminders/batch"
+      },
+      "retry_policy": null,
+      "email": {
+        "template": "greeting",
+        "subject": "Good morning from Breadly!"
+      },
+      "payload": {
+        "type": "greeting",
+        "userIds": []
+      }
+    }
+  ]
+}

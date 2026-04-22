@@ -1,0 +1,24 @@
+<mjml>
+  <mj-body background-color="#f4f4f4">
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-text font-size="24px" font-weight="bold" color="#333333" align="center">
+          Good morning, {{userName}}!
+        </mj-text>
+        <mj-text font-size="16px" color="#555555" padding-top="16px">
+          Ready to cook something delicious today? Check out your recipe collection and get inspired!
+        </mj-text>
+        <mj-button background-color="#e67e22" color="#ffffff" href="{{appUrl}}/recipes" font-size="16px" padding-top="24px">
+          Browse Recipes
+        </mj-button>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="16px">
+      <mj-column>
+        <mj-text font-size="12px" color="#999999" align="center">
+          You are receiving this email because you are a Breadly user.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
