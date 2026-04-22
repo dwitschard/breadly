@@ -23,6 +23,12 @@ variable "api_gateway_execution_arn" {
   type        = string
 }
 
+variable "api_gateway_stage" {
+  description = "Stage name of the API Gateway HTTP API (e.g. '$default')."
+  type        = string
+  default     = "$default"
+}
+
 variable "tags" {
   description = "Additional tags merged onto all resources."
   type        = map(string)
