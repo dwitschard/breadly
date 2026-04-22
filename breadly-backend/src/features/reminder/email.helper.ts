@@ -19,6 +19,9 @@ export const setTemplateBaseDir = (dir: string): void => {
 };
 
 export const loadTemplate = (templateName: string): string => {
+  if (!/^[\w-]+$/.test(templateName)) {
+    throw new Error(`Invalid template name: ${templateName}`);
+  }
   const baseDir = templateBaseDir ?? resolve(process.cwd(), 'dist', 'templates');
   const templatePath = resolve(baseDir, `${templateName}.html`);
   return readFileSync(templatePath, 'utf-8');
