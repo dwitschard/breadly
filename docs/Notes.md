@@ -6,10 +6,6 @@
 - [ ] How to continuously update AGENTS.md Files? In Dev Cycle Loop?
 
 ## Next Tasks
-- [ ] Switch Testing in Frontend to use TestingLibrary
-    - [ ] Adjust instructions in AGENTS.md Files for FE-Testing
-
-
 - [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.
   - [ ] It should call API's of the Domain Backend(s) at defined triggers (scheduled)
 
@@ -73,6 +69,7 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
+- [x] Switch Testing in Frontend to use TestingLibrary
 - [x] E2E Testing Setup
 - [x] Build Open API Spec for FE and BE differently
 - [x] Cleanup `breadly-api/` -> frontend / backend link the file anyway and create the dto's

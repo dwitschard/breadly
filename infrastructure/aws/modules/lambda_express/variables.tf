@@ -71,7 +71,7 @@ variable "extra_env_vars" {
 }
 
 variable "extra_policy_arns" {
-  description = "List of additional IAM policy ARNs to attach to the Lambda execution role (e.g. SES send, EventBridge Scheduler)."
-  type        = list(string)
-  default     = []
+  description = "Map of additional IAM policy ARNs to attach to the Lambda execution role. Keys are static identifiers (e.g. \"ses\", \"scheduler\"), values are the policy ARNs."
+  type        = map(string)
+  default     = {}
 }

@@ -83,10 +83,10 @@ module "backend" {
     ENV_NAME              = terraform.workspace
   }
 
-  extra_policy_arns = [
-    module.ses.ses_send_policy_arn,
-    module.scheduler.lambda_manage_schedules_policy_arn,
-  ]
+  extra_policy_arns = {
+    ses       = module.ses.ses_send_policy_arn,
+    scheduler = module.scheduler.lambda_manage_schedules_policy_arn,
+  }
 
   tags = {
     Component = "backend"

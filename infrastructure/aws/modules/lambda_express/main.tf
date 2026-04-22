@@ -101,7 +101,7 @@ resource "aws_lambda_function" "this" {
 # ---------------------------------------------------------------------------
 
 resource "aws_iam_role_policy_attachment" "extra" {
-  for_each = toset(var.extra_policy_arns)
+  for_each = var.extra_policy_arns
 
   role       = aws_iam_role.lambda.name
   policy_arn = each.value
