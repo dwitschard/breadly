@@ -103,7 +103,7 @@ resource "aws_scheduler_schedule" "recurring" {
   }
 
   target {
-    arn      = "${var.api_gateway_arn}/${each.value.target.method}${each.value.target.path}"
+    arn      = "${var.api_gateway_execution_arn}/${each.value.target.method}${each.value.target.path}"
     role_arn = aws_iam_role.scheduler_execution.arn
     input    = jsonencode(each.value.payload)
 
