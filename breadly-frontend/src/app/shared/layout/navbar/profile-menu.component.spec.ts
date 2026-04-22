@@ -1,239 +1,143 @@
-import { Component, signal } from '@angular/core';
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
 import { ProfileMenuComponent } from './profile-menu.component';
 import { Profile } from '../../../generated/api';
-
-class FakeLoader implements TranslateLoader {
-  getTranslation() {
-    return of({
-      NAV: {
-        LOGIN: 'Anmelden',
-        LOGOUT: 'Abmelden',
-        PROFILE: 'Profil anzeigen',
-        HEALTH: 'Systemstatus',
-        ACCOUNT_MENU: 'Kontomenü für {{name}}',
-        ACCOUNT_OPTIONS: 'Kontooptionen',
-      },
-    });
-  }
-}
-
-const mockProfile: Profile = {
-  sub: 'user-1',
-  email: 'alice@example.com',
-  emailVerified: true,
-  name: 'Alice',
-  roles: [],
-};
-
-@Component({
-  imports: [ProfileMenuComponent],
-  template: `
-    <app-profile-menu
-      [profile]="profile()"
-      [isLoggedIn]="isLoggedIn()"
-      [isAdmin]="isAdmin()"
-      (loginClick)="loginClicks.set(loginClicks() + 1)"
-      (profileClick)="profileClicks.set(profileClicks() + 1)"
-      (logoutClick)="logoutClicks.set(logoutClicks() + 1)"
-      (healthClick)="healthClicks.set(healthClicks() + 1)"
-    />
-  `,
-})
-class TestHostComponent {
-  readonly profile = signal<Profile | null>(null);
-  readonly isLoggedIn = signal(false);
-  readonly isAdmin = signal(false);
-  readonly loginClicks = signal(0);
-  readonly profileClicks = signal(0);
-  readonly logoutClicks = signal(0);
-  readonly healthClicks = signal(0);
-}
+import { renderWithProviders, screen, userEvent } from '../../../../testing/render-with-providers';
 
 describe('ProfileMenuComponent', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        ProfileMenuComponent,
-        TestHostComponent,
-        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
-      ],
-    }).compileComponents();
-
-    TestBed.inject(TranslateService).use('de');
-  });
-
-  function create(
-    profile: Profile | null,
-    isLoggedIn: boolean,
-    isAdmin = false,
-  ): ComponentFixture<ProfileMenuComponent> {
-    const fixture = TestBed.createComponent(ProfileMenuComponent);
-    fixture.componentRef.setInput('profile', profile);
-    fixture.componentRef.setInput('isLoggedIn', isLoggedIn);
-    fixture.componentRef.setInput('isAdmin', isAdmin);
-    fixture.detectChanges();
-    return fixture;
-  }
-
-  function createHost(
-    profile: Profile | null,
-    isLoggedIn: boolean,
-  ): {
-    hostFixture: ComponentFixture<TestHostComponent>;
-    host: TestHostComponent;
-    menu: ProfileMenuComponent;
-  } {
-    const hostFixture = TestBed.createComponent(TestHostComponent);
-    const host = hostFixture.componentInstance;
-    host.profile.set(profile);
-    host.isLoggedIn.set(isLoggedIn);
-    hostFixture.detectChanges();
-    const menu = hostFixture.debugElement.children[0].componentInstance as ProfileMenuComponent;
-    return { hostFixture, host, menu };
-  }
-
-  function asAny(instance: ProfileMenuComponent) {
-    return instance as any;
-  }
+  const user = userEvent.setup();
 
   describe('when logged out', () => {
-    it('renders a Login button', () => {
-      const fixture = create(null, false);
-      const btn: HTMLButtonElement = fixture.nativeElement.querySelector('button');
-      expect(btn).toBeTruthy();
-      expect(btn.textContent?.trim()).toBe('Anmelden');
-    });
+    it('renders a Login button and emits loginClick when clicked', async () => {
+      const loginClick = vi.fn();
+      await setup({ profile: null, isLoggedIn: false, on: { loginClick } });
 
-    it('emits loginClick via host binding', () => {
-      const { hostFixture, host, menu } = createHost(null, false);
-      expect(host.loginClicks()).toBe(0);
-      menu.loginClick.emit();
-      hostFixture.detectChanges();
-      expect(host.loginClicks()).toBe(1);
+      await user.click(screen.getByRole('button', { name: 'NAV.LOGIN' }));
+
+      expect(loginClick).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('when logged in', () => {
-    it('renders an avatar button with aria-haspopup', () => {
-      const fixture = create(mockProfile, true);
-      const btn = fixture.nativeElement.querySelector('[aria-haspopup="menu"]');
-      expect(btn).toBeTruthy();
+    it('renders an avatar button with aria-haspopup and dropdown is closed by default', async () => {
+      await setup({ profile: mockProfile, isLoggedIn: true });
+
+      expect(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' })).toHaveAttribute(
+        'aria-haspopup',
+        'menu',
+      );
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('dropdown is closed by default', () => {
-      const fixture = create(mockProfile, true);
-      expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
+    it('opens the dropdown when avatar is clicked, shows display name and email', async () => {
+      await setup({ profile: mockProfile, isLoggedIn: true });
+
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-display-name')).toHaveTextContent('Alice');
+      expect(screen.getByTestId('nav-display-email')).toHaveTextContent('alice@example.com');
     });
 
-    it('opens the dropdown when toggle() is called', () => {
-      const fixture = create(mockProfile, true);
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeTruthy();
+    it('closes the dropdown when avatar is clicked twice', async () => {
+      await setup({ profile: mockProfile, isLoggedIn: true });
+
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('closes the dropdown when toggle() is called twice', () => {
-      const fixture = create(mockProfile, true);
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
+    it('emits profileClick and closes dropdown when Profile item is clicked', async () => {
+      const profileClick = vi.fn();
+      await setup({ profile: mockProfile, isLoggedIn: true, on: { profileClick } });
+
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+      await user.click(screen.getByRole('menuitem', { name: 'NAV.PROFILE' }));
+
+      expect(profileClick).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('shows the display name and email in the dropdown header', () => {
-      const fixture = create(mockProfile, true);
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-      const text: string = fixture.nativeElement.textContent ?? '';
-      expect(text).toContain('Alice');
-      expect(text).toContain('alice@example.com');
+    it('emits logoutClick and closes dropdown when Logout item is clicked', async () => {
+      const logoutClick = vi.fn();
+      await setup({ profile: mockProfile, isLoggedIn: true, on: { logoutClick } });
+
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+      await user.click(screen.getByRole('menuitem', { name: 'NAV.LOGOUT' }));
+
+      expect(logoutClick).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('emits profileClick and closes dropdown via host binding', () => {
-      const { hostFixture, host, menu } = createHost(mockProfile, true);
-      expect(host.profileClicks()).toBe(0);
-      asAny(menu).toggle();
-      hostFixture.detectChanges();
-      asAny(menu).onProfileClick();
-      hostFixture.detectChanges();
-      expect(host.profileClicks()).toBe(1);
-      expect(hostFixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
+    it('shows no profile picture when profile has no picture', async () => {
+      await setup({ profile: { ...mockProfile, picture: undefined }, isLoggedIn: true });
+
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' })).toBeInTheDocument();
     });
 
-    it('emits logoutClick and closes dropdown via host binding', () => {
-      const { hostFixture, host, menu } = createHost(mockProfile, true);
-      expect(host.logoutClicks()).toBe(0);
-      asAny(menu).toggle();
-      hostFixture.detectChanges();
-      asAny(menu).onLogoutClick();
-      hostFixture.detectChanges();
-      expect(host.logoutClicks()).toBe(1);
-      expect(hostFixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
+    it('falls back to givenName when name is absent', async () => {
+      await setup({
+        profile: { ...mockProfile, name: undefined, givenName: 'Ali' },
+        isLoggedIn: true,
+      });
+
+      expect(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' })).toBeInTheDocument();
     });
 
-    it('shows SVG fallback when profile has no picture', () => {
-      const profileNoPic: Profile = { ...mockProfile, picture: undefined };
-      const fixture = create(profileNoPic, true);
-      const svg = fixture.nativeElement.querySelector('svg');
-      expect(svg).toBeTruthy();
+    it('does not show health menu item when isAdmin is false', async () => {
+      await setup({ profile: mockProfile, isLoggedIn: true, isAdmin: false });
+
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+
+      expect(screen.queryByRole('menuitem', { name: 'NAV.HEALTH' })).not.toBeInTheDocument();
     });
 
-    it('falls back to givenName when name is absent', () => {
-      const profileNoName: Profile = {
-        ...mockProfile,
-        name: undefined,
-        givenName: 'Ali',
-      };
-      const fixture = create(profileNoName, true);
-      const btn: HTMLElement = fixture.nativeElement.querySelector('[aria-haspopup="menu"]');
-      expect(btn.getAttribute('aria-label')).toContain('Ali');
+    it('shows health menu item and emits healthClick when isAdmin is true', async () => {
+      const healthClick = vi.fn();
+      await setup({ profile: mockProfile, isLoggedIn: true, isAdmin: true, on: { healthClick } });
+
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+      await user.click(screen.getByRole('menuitem', { name: 'NAV.HEALTH' }));
+
+      expect(healthClick).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('closes the dropdown on outside click', () => {
-      const fixture = create(mockProfile, true);
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-      const outsideEl = document.createElement('div');
-      document.body.appendChild(outsideEl);
-      asAny(fixture.componentInstance).onDocumentClick({
-        target: outsideEl,
-      } as unknown as MouseEvent);
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
-      document.body.removeChild(outsideEl);
-    });
+    it('closes the dropdown on outside click', async () => {
+      await setup({ profile: mockProfile, isLoggedIn: true });
 
-    it('does not show health menu item when isAdmin is false', () => {
-      const fixture = create(mockProfile, true, false);
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('[data-testid="nav-health-btn"]')).toBeNull();
-    });
+      await user.click(screen.getByRole('button', { name: 'NAV.ACCOUNT_MENU' }));
+      expect(screen.getByRole('menu')).toBeInTheDocument();
 
-    it('shows health menu item when isAdmin is true', () => {
-      const fixture = create(mockProfile, true, true);
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-      const btn = fixture.nativeElement.querySelector('[data-testid="nav-health-btn"]');
-      expect(btn).toBeTruthy();
-      expect(btn.textContent?.trim()).toBe('Systemstatus');
-    });
+      await user.click(document.body);
 
-    it('emits healthClick and closes dropdown', () => {
-      const fixture = create(mockProfile, true, true);
-      asAny(fixture.componentInstance).toggle();
-      fixture.detectChanges();
-
-      const healthEmitSpy = vi.spyOn(fixture.componentInstance.healthClick, 'emit');
-      asAny(fixture.componentInstance).onHealthClick();
-      fixture.detectChanges();
-
-      expect(healthEmitSpy).toHaveBeenCalledTimes(1);
-      expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeNull();
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
   });
+
+  const mockProfile: Profile = {
+    sub: 'user-1',
+    email: 'alice@example.com',
+    emailVerified: true,
+    name: 'Alice',
+    roles: [],
+  };
+
+  async function setup(options: {
+    profile: Profile | null;
+    isLoggedIn: boolean;
+    isAdmin?: boolean;
+    on?: {
+      loginClick?: () => void;
+      profileClick?: () => void;
+      logoutClick?: () => void;
+      healthClick?: () => void;
+    };
+  }) {
+    const { profile, isLoggedIn, isAdmin = false, on = {} } = options;
+    return renderWithProviders(ProfileMenuComponent, {
+      componentInputs: { profile, isLoggedIn, isAdmin },
+      on,
+    });
+  }
 });

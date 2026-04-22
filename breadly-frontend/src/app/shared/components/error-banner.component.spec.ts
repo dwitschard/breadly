@@ -1,35 +1,23 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { ErrorBannerComponent } from './error-banner.component';
+import { renderWithProviders, screen } from '../../../testing/render-with-providers';
 
 describe('ErrorBannerComponent', () => {
-  let fixture: ComponentFixture<ErrorBannerComponent>;
+  it('renders the message in an alert region', async () => {
+    await setup('Test error message');
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ErrorBannerComponent],
-    }).compileComponents();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Test error message')).toBeInTheDocument();
   });
 
-  it('should create', () => {
-    fixture = TestBed.createComponent(ErrorBannerComponent);
-    fixture.componentRef.setInput('message', 'Something went wrong');
-    fixture.detectChanges();
-    expect(fixture.componentInstance).toBeTruthy();
+  it('displays a different message when input changes', async () => {
+    await setup('Something went wrong');
+
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 
-  it('renders the message', () => {
-    fixture = TestBed.createComponent(ErrorBannerComponent);
-    fixture.componentRef.setInput('message', 'Test error message');
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('Test error message');
-  });
-
-  it('has role="alert" for accessibility', () => {
-    fixture = TestBed.createComponent(ErrorBannerComponent);
-    fixture.componentRef.setInput('message', 'Error');
-    fixture.detectChanges();
-    const alert = fixture.nativeElement.querySelector('[role="alert"]');
-    expect(alert).toBeTruthy();
-  });
+  async function setup(message: string) {
+    return renderWithProviders(ErrorBannerComponent, {
+      componentInputs: { message },
+    });
+  }
 });

@@ -30,7 +30,7 @@ export class RecipeListPage {
 
   async deleteRecipe(name: string): Promise<void> {
     const item = this.getRecipeItem(name);
-    const deleteBtn = item.getByTestId('recipe-delete-btn');
+    const deleteBtn = item.locator('[data-testid^="recipe-delete-btn-"]');
     await deleteBtn.click();
   }
 

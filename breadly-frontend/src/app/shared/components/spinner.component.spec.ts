@@ -1,32 +1,14 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { SpinnerComponent } from './spinner.component';
+import { renderWithProviders, screen } from '../../../testing/render-with-providers';
 
 describe('SpinnerComponent', () => {
-  let fixture: ComponentFixture<SpinnerComponent>;
+  it('renders a status element with translated loading label', async () => {
+    await setup();
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [SpinnerComponent],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(SpinnerComponent);
-    fixture.detectChanges();
+    expect(screen.getByRole('status', { name: 'COMMON.LOADING' })).toBeInTheDocument();
   });
 
-  it('should create', () => {
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
-  it('renders a status element with sr-only text', () => {
-    const el: HTMLElement = fixture.nativeElement;
-    const status = el.querySelector('[role="status"]');
-    expect(status).toBeTruthy();
-    expect(status!.textContent).toContain('Laden');
-  });
-
-  it('has aria-live polite for accessibility', () => {
-    const el: HTMLElement = fixture.nativeElement;
-    const container = el.querySelector('[aria-live="polite"]');
-    expect(container).toBeTruthy();
-  });
+  async function setup() {
+    return renderWithProviders(SpinnerComponent);
+  }
 });

@@ -688,25 +688,165 @@ Nested JSON organized by feature:
 
 Vitest with `@angular/build:unit-test`. No Karma, no Jasmine.
 
-### Testing Responsibilities
+Angular Testing Library (ATL) is the standard for all component tests. ATL enforces the Testing Library principle: tests should resemble the way the software is used.
 
-Every artifact type has a defined testing scope:
+### Testing Boundary Table
 
-| Artifact | What to Test |
-|----------|-------------|
-| **Containers** | Data flow, service interactions, state transitions, error handling |
-| **Pages** | URL-to-model translation, route param parsing |
-| **Components** (dumb) | Input/output bindings, template rendering, user interaction |
-| **Services** | API calls, caching, error handling, signal state changes |
-| **Pure functions** | Input/output with simple unit tests |
-| **Guards** | Route activation/deactivation logic |
+| Artifact | Testing Tool | Mock Boundary |
+|----------|-------------|---------------|
+| **Dumb components** | ATL (`renderWithProviders`) | None — isolated with `componentInputs` and `on` |
+| **Containers / Pages** | ATL (`renderWithProviders`) | Feature service (controllable signals) |
+| **Root component** | ATL (`renderWithProviders`) | `ConfigService` (controllable signals) |
+| **Feature services** | TestBed + `HttpTestingController` | HTTP layer |
+| **Auth/shared services** | TestBed + `HttpTestingController` | HTTP layer |
+| **Pure functions** | Plain Vitest | None |
+| **Guards** | TestBed | Injected services |
+| **Interceptors** | TestBed + `HttpTestingController` | HTTP layer |
 
-### Testing Patterns
+### Shared Test Infrastructure
 
-- **Dumb components** are tested in isolation: set inputs, assert rendered output, trigger events and assert emitted outputs
-- **Containers** are tested by mocking injected services and asserting signal state changes
-- **Pages** are tested by providing mock `ActivatedRoute` and asserting model translation
-- **Services** are tested by mocking the generated API services and asserting state management
+**Global setup** at `src/test-setup.ts` — registers `@testing-library/jest-dom` matchers. Wired via `setupFiles` in `angular.json`.
+
+**`renderWithProviders()`** at `src/testing/render-with-providers.ts` — pre-configures `TranslateModule.forRoot()` in passthrough mode (translation keys render as-is). Re-exports `screen`, `within`, and `userEvent` for convenience.
+
+```typescript
+import { renderWithProviders, screen, within, userEvent }
+  from '../../../testing/render-with-providers';
+```
+
+### Translation Passthrough Mode
+
+`TranslateModule.forRoot()` with no loader causes `DefaultMissingTranslationHandler` to return the key as-is. So `{{ 'RECIPES.EMPTY' | translate }}` renders `RECIPES.EMPTY` in the DOM.
+
+Tests assert against these stable keys, not German translations. This eliminates all `FakeLoader` classes.
+
+> **Note:** Template interpolation is not applied in passthrough mode. `{{ 'NAV.ACCOUNT_MENU' | translate: { name: 'Alice' } }}` renders `NAV.ACCOUNT_MENU`, not `Kontomenü für Alice`. Use `data-testid` assertions to verify dynamic values separately.
+
+### Canonical Test File Structure
+
+```typescript
+import { ComponentUnderTest } from './component-under-test.component';
+import { renderWithProviders, screen, userEvent } from '../../../testing/render-with-providers';
+
+describe('ComponentUnderTest', () => {
+  const user = userEvent.setup();
+
+  it('describes user-visible behavior', async () => {
+    await setup({ ... });
+    expect(screen.getByRole(...)).toBeInTheDocument();
+  });
+
+  // Mock data constants
+  const MOCK_RECIPE = { _id: '1', name: 'Pasta' };
+
+  // setup() is always last, always async
+  async function setup(options: { ... } = {}) {
+    return renderWithProviders(ComponentUnderTest, {
+      componentInputs: { ... },
+      on: { ... },
+    });
+  }
+});
+```
+
+Rules:
+- **No `beforeEach`** for component rendering — every test calls `setup()` explicitly
+- **`setup()` is last** inside `describe`, always `async`
+- **Fewer, longer tests** — group related assertions about one scenario in a single `it`
+- **Mock data constants** above `setup()`, inside `describe`
+
+### Query Priority
+
+Follow Testing Library query priority — highest confidence first:
+
+1. `getByRole` — buttons, headings, lists, links, alerts (primary)
+2. `getByLabelText` — form fields
+3. `getByText` — static text content (translation keys in passthrough mode)
+4. `getByTestId` — escape hatch for elements without semantic roles (e.g., status indicators)
+
+### Dumb Component Testing Pattern
+
+```typescript
+async function setup(options: { recipes: Recipe[]; on?: { deleteRecipe?: (r: Recipe) => void } } = {}) {
+  return renderWithProviders(RecipeListComponent, {
+    componentInputs: { recipes: options.recipes ?? [] },
+    on: options.on ?? {},
+  });
+}
+```
+
+- Inputs via `componentInputs`
+- Outputs via `on` with `vi.fn()`
+- No `fixture.componentInstance` access
+- No `spyOn(component.output, 'emit')`
+- No `TestHostComponent` wrappers
+
+### Smart Component (Container/Page) Testing Pattern
+
+Containers render their **real child components**. Mocking happens at the **service boundary** via `componentProviders`.
+
+```typescript
+const fakeHealthService = {
+  healthResource: {
+    value: signal<HealthResponse | undefined>(mockHealth),
+    isLoading: signal(false),
+    error: signal<unknown>(undefined),
+  },
+  frontendVersionResource: { value: signal<VersionInfo | undefined>(mockVersion) },
+  backendVersionResource:  { value: signal<VersionInfo | undefined>(mockVersion) },
+  reload: vi.fn(),
+};
+
+return renderWithProviders(HealthContainerComponent, {
+  componentProviders: [{ provide: HealthFeatureService, useValue: fakeHealthService }],
+});
+```
+
+For services using plain signals (not `rxResource`):
+
+```typescript
+const fakeProfileService = {
+  profile: signal<Profile | null>(null).asReadonly(),
+  loading: signal(false).asReadonly(),
+  load: vi.fn(),
+  clear: vi.fn(),
+};
+```
+
+### User Interactions
+
+Always use `userEvent.setup()` at the top of `describe`:
+
+```typescript
+const user = userEvent.setup();
+// In test:
+await user.click(screen.getByRole('button', { name: 'COMMON.ADD' }));
+await user.type(screen.getByRole('textbox', { name: 'RECIPES.NAME_LABEL' }), 'Bread');
+```
+
+`fireEvent` is a fallback only when `user-event` doesn't support a specific interaction.
+
+### Forbidden Patterns
+
+Never use any of these in component tests:
+
+- `fixture.componentInstance` access
+- `querySelector` / `querySelectorAll`
+- `spyOn(component.output, 'emit')`
+- `TestHostComponent` wrappers
+- `asAny()` / private method access
+- `beforeEach` for component rendering
+- `expect(component).toBeTruthy()` smoke tests
+- `FakeLoader` classes for `ngx-translate`
+- `HttpTestingController` in container/page tests
+- German text assertions (always use translation keys)
+
+### Unchanged Test Scope
+
+These 4 file types are **not** migrated to ATL:
+
+- **Service tests** — `TestBed` + `HttpTestingController` is the correct boundary
+- **Pure function tests** — plain Vitest, no framework
 
 ---
 

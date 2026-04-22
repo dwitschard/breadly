@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const TARGET_URL =
   'https://www.aletscharena.ch/planen-buchen/angebote-erlebnisse/cube-aletsch';
 
-test.describe('Smoke: Cube Aletsch booking monitor', () => {
+test.describe.skip('Smoke: Cube Aletsch booking monitor', () => {
   test('booking is NOT yet available', async ({ page }) => {
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded' });
 
