@@ -21,6 +21,6 @@ export const env = {
   SCHEDULER_GROUP_NAME: optional('SCHEDULER_GROUP_NAME', 'breadly-schedules'),
   SCHEDULER_ROLE_ARN: optional('SCHEDULER_ROLE_ARN', ''),
   API_GATEWAY_ENDPOINT: optional('API_GATEWAY_ENDPOINT', ''),
-  SES_SENDER_EMAIL: optional('SES_SENDER_EMAIL', 'noreply@breadly.app'),
+  SES_SENDER_EMAIL: optional('SES_SENDER_EMAIL', 'floete-argon.8h@icloud.com'),
   APP_URL: optional('APP_URL', 'http://localhost:4200'),
 };

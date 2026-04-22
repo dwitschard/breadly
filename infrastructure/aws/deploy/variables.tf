@@ -47,5 +47,5 @@ variable "mongodb_uri" {
 variable "ses_sender_email" {
   description = "Email address used as the SES sender identity for all outgoing emails."
   type        = string
-  default     = "noreply@breadly.app"
+  default     = "floete-argon.8h@icloud.com"
 }
