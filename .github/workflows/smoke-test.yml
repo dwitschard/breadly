@@ -15,8 +15,6 @@
 name: Smoke Test
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'                 # Every 5 minutes
   workflow_dispatch:
 
 jobs:
