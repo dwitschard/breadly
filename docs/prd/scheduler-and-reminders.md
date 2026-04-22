@@ -18,7 +18,7 @@ The first concrete feature built on this scheduler is **email reminders**: batch
 
 All scheduler configuration — cron schedules, retry policies, email templates, and sender settings — is centralized in a config directory (`breadly-backend/config/`), making it easy to add new scheduled jobs by editing a JSON file and adding an MJML template.
 
-The system is designed for low volume (< 100 concurrent per-user reminders, minute-level timing precision) and adds effectively zero cost at this scale thanks to EventBridge Scheduler's permanent free tier of 14M invocations/month.
+The system is designed for low volume (< 100 concurrent per-user reminders system-wide, soft limit of 10 per user, minute-level timing precision) and adds effectively zero cost at this scale thanks to EventBridge Scheduler's permanent free tier of 14M invocations/month.
 
 ## User Stories
 
@@ -32,7 +32,7 @@ The system is designed for low volume (< 100 concurrent per-user reminders, minu
 
 5. As a user, I want reminder emails to be well-formatted and readable on both desktop and mobile, so that I have a pleasant experience regardless of device.
 
-6. As a user, I want reminder emails to address me by name and link directly to the relevant recipe, so that the email feels personal and actionable.
+6. As a user, I want reminder emails to link directly to the relevant recipe, so that the email feels actionable.
 
 7. As a developer, I want a domain-agnostic scheduler service that wraps EventBridge Scheduler, so that I can add new scheduled features (e.g., scheduled publishing, digest emails) without reimplementing AWS SDK interaction.
 
@@ -76,12 +76,17 @@ The system is designed for low volume (< 100 concurrent per-user reminders, minu
 - **EventBridge Scheduler as sole source of truth for schedule data.** No MongoDB collection for reminders. Schedule metadata is stored in the EventBridge schedule's target payload. The user-facing `GET /api/reminders` endpoint calls `ListSchedules` with a `NamePrefix` filter and parses results. This accepts tradeoffs (no rich querying, ~200-500ms latency, cursor-based pagination) in exchange for fewer moving parts.
 - **Schedule naming convention.** All schedules follow the pattern `breadly-{env}-{feature}-{userId}-{uuid}` to enable prefix-based filtering per user via the `ListSchedules` API.
 - **Private Lambda only** receives new IAM permissions (EventBridge Scheduler + SES). The public Lambda is unchanged. Only the private Lambda handles both user-facing and internal reminder routes.
+- **Schedule ownership verification.** When a user calls `DELETE /api/reminders/:id`, ownership is verified by parsing the userId segment from the EventBridge schedule name (`breadly-{env}-reminder-{userId}-{uuid}`). If the authenticated user's ID does not match the userId in the schedule name, the request is rejected with 403.
+- **Per-user reminder limit.** A soft limit of 10 active reminders per user is enforced at the API level. `POST /api/reminders` calls `listSchedules` with the user's prefix and rejects with 409 if the count is >= 10.
+- **Timezone handling for per-user reminders.** The client sends `scheduledAt` as an ISO 8601 datetime with UTC offset (e.g., `2026-04-25T15:00:00+02:00`). The backend converts this to UTC for the EventBridge `at()` schedule expression. EventBridge executes at the correct absolute point in time regardless of DST.
+- **Timezone handling for cron schedules.** Recurring cron schedules in `schedules.json` include a `timezone` field (IANA format, e.g., `Europe/Zurich`). EventBridge Scheduler natively supports timezone-aware cron expressions, ensuring DST transitions are handled correctly.
+- **Email personalization.** In this iteration, all emails use a static placeholder name (`"Breadly User"`) instead of a real user name. This avoids the need for a user profile collection or OIDC token claim lookup. When a profile feature is added later, the placeholder can be replaced with the actual user name.
 - **dev/prod only.** Scheduler infrastructure is not deployed in preview environments to avoid side effects and orphaned resources.
 
 ### Config-Driven Scheduling
 
 - **Centralized config** at `breadly-backend/config/`. Contains `schedules.json` (schedule definitions, retry policies, email metadata) and `templates/*.mjml` (email templates).
-- **Config schema.** `schedules.json` has a `defaults` block (global retry policy, sender email) and a `schedules` array. Each schedule entry defines: `name`, `description`, `enabled`, `schedule_expression`, `target` (method + path), `retry_policy` (nullable, falls back to defaults), `email` (template name, subject with `{{variables}}`, optional sender override), and `payload` (arbitrary JSON passed to the internal endpoint).
+- **Config schema.** `schedules.json` has a `defaults` block (global retry policy, sender email) and a `schedules` array. Each schedule entry defines: `name`, `description`, `enabled`, `schedule_expression`, `timezone` (IANA timezone for cron evaluation, e.g. `Europe/Zurich`), `target` (method + path), `retry_policy` (nullable, falls back to defaults), `email` (template name, subject with `{{variables}}`, optional sender override), and `payload` (arbitrary JSON passed to the internal endpoint — for batch jobs, includes `type` and `userIds`).
 - **Terraform reads the config.** The scheduler Terraform module reads `schedules.json` via `jsondecode(file(...))` and creates EventBridge recurring schedules with `for_each`. The `enabled` flag controls whether a schedule is created.
 - **Adding a new cron job** requires: (1) add an entry to `schedules.json`, (2) create an MJML template in `config/templates/`, (3) add the internal endpoint in the backend, (4) run `terraform apply`.
 
@@ -106,7 +111,12 @@ The system is designed for low volume (< 100 concurrent per-user reminders, minu
 
 - Internal endpoints are added to the OpenAPI spec in `breadly-api/openapi.yaml` with an `Internal` tag. This generates TypeScript DTOs for request/response types, keeping the spec as the single source of truth.
 - User-facing endpoints are added under a `Reminders` tag.
-- Schemas: `CreateReminderDto`, `Reminder`, `ReminderList`, `SendReminderPayload`, `BatchReminderPayload`.
+- Schemas:
+  - `CreateReminderDto`: `recipeId` (string, required), `scheduledAt` (string, ISO 8601 with UTC offset, required), `title` (string, optional), `message` (string, optional). The backend validates that `scheduledAt` is in the future and enforces a per-user soft limit of 10 active reminders.
+  - `Reminder`: `id` (string — the EventBridge schedule name), `recipeId` (string), `scheduledAt` (string, ISO 8601), `title` (string, optional), `message` (string, optional).
+  - `ReminderList`: `items` (array of `Reminder`), `nextToken` (string, optional — cursor for EventBridge pagination).
+  - `SendReminderPayload`: payload for the internal single-reminder send endpoint (fields TBD by implementation, must include recipe and recipient info).
+  - `BatchReminderPayload`: `type` (string, e.g. `"greeting"`), `userIds` (array of strings — explicit list of user IDs to target).
 
 ### Infrastructure Modules
 
@@ -119,9 +129,9 @@ The system is designed for low volume (< 100 concurrent per-user reminders, minu
 ### Dummy Verification Schedule
 
 A "daily greeting" schedule is included in the initial config to verify the full pipeline works end-to-end:
-- **Config**: `schedules.json` entry with `cron(0 7 * * ? *)` (daily at 8am CET) targeting `POST /api/internal/reminders/batch`
-- **Template**: `config/templates/greeting.mjml` — a simple responsive email with `{{userName}}` and `{{appUrl}}` variables, a CTA button linking to the recipes page, and an unsubscribe footer
-- **Payload**: `{ "type": "greeting" }` — the batch endpoint uses this to determine which template and user query to apply
+- **Config**: `schedules.json` entry with `cron(0 7 * * ? *)` in timezone `Europe/Zurich` (daily at 7am local time, DST-aware) targeting `POST /api/internal/reminders/batch`
+- **Template**: `config/templates/greeting.mjml` — a simple responsive email with `{{userName}}` and `{{appUrl}}` variables, a CTA button linking to the recipes page, and an unsubscribe footer. `{{userName}}` uses a static placeholder (`"Breadly User"`) for all recipients in this iteration.
+- **Payload**: `{ "type": "greeting", "userIds": ["..."] }` — the batch endpoint iterates the explicit list of user IDs, loads the template, and sends a personalized email to each
 
 ### Cost Impact
 
@@ -143,7 +153,7 @@ Tests verify external behavior through public interfaces, not implementation det
 |--------|-----------|-------------|-------|
 | **Scheduler Service** | Unit (`scheduler.service.spec.ts`) | `createSchedule` creates correctly named EventBridge schedule with proper target config; `deleteSchedule` calls SDK with correct name; `listSchedules` parses prefix results and extracts payloads; naming convention enforcement; error propagation from SDK failures | `@aws-sdk/client-scheduler` (mock SDK client) |
 | **Email Helper** | Unit (`email.helper.spec.ts`) | `loadTemplate` reads correct file path; `interpolate` replaces all `{{variables}}`; `interpolate` handles missing variables gracefully; `sendEmail` calls SES with correct parameters | `fs` (mock file reads), `@aws-sdk/client-ses` (mock SDK client) |
-| **Reminder Service** | Unit (`reminder.service.spec.ts`) | `createReminder` calls scheduler service with correct naming and payload; `listReminders` maps EventBridge results to Reminder DTOs; `cancelReminder` verifies ownership before deleting; `sendReminder` loads template, interpolates, sends email; `processBatchReminders` queries users and sends per-user emails | Scheduler Service, Email Helper (mock both) |
+| **Reminder Service** | Unit (`reminder.service.spec.ts`) | `createReminder` calls scheduler service with correct naming and payload; `createReminder` rejects past `scheduledAt` dates; `createReminder` enforces per-user limit of 10; `listReminders` maps EventBridge results to Reminder DTOs; `cancelReminder` verifies ownership by parsing userId from schedule name before deleting; `cancelReminder` rejects with 403 if userId does not match; `sendReminder` loads template, interpolates, sends email; `processBatchReminders` iterates explicit userIds and sends per-user emails | Scheduler Service, Email Helper (mock both) |
 | **Reminder Controller** | Integration (`reminder.controller.spec.ts`) | User-facing routes: POST creates reminder and returns 201; GET returns reminder list; DELETE returns 204; auth required (401 without token). Internal routes: POST /send triggers email; POST /batch triggers batch processing; no JWT required. Input validation on all routes. | Reminder Service (mock), use `supertest` against Express app with `makeToken()` for auth |
 
 ### Prior art

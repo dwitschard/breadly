@@ -24,3 +24,13 @@ output "cognito_hosted_ui_domain" {
   description = "Passed through from the cognito module for operator convenience."
   value       = var.cognito_hosted_ui_domain
 }
+
+output "api_execution_arn" {
+  description = "Execution ARN of the HTTP API."
+  value       = aws_apigatewayv2_api.this.execution_arn
+}
+
+output "api_arn" {
+  description = "ARN of the HTTP API."
+  value       = aws_apigatewayv2_api.this.arn
+}
