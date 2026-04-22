@@ -140,9 +140,8 @@ module "scheduler" {
 
   name                      = local.name_prefix
   group_name                = "${local.name_prefix}-schedules"
-  config_json               = file("${path.module}/../../../breadly-backend/config/schedules.json")
-  api_gateway_arn           = module.api_gateway.api_arn
-  api_gateway_execution_arn = module.api_gateway.api_execution_arn
+  config_json         = file("${path.module}/../../../breadly-backend/config/schedules.json")
+  lambda_function_arn = module.backend.function_arn
 
   tags = {
     Component = "scheduler"

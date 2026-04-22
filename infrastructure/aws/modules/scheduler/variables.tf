@@ -13,20 +13,9 @@ variable "config_json" {
   type        = string
 }
 
-variable "api_gateway_arn" {
-  description = "ARN of the API Gateway HTTP API (used as the EventBridge target)."
+variable "lambda_function_arn" {
+  description = "ARN of the backend Lambda function invoked by EventBridge Scheduler."
   type        = string
-}
-
-variable "api_gateway_execution_arn" {
-  description = "Execution ARN of the API Gateway HTTP API (used in IAM policy)."
-  type        = string
-}
-
-variable "api_gateway_stage" {
-  description = "Stage name of the API Gateway HTTP API (e.g. '$default')."
-  type        = string
-  default     = "$default"
 }
 
 variable "tags" {

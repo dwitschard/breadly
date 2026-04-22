@@ -1,7 +1,12 @@
 # modules/scheduler/main.tf — EventBridge Scheduler resources.
 #
-# Creates a schedule group, IAM execution role for EventBridge-to-API-Gateway,
+# Creates a schedule group, IAM execution role for EventBridge-to-Lambda,
 # and recurring schedules from the config file.
+#
+# EventBridge Scheduler does not support API Gateway HTTP API (v2) as a target.
+# The backend Lambda is used as the templated target instead. The input payload
+# is shaped as an HTTP API v2 (payload format 2.0) event so that Lambda Web
+# Adapter forwards it to Express as a standard HTTP request.
 
 locals {
   config    = jsondecode(var.config_json)
@@ -20,7 +25,7 @@ resource "aws_scheduler_schedule_group" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# IAM Role — allows EventBridge Scheduler to invoke API Gateway
+# IAM Role — allows EventBridge Scheduler to invoke the backend Lambda
 # ---------------------------------------------------------------------------
 
 data "aws_iam_policy_document" "scheduler_assume_role" {
@@ -42,18 +47,18 @@ resource "aws_iam_role" "scheduler_execution" {
   tags = var.tags
 }
 
-data "aws_iam_policy_document" "scheduler_invoke_apigw" {
+data "aws_iam_policy_document" "scheduler_invoke_lambda" {
   statement {
     effect    = "Allow"
-    actions   = ["execute-api:Invoke"]
-    resources = ["${var.api_gateway_execution_arn}/*/POST/api/internal/*"]
+    actions   = ["lambda:InvokeFunction"]
+    resources = [var.lambda_function_arn]
   }
 }
 
-resource "aws_iam_role_policy" "scheduler_invoke_apigw" {
-  name   = "invoke-apigw"
+resource "aws_iam_role_policy" "scheduler_invoke_lambda" {
+  name   = "invoke-lambda"
   role   = aws_iam_role.scheduler_execution.id
-  policy = data.aws_iam_policy_document.scheduler_invoke_apigw.json
+  policy = data.aws_iam_policy_document.scheduler_invoke_lambda.json
 }
 
 # ---------------------------------------------------------------------------
@@ -103,9 +108,33 @@ resource "aws_scheduler_schedule" "recurring" {
   }
 
   target {
-    arn      = "${var.api_gateway_execution_arn}/${var.api_gateway_stage}/${each.value.target.method}${each.value.target.path}"
+    # Lambda is a supported templated target. The ARN is the function ARN.
+    # EventBridge Scheduler passes `input` as the Lambda event payload directly.
+    arn      = var.lambda_function_arn
     role_arn = aws_iam_role.scheduler_execution.arn
-    input    = jsonencode(each.value.payload)
+
+    # Shape the input as an HTTP API v2 (payload format 2.0) event.
+    # Lambda Web Adapter translates this into an HTTP request to the Express app.
+    input = jsonencode({
+      version  = "2.0"
+      routeKey = "${each.value.target.method} ${each.value.target.path}"
+      rawPath  = each.value.target.path
+      requestContext = {
+        http = {
+          method    = each.value.target.method
+          path      = each.value.target.path
+          protocol  = "HTTP/1.1"
+          sourceIp  = "scheduler"
+          userAgent = "EventBridge-Scheduler"
+        }
+        stage = "$default"
+      }
+      headers = {
+        "content-type" = "application/json"
+      }
+      body            = jsonencode(each.value.payload)
+      isBase64Encoded = false
+    })
 
     retry_policy {
       maximum_retry_attempts       = try(each.value.retry_policy.maximum_retry_attempts, local.defaults.retry_policy.maximum_retry_attempts)
