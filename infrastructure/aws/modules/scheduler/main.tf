@@ -103,20 +103,13 @@ resource "aws_scheduler_schedule" "recurring" {
   }
 
   target {
-    arn      = var.api_gateway_arn
+    arn      = "${var.api_gateway_arn}/${each.value.target.method}${each.value.target.path}"
     role_arn = aws_iam_role.scheduler_execution.arn
     input    = jsonencode(each.value.payload)
-
-    http_parameters {
-      method = each.value.target.method
-      path   = each.value.target.path
-    }
 
     retry_policy {
       maximum_retry_attempts       = try(each.value.retry_policy.maximum_retry_attempts, local.defaults.retry_policy.maximum_retry_attempts)
       maximum_event_age_in_seconds = try(each.value.retry_policy.maximum_event_age_in_seconds, local.defaults.retry_policy.maximum_event_age_in_seconds)
     }
   }
-
-  tags = var.tags
 }

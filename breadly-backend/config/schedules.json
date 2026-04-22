@@ -24,7 +24,9 @@
       },
       "payload": {
         "type": "greeting",
-        "userIds": []
+        "userIds": [
+          "bootsleute.ansammlung.2b@icloud.com"
+        ]
       }
     }
   ]
