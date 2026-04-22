@@ -571,6 +571,12 @@ components:
         type:
           type: string
           description: Type of batch job (e.g. "greeting")
+        template:
+          type: string
+          description: Email template name to use (defaults to the value of "type" if omitted)
+        subject:
+          type: string
+          description: Email subject line (defaults to a generic subject if omitted)
         userIds:
           type: array
           items:

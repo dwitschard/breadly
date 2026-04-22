@@ -138,7 +138,7 @@ describe('reminder.service', () => {
   });
 
   describe('processBatchReminders', () => {
-    it('sends greeting emails to all userIds', async () => {
+    it('sends batch emails to all userIds', async () => {
       await processBatchReminders({
         type: 'greeting',
         userIds: ['user1@example.com', 'user2@example.com'],
@@ -146,6 +146,32 @@ describe('reminder.service', () => {
 
       expect(mockEmail.loadTemplate).toHaveBeenCalledWith('greeting');
       expect(mockEmail.sendEmail).toHaveBeenCalledTimes(2);
+    });
+
+    it('uses explicit template and subject when provided', async () => {
+      await processBatchReminders({
+        type: 'greeting',
+        template: 'custom-greeting',
+        subject: 'Custom Subject',
+        userIds: ['user1@example.com'],
+      });
+
+      expect(mockEmail.loadTemplate).toHaveBeenCalledWith('custom-greeting');
+      expect(mockEmail.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: 'Custom Subject' }),
+      );
+    });
+
+    it('falls back to type as template name and generic subject', async () => {
+      await processBatchReminders({
+        type: 'weekly-digest',
+        userIds: ['user1@example.com'],
+      });
+
+      expect(mockEmail.loadTemplate).toHaveBeenCalledWith('weekly-digest');
+      expect(mockEmail.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: 'Breadly: weekly-digest' }),
+      );
     });
 
     it('continues sending even if one fails', async () => {
@@ -159,15 +185,6 @@ describe('reminder.service', () => {
       });
 
       expect(mockEmail.sendEmail).toHaveBeenCalledTimes(2);
-    });
-
-    it('logs warning for unknown batch type', async () => {
-      await processBatchReminders({
-        type: 'unknown',
-        userIds: ['user1@example.com'],
-      });
-
-      expect(mockEmail.sendEmail).not.toHaveBeenCalled();
     });
   });
 });

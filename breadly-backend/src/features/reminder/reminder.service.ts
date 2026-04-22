@@ -164,26 +164,24 @@ export const sendReminderEmail = async (payload: SendReminderPayload): Promise<v
 };
 
 export const processBatchReminders = async (payload: BatchReminderPayload): Promise<void> => {
-  if (payload.type === 'greeting') {
-    const template = loadTemplate('greeting');
+  const templateName = payload.template ?? payload.type;
+  const subject = payload.subject ?? `Breadly: ${payload.type}`;
+  const template = loadTemplate(templateName);
 
-    for (const userId of payload.userIds) {
-      try {
-        const html = interpolate(template, {
-          userName: 'Breadly User',
-          appUrl: env.APP_URL,
-        });
+  for (const userId of payload.userIds) {
+    try {
+      const html = interpolate(template, {
+        userName: 'Breadly User',
+        appUrl: env.APP_URL,
+      });
 
-        await sendEmail({
-          to: userId,
-          subject: 'Good morning from Breadly!',
-          htmlBody: html,
-        });
-      } catch (error) {
-        logger.error({ userId, error }, 'Failed to send batch email');
-      }
+      await sendEmail({
+        to: userId,
+        subject,
+        htmlBody: html,
+      });
+    } catch (error) {
+      logger.error({ userId, error }, 'Failed to send batch email');
     }
-  } else {
-    logger.warn({ type: payload.type }, 'Unknown batch reminder type');
   }
 };
