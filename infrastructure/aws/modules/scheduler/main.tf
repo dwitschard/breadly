@@ -4,7 +4,7 @@
 # and recurring schedules from the config file.
 
 locals {
-  config    = jsondecode(file(var.config_path))
+  config    = jsondecode(var.config_json)
   defaults  = local.config.defaults
   schedules = { for s in local.config.schedules : s.name => s if s.enabled }
 }

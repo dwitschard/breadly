@@ -8,8 +8,8 @@ variable "group_name" {
   type        = string
 }
 
-variable "config_path" {
-  description = "Path to the schedules.json config file."
+variable "config_json" {
+  description = "JSON string contents of the schedules config file."
   type        = string
 }
 
