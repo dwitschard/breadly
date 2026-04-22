@@ -1,116 +1,87 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
+import { signal } from '@angular/core';
 import { HealthContainerComponent } from './health.container';
-import { HealthResponse, provideApi } from '../../../generated/api';
-
-class FakeLoader implements TranslateLoader {
-  getTranslation() {
-    return of({
-      COMMON: { RELOAD: 'Aktualisieren' },
-      HEALTH: {
-        TITLE: 'Systemstatus',
-        VERSIONS: 'Versionen',
-        VERSIONS_LABEL: 'Versionen',
-        CHECKS_LABEL: 'Systemstatus-Prüfungen',
-        LOAD_ERROR: 'Systemstatus konnte nicht abgerufen werden.',
-        API: 'API',
-        DATABASE: 'Datenbank',
-        OPERATIONAL: 'Betriebsbereit',
-        ERROR: 'Fehler',
-        OVERALL_STATUS: 'Gesamtstatus:',
-        ALL_OPERATIONAL: 'Alle Systeme betriebsbereit',
-        DEGRADED: 'Eingeschränkt',
-      },
-    });
-  }
-}
-
-const mockHealth: HealthResponse = {
-  status: 'ok' as HealthResponse.StatusEnum,
-  checks: {
-    api: { status: 'ok' as any, responseTime: '10ms' },
-    database: { status: 'ok' as any, responseTime: '5ms' },
-  },
-};
+import { HealthFeatureService } from '../health.service';
+import { HealthResponse, VersionInfo } from '../../../generated/api';
+import { renderWithProviders, screen, userEvent } from '../../../../testing/render-with-providers';
 
 describe('HealthContainerComponent', () => {
-  let fixture: ComponentFixture<HealthContainerComponent>;
-  let httpMock: HttpTestingController;
+  const user = userEvent.setup();
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        HealthContainerComponent,
-        TranslateModule.forRoot({
-          loader: { provide: TranslateLoader, useClass: FakeLoader },
-        }),
-      ],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideApi('api')],
-    }).compileComponents();
+  it('shows spinner while loading', async () => {
+    await setup({ isLoading: true });
 
-    httpMock = TestBed.inject(HttpTestingController);
-
-    const translate = TestBed.inject(TranslateService);
-    translate.use('de');
+    expect(screen.getByRole('status', { name: 'COMMON.LOADING' })).toBeInTheDocument();
   });
 
-  afterEach(() => {
-    httpMock.verify();
-  });
+  it('shows error banner when health request fails', async () => {
+    await setup({ healthError: new Error('network error') });
 
-  it('should create', () => {
-    fixture = TestBed.createComponent(HealthContainerComponent);
-    fixture.detectChanges();
-
-    httpMock.expectOne('api/health').flush(mockHealth);
-    httpMock.expectOne('api/version').flush({ version: 'abc1234', releaseUrl: '' });
-    httpMock.expectOne('version.json').flush({ version: 'def5678', releaseUrl: '' });
-
-    expect(fixture.componentInstance).toBeTruthy();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH.LOAD_ERROR')).toBeInTheDocument();
   });
 
   it('renders health-dashboard when health data is available', async () => {
-    fixture = TestBed.createComponent(HealthContainerComponent);
-    fixture.detectChanges();
+    await setup({ health: mockHealth });
 
-    httpMock.expectOne('api/health').flush(mockHealth);
-    httpMock.expectOne('api/version').flush({ version: 'abc1234', releaseUrl: '' });
-    httpMock.expectOne('version.json').flush({ version: 'def5678', releaseUrl: '' });
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('health-dashboard')).toBeTruthy();
+    expect(screen.getByTestId('health-check-api')).toBeInTheDocument();
+    expect(screen.getByTestId('health-check-db')).toBeInTheDocument();
   });
 
-  it('renders version-info component', () => {
-    fixture = TestBed.createComponent(HealthContainerComponent);
-    fixture.detectChanges();
+  it('renders version-info with frontend and backend versions', async () => {
+    await setup({ health: mockHealth });
 
-    httpMock.expectOne('api/health').flush(mockHealth);
-    httpMock.expectOne('api/version').flush({ version: 'abc1234', releaseUrl: '' });
-    httpMock.expectOne('version.json').flush({ version: 'def5678', releaseUrl: '' });
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('health-version-info')).toBeTruthy();
+    expect(screen.getByTestId('health-version-frontend')).toBeInTheDocument();
+    expect(screen.getByTestId('health-version-backend')).toBeInTheDocument();
   });
 
-  it('shows dev fallback when version requests fail', () => {
-    fixture = TestBed.createComponent(HealthContainerComponent);
-    fixture.detectChanges();
+  it('reload button calls healthService.reload()', async () => {
+    const reload = vi.fn();
+    await setup({ health: mockHealth, reload });
 
-    httpMock.expectOne('api/health').flush(mockHealth);
-    httpMock.expectOne('api/version').error(new ProgressEvent('error'));
-    httpMock.expectOne('version.json').error(new ProgressEvent('error'));
-    fixture.detectChanges();
+    await user.click(screen.getByRole('button', { name: 'COMMON.RELOAD' }));
 
-    const el: HTMLElement = fixture.nativeElement;
-    const versionInfo = el.querySelector('health-version-info');
-    expect(versionInfo).toBeTruthy();
-    expect(versionInfo?.textContent).toContain('dev');
+    expect(reload).toHaveBeenCalledTimes(1);
   });
+
+  it('reload button is disabled while loading', async () => {
+    await setup({ isLoading: true });
+
+    expect(screen.getByRole('button', { name: 'COMMON.RELOAD' })).toBeDisabled();
+  });
+
+  const mockHealth: HealthResponse = {
+    status: 'ok' as HealthResponse.StatusEnum,
+    checks: {
+      api: { status: 'ok' as any, responseTime: '10ms' },
+      database: { status: 'ok' as any, responseTime: '5ms' },
+    },
+  };
+
+  const mockVersion: VersionInfo = { version: 'abc1234', releaseUrl: '' };
+
+  async function setup(options: {
+    health?: HealthResponse;
+    isLoading?: boolean;
+    healthError?: unknown;
+    reload?: () => void;
+  } = {}) {
+    const { health, isLoading = false, healthError = undefined, reload = vi.fn() } = options;
+
+    const fakeHealthService = {
+      healthResource: {
+        value: signal<HealthResponse | undefined>(health),
+        isLoading: signal(isLoading),
+        error: signal<unknown>(healthError),
+      },
+      frontendVersionResource: { value: signal<VersionInfo | undefined>(mockVersion) },
+      backendVersionResource: { value: signal<VersionInfo | undefined>(mockVersion) },
+      reload,
+    };
+
+    return renderWithProviders(HealthContainerComponent, {
+      componentProviders: [
+        { provide: HealthFeatureService, useValue: fakeHealthService },
+      ],
+    });
+  }
 });

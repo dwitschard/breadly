@@ -1,74 +1,49 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
 import { RecipeListComponent } from './recipe-list.component';
 import { Recipe } from '../../../generated/api';
-
-class FakeLoader implements TranslateLoader {
-  getTranslation() {
-    return of({
-      RECIPES: {
-        EMPTY: 'Noch keine Rezepte vorhanden. Erstelle oben ein neues.',
-        DELETE_LABEL: 'Rezept löschen: {{name}}',
-      },
-    });
-  }
-}
-
-const mockRecipes: Recipe[] = [
-  { _id: '1', name: 'Pasta' },
-  { _id: '2', name: 'Pizza' },
-];
+import { renderWithProviders, screen, userEvent, within } from '../../../../testing/render-with-providers';
 
 describe('RecipeListComponent', () => {
-  let fixture: ComponentFixture<RecipeListComponent>;
+  const user = userEvent.setup();
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        RecipeListComponent,
-        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
-      ],
-    }).compileComponents();
+  it('shows empty-state message when recipes list is empty', async () => {
+    await setup([]);
 
-    TestBed.inject(TranslateService).use('de');
+    expect(screen.getByText('RECIPES.EMPTY')).toBeInTheDocument();
   });
 
-  it('should create', () => {
-    fixture = TestBed.createComponent(RecipeListComponent);
-    fixture.componentRef.setInput('recipes', []);
-    fixture.detectChanges();
-    expect(fixture.componentInstance).toBeTruthy();
+  it('renders a list item for each recipe', async () => {
+    await setup(mockRecipes);
+
+    expect(screen.getByText('Pasta')).toBeInTheDocument();
+    expect(screen.getByText('Pizza')).toBeInTheDocument();
   });
 
-  it('shows empty message when no recipes', () => {
-    fixture = TestBed.createComponent(RecipeListComponent);
-    fixture.componentRef.setInput('recipes', []);
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('Noch keine Rezepte');
+  it('emits deleteRecipe with the correct recipe when delete button is clicked', async () => {
+    const deleteRecipe = vi.fn();
+    await setup(mockRecipes, { deleteRecipe });
+
+    await user.click(screen.getByTestId('recipe-delete-btn-1'));
+
+    expect(deleteRecipe).toHaveBeenCalledTimes(1);
+    expect(deleteRecipe).toHaveBeenCalledWith(mockRecipes[0]);
   });
 
-  it('renders recipe items', () => {
-    fixture = TestBed.createComponent(RecipeListComponent);
-    fixture.componentRef.setInput('recipes', mockRecipes);
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement;
-    const items = el.querySelectorAll('li');
-    expect(items.length).toBe(2);
-    expect(items[0].textContent).toContain('Pasta');
-    expect(items[1].textContent).toContain('Pizza');
+  it('each recipe has its own delete button scoped to the list item', async () => {
+    await setup(mockRecipes);
+
+    const pastaItem = screen.getByText('Pasta').closest('li')!;
+    expect(within(pastaItem).getByTestId('recipe-delete-btn-1')).toBeInTheDocument();
   });
 
-  it('emits deleteRecipe when delete button is clicked', () => {
-    fixture = TestBed.createComponent(RecipeListComponent);
-    fixture.componentRef.setInput('recipes', mockRecipes);
-    fixture.detectChanges();
+  const mockRecipes: Recipe[] = [
+    { _id: '1', name: 'Pasta' },
+    { _id: '2', name: 'Pizza' },
+  ];
 
-    const emitSpy = vi.spyOn(fixture.componentInstance.deleteRecipe, 'emit');
-    const deleteButton = fixture.nativeElement.querySelector('button');
-    deleteButton.click();
-
-    expect(emitSpy).toHaveBeenCalledWith(mockRecipes[0]);
-  });
+  async function setup(recipes: Recipe[], on: { deleteRecipe?: (r: Recipe) => void } = {}) {
+    return renderWithProviders(RecipeListComponent, {
+      componentInputs: { recipes },
+      on,
+    });
+  }
 });

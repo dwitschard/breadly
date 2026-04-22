@@ -1,96 +1,48 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
 import { HealthDashboardComponent } from './health-dashboard.component';
 import { HealthResponse } from '../../../generated/api';
-
-class FakeLoader implements TranslateLoader {
-  getTranslation() {
-    return of({
-      HEALTH: {
-        CHECKS_LABEL: 'Systemstatus-Prüfungen',
-        API: 'API',
-        DATABASE: 'Datenbank',
-        OPERATIONAL: 'Betriebsbereit',
-        ERROR: 'Fehler',
-        OVERALL_STATUS: 'Gesamtstatus:',
-        ALL_OPERATIONAL: 'Alle Systeme betriebsbereit',
-        DEGRADED: 'Eingeschränkt',
-      },
-    });
-  }
-}
-
-const mockHealth: HealthResponse = {
-  status: 'ok' as HealthResponse.StatusEnum,
-  checks: {
-    api: { status: 'ok' as any, responseTime: '12ms' },
-    database: { status: 'ok' as any, responseTime: '5ms' },
-  },
-};
-
-const degradedHealth: HealthResponse = {
-  status: 'degraded' as HealthResponse.StatusEnum,
-  checks: {
-    api: { status: 'ok' as any, responseTime: '12ms' },
-    database: { status: 'degraded' as any },
-  },
-};
+import { renderWithProviders, screen } from '../../../../testing/render-with-providers';
 
 describe('HealthDashboardComponent', () => {
-  let fixture: ComponentFixture<HealthDashboardComponent>;
+  it('renders API and Database check items with response times', async () => {
+    await setup(mockHealth);
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        HealthDashboardComponent,
-        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
-      ],
-    }).compileComponents();
-
-    TestBed.inject(TranslateService).use('de');
+    expect(screen.getByText('HEALTH.API')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH.DATABASE')).toBeInTheDocument();
+    expect(screen.getByText('12ms')).toBeInTheDocument();
+    expect(screen.getByText('5ms')).toBeInTheDocument();
   });
 
-  it('should create', () => {
-    fixture = TestBed.createComponent(HealthDashboardComponent);
-    fixture.componentRef.setInput('health', mockHealth);
-    fixture.detectChanges();
-    expect(fixture.componentInstance).toBeTruthy();
+  it('shows all operational message when status is ok', async () => {
+    await setup(mockHealth);
+
+    expect(screen.getByText('HEALTH.ALL_OPERATIONAL')).toBeInTheDocument();
   });
 
-  it('renders API and Database check items', () => {
-    fixture = TestBed.createComponent(HealthDashboardComponent);
-    fixture.componentRef.setInput('health', mockHealth);
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement;
-    const items = el.querySelectorAll('li');
-    expect(items.length).toBe(2);
-    expect(items[0].textContent).toContain('API');
-    expect(items[1].textContent).toContain('Datenbank');
+  it('shows degraded message when status is degraded', async () => {
+    await setup(degradedHealth);
+
+    expect(screen.getByText('HEALTH.DEGRADED')).toBeInTheDocument();
   });
 
-  it('shows all operational message when status is ok', () => {
-    fixture = TestBed.createComponent(HealthDashboardComponent);
-    fixture.componentRef.setInput('health', mockHealth);
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('Alle Systeme betriebsbereit');
-  });
+  const mockHealth: HealthResponse = {
+    status: 'ok' as HealthResponse.StatusEnum,
+    checks: {
+      api: { status: 'ok' as any, responseTime: '12ms' },
+      database: { status: 'ok' as any, responseTime: '5ms' },
+    },
+  };
 
-  it('shows degraded message when status is degraded', () => {
-    fixture = TestBed.createComponent(HealthDashboardComponent);
-    fixture.componentRef.setInput('health', degradedHealth);
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('Eingeschränkt');
-  });
+  const degradedHealth: HealthResponse = {
+    status: 'degraded' as HealthResponse.StatusEnum,
+    checks: {
+      api: { status: 'ok' as any, responseTime: '12ms' },
+      database: { status: 'degraded' as any },
+    },
+  };
 
-  it('displays response time when available', () => {
-    fixture = TestBed.createComponent(HealthDashboardComponent);
-    fixture.componentRef.setInput('health', mockHealth);
-    fixture.detectChanges();
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('12ms');
-    expect(el.textContent).toContain('5ms');
-  });
+  async function setup(health: HealthResponse) {
+    return renderWithProviders(HealthDashboardComponent, {
+      componentInputs: { health },
+    });
+  }
 });

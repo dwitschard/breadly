@@ -1,71 +1,45 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
 import { RecipeFormComponent } from './recipe-form.component';
-
-class FakeLoader implements TranslateLoader {
-  getTranslation() {
-    return of({
-      COMMON: { ADD: 'Hinzufügen' },
-      RECIPES: { NAME_LABEL: 'Rezeptname', NAME_PLACEHOLDER: 'Rezeptname' },
-    });
-  }
-}
+import { renderWithProviders, screen, userEvent } from '../../../../testing/render-with-providers';
 
 describe('RecipeFormComponent', () => {
-  let fixture: ComponentFixture<RecipeFormComponent>;
-  let component: RecipeFormComponent;
+  const user = userEvent.setup();
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        RecipeFormComponent,
-        TranslateModule.forRoot({ loader: { provide: TranslateLoader, useClass: FakeLoader } }),
-      ],
-    }).compileComponents();
+  it('submit button is disabled when the input is empty', async () => {
+    await setup();
 
-    TestBed.inject(TranslateService).use('de');
-
-    fixture = TestBed.createComponent(RecipeFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    expect(screen.getByRole('button', { name: 'COMMON.ADD' })).toBeDisabled();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('enables submit button once user types a name', async () => {
+    await setup();
+
+    await user.type(screen.getByRole('textbox', { name: 'RECIPES.NAME_LABEL' }), 'Bread');
+
+    expect(screen.getByRole('button', { name: 'COMMON.ADD' })).toBeEnabled();
   });
 
-  it('renders an input and submit button', () => {
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('input')).toBeTruthy();
-    expect(el.querySelector('button[type="submit"]')).toBeTruthy();
+  it('emits submitRecipe with trimmed name and resets the input', async () => {
+    const submitRecipe = vi.fn();
+    await setup({ submitRecipe });
+
+    await user.type(screen.getByRole('textbox', { name: 'RECIPES.NAME_LABEL' }), '  Bread  ');
+    await user.click(screen.getByRole('button', { name: 'COMMON.ADD' }));
+
+    expect(submitRecipe).toHaveBeenCalledWith({ name: 'Bread' });
+    expect(screen.getByRole('textbox', { name: 'RECIPES.NAME_LABEL' })).toHaveValue('');
   });
 
-  it('submit button is disabled when name is empty', () => {
-    const button: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
-    expect(button.disabled).toBe(true);
+  it('does not emit when the input contains only whitespace', async () => {
+    const submitRecipe = vi.fn();
+    await setup({ submitRecipe });
+
+    await user.type(screen.getByRole('textbox', { name: 'RECIPES.NAME_LABEL' }), '   ');
+    await user.click(screen.getByRole('button', { name: 'COMMON.ADD' }));
+
+    expect(submitRecipe).not.toHaveBeenCalled();
   });
 
-  it('emits submitRecipe with trimmed name on submit', () => {
-    const emitSpy = vi.spyOn(component.submitRecipe, 'emit');
-    component.name.set('  Bread  ');
-    fixture.detectChanges();
-
-    component.onSubmit();
-
-    expect(emitSpy).toHaveBeenCalledWith({ name: 'Bread' });
-  });
-
-  it('resets name after successful submit', () => {
-    component.name.set('Bread');
-    component.onSubmit();
-    expect(component.name()).toBe('');
-  });
-
-  it('does not emit when name is whitespace only', () => {
-    const emitSpy = vi.spyOn(component.submitRecipe, 'emit');
-    component.name.set('   ');
-    component.onSubmit();
-    expect(emitSpy).not.toHaveBeenCalled();
-  });
+  async function setup(on: { submitRecipe?: (dto: { name: string }) => void } = {}) {
+    return renderWithProviders(RecipeFormComponent, { on });
+  }
 });

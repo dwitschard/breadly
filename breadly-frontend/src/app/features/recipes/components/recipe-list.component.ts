@@ -22,7 +22,7 @@ import { Recipe } from '../../../generated/api';
             <span>{{ recipe.name }}</span>
             <button
               type="button"
-              data-testid="recipe-delete-btn"
+              [attr.data-testid]="'recipe-delete-btn-' + recipe._id"
               (click)="deleteRecipe.emit(recipe)"
               class="text-red-600 hover:text-red-800 cursor-pointer"
               [attr.aria-label]="'RECIPES.DELETE_LABEL' | translate: { name: recipe.name }"
