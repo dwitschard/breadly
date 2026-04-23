@@ -65,6 +65,7 @@ output "cognito_hosted_ui_domain" {
 output "cloudfront_url" {
   description = "HTTPS CloudFront URL (e.g. https://xxxxx.cloudfront.net)."
   value       = module.cdn.cloudfront_domain_name
+  sensitive   = true
 }
 
 output "cloudfront_distribution_id" {
