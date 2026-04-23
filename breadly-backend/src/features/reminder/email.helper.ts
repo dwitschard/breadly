@@ -48,6 +48,7 @@ export const sendEmail = async (params: {
       Subject: { Data: params.subject, Charset: 'UTF-8' },
       Body: { Html: { Data: params.htmlBody, Charset: 'UTF-8' } },
     },
+    ...(env.SES_CONFIGURATION_SET ? { ConfigurationSetName: env.SES_CONFIGURATION_SET } : {}),
   });
 
   await getSesClient().send(command);

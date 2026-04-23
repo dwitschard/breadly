@@ -59,6 +59,25 @@ describe('email.helper', () => {
       expect(command.input.Destination.ToAddresses).toEqual(['alice@example.com']);
       expect(command.input.Message.Subject.Data).toBe('Test Subject');
       expect(command.input.Message.Body.Html.Data).toBe('<html>Hello</html>');
+      expect(command.input.ConfigurationSetName).toBeUndefined();
+    });
+
+    it('includes ConfigurationSetName when SES_CONFIGURATION_SET is set', async () => {
+      mockSend.mockResolvedValueOnce({});
+      process.env['SES_CONFIGURATION_SET'] = 'breadly-dev';
+
+      try {
+        await sendEmail({
+          to: 'alice@example.com',
+          subject: 'Test',
+          htmlBody: '<html></html>',
+        });
+
+        const command = mockSend.mock.calls[0][0];
+        expect(command.input.ConfigurationSetName).toBe('breadly-dev');
+      } finally {
+        delete process.env['SES_CONFIGURATION_SET'];
+      }
     });
 
     it('propagates SES errors', async () => {

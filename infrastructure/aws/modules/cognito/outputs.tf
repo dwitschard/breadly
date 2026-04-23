@@ -17,5 +17,10 @@ output "issuer_url" {
 
 output "hosted_ui_domain" {
   description = "Base URL of the Cognito Hosted UI (needed for OIDC logout redirect)."
-  value       = "https://${aws_cognito_user_pool_domain.this.domain}.auth.${var.aws_region}.amazoncognito.com"
+  value       = var.custom_domain != "" ? "https://${var.custom_domain}" : "https://${aws_cognito_user_pool_domain.this[0].domain}.auth.${var.aws_region}.amazoncognito.com"
+}
+
+output "cognito_cloudfront_domain" {
+  description = "CloudFront domain name backing the custom Cognito domain. Empty when using prefix domain."
+  value       = var.custom_domain != "" ? aws_cognito_user_pool_domain.custom[0].cloudfront_distribution : ""
 }

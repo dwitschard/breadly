@@ -1,0 +1,55 @@
+# manage-global.yml
+#
+# Provisions or updates global infrastructure (DNS, ACM, SES).
+# This is a one-time setup workflow, run manually via workflow_dispatch.
+#
+# Jobs
+#   apply     Runs terraform plan/apply against the global root module.
+#
+# Triggers
+#   workflow_dispatch  Manual trigger only.
+#
+# Required secrets/variables — see .github/workflows/README.md.
+#   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID
+#   Variables: AWS_REGION   DOMAIN_NAME   DMARC_RUA_EMAIL
+
+name: Manage Global Infrastructure
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_NAME: breadly
+
+jobs:
+  apply:
+    name: Apply Global Infrastructure
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/global
+          environment: global
+          session_name: github-global-infra
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Set global Terraform variables
+        run: |
+          echo "TF_VAR_domain_name=${{ vars.DOMAIN_NAME }}" >> "$GITHUB_ENV"
+          echo "TF_VAR_dmarc_rua_email=${{ vars.DMARC_RUA_EMAIL }}" >> "$GITHUB_ENV"
+
+      - name: Terraform apply
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/global
+          workspace: default

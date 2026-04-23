@@ -7,6 +7,30 @@
 # No Cognito, no Lambda — those are per-branch resources managed by preview/deploy.
 # Frontend files are uploaded by the workflow via `aws s3 sync`, not Terraform.
 
+# ---------------------------------------------------------------------------
+# SSM — read global outputs
+# ---------------------------------------------------------------------------
+
+data "aws_ssm_parameter" "hosted_zone_id" {
+  name = "/${var.project_name}/global/hosted-zone-id"
+}
+
+data "aws_ssm_parameter" "certificate_arn" {
+  name = "/${var.project_name}/global/certificate-arn"
+}
+
+data "aws_ssm_parameter" "app_domain" {
+  name = "/${var.project_name}/global/app-domain"
+}
+
+locals {
+  preview_domain = "preview.${data.aws_ssm_parameter.app_domain.value}"
+}
+
+# ---------------------------------------------------------------------------
+# API Gateway
+# ---------------------------------------------------------------------------
+
 resource "aws_apigatewayv2_api" "this" {
   name          = "${var.project_name}-preview"
   protocol_type = "HTTP"
@@ -85,7 +109,39 @@ module "cdn" {
   preview_bucket_arn                  = aws_s3_bucket.preview_frontend.arn
   preview_bucket_regional_domain_name = aws_s3_bucket.preview_frontend.bucket_regional_domain_name
 
+  # Custom domain configuration.
+  domain_aliases      = [local.preview_domain]
+  acm_certificate_arn = data.aws_ssm_parameter.certificate_arn.value
+
   tags = {
     Component = "preview-cdn"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Route53 — DNS records for preview custom domain
+# ---------------------------------------------------------------------------
+
+resource "aws_route53_record" "preview_a" {
+  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
+  name    = local.preview_domain
+  type    = "A"
+
+  alias {
+    name                   = module.cdn.cloudfront_raw_domain_name
+    zone_id                = module.cdn.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "preview_aaaa" {
+  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
+  name    = local.preview_domain
+  type    = "AAAA"
+
+  alias {
+    name                   = module.cdn.cloudfront_raw_domain_name
+    zone_id                = module.cdn.cloudfront_hosted_zone_id
+    evaluate_target_health = false
   }
 }

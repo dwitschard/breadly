@@ -22,5 +22,6 @@ export const env = {
   SCHEDULER_ROLE_ARN: optional('SCHEDULER_ROLE_ARN', ''),
   API_GATEWAY_ENDPOINT: optional('API_GATEWAY_ENDPOINT', ''),
   SES_SENDER_EMAIL: optional('SES_SENDER_EMAIL', 'floete-argon.8h@icloud.com'),
+  get SES_CONFIGURATION_SET(): string | undefined { return process.env['SES_CONFIGURATION_SET']; },
   APP_URL: optional('APP_URL', 'http://localhost:4200'),
 };

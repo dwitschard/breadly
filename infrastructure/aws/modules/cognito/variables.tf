@@ -27,3 +27,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "custom_domain" {
+  description = "Custom domain for the Cognito Hosted UI (e.g. auth.example.com). When empty, uses the prefix domain."
+  type        = string
+  default     = ""
+}
+
+variable "certificate_arn" {
+  description = "ACM certificate ARN for the custom domain. Required when custom_domain is set."
+  type        = string
+  default     = ""
+}

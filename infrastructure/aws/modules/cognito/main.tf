@@ -80,8 +80,19 @@ resource "aws_cognito_user_pool_client" "this" {
 
 # Cognito Hosted UI domain — required to expose the /oauth2/authorize and
 # /oauth2/token endpoints used by the PKCE authorization code flow.
-# Resulting domain: <var.name>.auth.<region>.amazoncognito.com
+# When custom_domain is set, uses the custom domain with an ACM certificate.
+# Otherwise, uses the prefix domain: <var.name>.auth.<region>.amazoncognito.com
 resource "aws_cognito_user_pool_domain" "this" {
+  count = var.custom_domain != "" ? 0 : 1
+
   domain       = var.name
   user_pool_id = aws_cognito_user_pool.this.id
+}
+
+resource "aws_cognito_user_pool_domain" "custom" {
+  count = var.custom_domain != "" ? 1 : 0
+
+  domain          = var.custom_domain
+  certificate_arn = var.certificate_arn
+  user_pool_id    = aws_cognito_user_pool.this.id
 }

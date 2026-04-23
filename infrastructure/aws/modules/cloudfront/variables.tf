@@ -57,3 +57,15 @@ variable "preview_bucket_regional_domain_name" {
   type        = string
   default     = ""
 }
+
+variable "domain_aliases" {
+  description = "Custom domain aliases for the CloudFront distribution. When non-empty, the ACM certificate is used."
+  type        = list(string)
+  default     = []
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of the ACM certificate for custom domain aliases. Required when domain_aliases is non-empty."
+  type        = string
+  default     = ""
+}

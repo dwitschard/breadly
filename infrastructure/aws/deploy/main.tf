@@ -23,15 +23,62 @@
 #   This is a valid DAG with no cycle.
 
 # ---------------------------------------------------------------------------
+# SSM — read global outputs
+# ---------------------------------------------------------------------------
+
+data "aws_ssm_parameter" "hosted_zone_id" {
+  name = "/${var.project_name}/global/hosted-zone-id"
+}
+
+data "aws_ssm_parameter" "certificate_arn" {
+  name = "/${var.project_name}/global/certificate-arn"
+}
+
+data "aws_ssm_parameter" "ses_send_policy_arn" {
+  name = "/${var.project_name}/global/ses-send-policy-arn"
+}
+
+data "aws_ssm_parameter" "app_domain" {
+  name = "/${var.project_name}/global/app-domain"
+}
+
+data "aws_ssm_parameter" "domain_name" {
+  name = "/${var.project_name}/global/domain-name"
+}
+
+data "aws_ssm_parameter" "ses_config_set" {
+  name = "/${var.project_name}/global/ses-config-set-${terraform.workspace == "prod" ? "prod" : "dev"}"
+}
+
+# ---------------------------------------------------------------------------
 # Locals
 # ---------------------------------------------------------------------------
 
 locals {
-  name_prefix    = "${var.project_name}-${terraform.workspace}"
-  cloudfront_url = module.cdn.cloudfront_domain_name
+  name_prefix = "${var.project_name}-${terraform.workspace}"
 
-  # Dev includes localhost for local development; prod only has the CloudFront URL.
+  app_domain = data.aws_ssm_parameter.app_domain.value
+  domain_name = data.aws_ssm_parameter.domain_name.value
+
+  # Workspace-based domain mapping
+  env_domain = terraform.workspace == "prod" ? local.app_domain : "${terraform.workspace}.${local.app_domain}"
+
+  # Custom domain aliases for CloudFront
+  domain_aliases = [local.env_domain]
+
+  cloudfront_url = "https://${local.env_domain}"
+
+  # Dev includes localhost for local development; prod only has the custom domain URL.
   frontend_urls = terraform.workspace == "dev" ? "http://localhost:4200,${local.cloudfront_url}" : local.cloudfront_url
+
+  # SES sender email per environment
+  ses_sender_email       = "noreply@${local.env_domain}"
+  ses_configuration_set  = data.aws_ssm_parameter.ses_config_set.value
+
+  # Cognito custom domain (prod only)
+  auth_domain      = "auth.${local.domain_name}"
+  cognito_custom_domain  = terraform.workspace == "prod" ? local.auth_domain : ""
+  cognito_certificate_arn = terraform.workspace == "prod" ? data.aws_ssm_parameter.certificate_arn.value : ""
 }
 
 # ---------------------------------------------------------------------------
@@ -57,9 +104,11 @@ module "frontend" {
 module "cognito" {
   source = "../modules/cognito"
 
-  name          = local.name_prefix
-  aws_region    = var.aws_region
-  frontend_urls = local.frontend_urls
+  name            = local.name_prefix
+  aws_region      = var.aws_region
+  frontend_urls   = local.frontend_urls
+  custom_domain   = local.cognito_custom_domain
+  certificate_arn = local.cognito_certificate_arn
 
   tags = {
     Component = "backend"
@@ -78,13 +127,14 @@ module "backend" {
     SCHEDULER_GROUP_NAME  = module.scheduler.schedule_group_name
     SCHEDULER_ROLE_ARN    = module.scheduler.scheduler_role_arn
     API_GATEWAY_ENDPOINT  = module.api_gateway.api_arn
-    SES_SENDER_EMAIL      = var.ses_sender_email
+    SES_SENDER_EMAIL      = local.ses_sender_email
+    SES_CONFIGURATION_SET = local.ses_configuration_set
     APP_URL               = local.cloudfront_url
     ENV_NAME              = terraform.workspace
   }
 
   extra_policy_arns = {
-    ses       = module.ses.ses_send_policy_arn,
+    ses       = data.aws_ssm_parameter.ses_send_policy_arn.value,
     scheduler = module.scheduler.lambda_manage_schedules_policy_arn,
   }
 
@@ -149,22 +199,7 @@ module "scheduler" {
 }
 
 # ---------------------------------------------------------------------------
-# SES — Email sending identity and permissions
-# ---------------------------------------------------------------------------
-
-module "ses" {
-  source = "../modules/ses"
-
-  name         = local.name_prefix
-  sender_email = var.ses_sender_email
-
-  tags = {
-    Component = "ses"
-  }
-}
-
-# ---------------------------------------------------------------------------
-# CDN — CloudFront distribution
+# CDN — CloudFront distribution with custom domain
 # ---------------------------------------------------------------------------
 
 module "cdn" {
@@ -178,7 +213,58 @@ module "cdn" {
   bucket_arn                  = module.frontend.bucket_arn
   bucket_regional_domain_name = module.frontend.bucket_regional_domain_name
 
+  # Custom domain configuration.
+  domain_aliases      = local.domain_aliases
+  acm_certificate_arn = data.aws_ssm_parameter.certificate_arn.value
+
   tags = {
     Component = "cdn"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Route53 — DNS records for custom domain aliases
+# ---------------------------------------------------------------------------
+
+resource "aws_route53_record" "app_a" {
+  for_each = toset(local.domain_aliases)
+
+  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
+  name    = each.value
+  type    = "A"
+
+  alias {
+    name                   = module.cdn.cloudfront_raw_domain_name
+    zone_id                = module.cdn.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "app_aaaa" {
+  for_each = toset(local.domain_aliases)
+
+  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
+  name    = each.value
+  type    = "AAAA"
+
+  alias {
+    name                   = module.cdn.cloudfront_raw_domain_name
+    zone_id                = module.cdn.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# Cognito custom domain DNS record (prod only — A record only, no AAAA)
+resource "aws_route53_record" "cognito_a" {
+  count = terraform.workspace == "prod" ? 1 : 0
+
+  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
+  name    = local.auth_domain
+  type    = "A"
+
+  alias {
+    name                   = module.cognito.cognito_cloudfront_domain
+    zone_id                = "Z2FDTNDATAQYW2" # Global CloudFront hosted zone ID
+    evaluate_target_health = false
   }
 }

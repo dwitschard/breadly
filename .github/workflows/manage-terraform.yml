@@ -30,6 +30,7 @@ on:
           - dev
           - prod
           - preview
+          - global
       action:
         description: "Action to perform on the bootstrap stack"
         required: true

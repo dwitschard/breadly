@@ -102,6 +102,7 @@ resource "aws_cloudfront_distribution" "this" {
   is_ipv6_enabled     = true
   default_root_object = var.preview_only ? null : "index.html"
   price_class         = "PriceClass_100"
+  aliases             = var.domain_aliases
 
   # Main S3 origin — standard mode only.
   dynamic "origin" {
@@ -243,7 +244,10 @@ resource "aws_cloudfront_distribution" "this" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = length(var.domain_aliases) == 0
+    acm_certificate_arn            = length(var.domain_aliases) > 0 ? var.acm_certificate_arn : null
+    ssl_support_method             = length(var.domain_aliases) > 0 ? "sni-only" : null
+    minimum_protocol_version       = length(var.domain_aliases) > 0 ? "TLSv1.2_2021" : null
   }
 
   tags = var.tags
