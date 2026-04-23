@@ -227,10 +227,8 @@ module "cdn" {
 # ---------------------------------------------------------------------------
 
 resource "aws_route53_record" "app_a" {
-  for_each = toset(local.domain_aliases)
-
   zone_id = data.aws_ssm_parameter.hosted_zone_id.value
-  name    = each.value
+  name    = local.env_domain
   type    = "A"
 
   alias {
@@ -241,10 +239,8 @@ resource "aws_route53_record" "app_a" {
 }
 
 resource "aws_route53_record" "app_aaaa" {
-  for_each = toset(local.domain_aliases)
-
   zone_id = data.aws_ssm_parameter.hosted_zone_id.value
-  name    = each.value
+  name    = local.env_domain
   type    = "AAAA"
 
   alias {
