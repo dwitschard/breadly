@@ -9,6 +9,7 @@
 
 - [ ] Domain Integration
   - [ ] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
+  - [ ] Create SES Email Identities that are verified to receive emails -> icloud-email addresses
   - 
 
 - [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.
