@@ -8,8 +8,10 @@
 ## Next Tasks
 
 - [ ] Domain Integration
-  - [ ] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
-  - 
+  - [ ] URL of dev-cognito still wrong -> `dev.auth.appdock.ch`
+  - [ ] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.appdock.ch` and share between all apps
+  - [ ] Create SES Email Identities that are verified to receive emails -> icloud-email addresses
+  
 
 - [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.
   - [ ] It should call API's of the Domain Backend(s) at defined triggers (scheduled)

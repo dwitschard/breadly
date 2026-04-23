@@ -28,6 +28,7 @@ output "preview_bucket_regional_domain_name" {
 output "cloudfront_url" {
   description = "HTTPS URL of the preview CloudFront distribution (custom domain)."
   value       = "https://${local.preview_domain}"
+  sensitive   = true
 }
 
 output "cloudfront_distribution_id" {
