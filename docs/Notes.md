@@ -13,6 +13,7 @@
   - [~] Only 3 Cognitos should be running -> prod, dev, preview
   - [~] Cognito should run on own domains
   - [ ] Fix Teardown of Environments using Domains
+  - [ ] Fix Feature to have a username
   - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
   - [ ] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
 

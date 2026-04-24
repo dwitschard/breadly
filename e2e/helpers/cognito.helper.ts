@@ -63,7 +63,7 @@ export function buildStorageState(
     { name: 'access_token', value: tokens.accessToken },
     { name: 'id_token', value: tokens.idToken },
     { name: 'expires_at', value: String(expiresAt) },
-    { name: 'granted_scopes', value: 'openid email' },
+    { name: 'granted_scopes', value: 'openid email profile' },
     { name: 'access_token_stored_at', value: String(Date.now()) },
     { name: 'id_token_stored_at', value: String(Date.now()) },
     { name: 'id_token_expires_at', value: String(expiresAt) },

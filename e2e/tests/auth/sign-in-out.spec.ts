@@ -19,7 +19,8 @@ test.describe('Sign in and out', () => {
 
     await page.goto('recipes');
 
-    await page.waitForURL('**/login**');
+    // Wait for the Cognito Hosted UI form to appear (ensures redirect completed)
+    await page.locator('input[id="signInFormUsername"]:visible').waitFor({ state: 'visible', timeout: 15_000 });
 
     // Verify the Cognito Hosted UI is on the correct auth domain
     const currentUrl = page.url();

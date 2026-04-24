@@ -10,7 +10,7 @@ test.describe('View profile', () => {
     await profile.expectLoaded();
 
     await profile.expectUserId();
-    // await profile.expectDisplayName('Demo User');
+    await profile.expectDisplayName('Demo User');
     await profile.expectEmail('demo@breadly.app');
   });
 });
