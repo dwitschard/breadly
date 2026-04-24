@@ -105,6 +105,17 @@ describe('requireAuth middleware', () => {
     });
   });
 
+  it('attaches the raw access token to req.accessToken', () => {
+    const claims: CognitoClaims = { sub: 'user-123' };
+    const token = makeToken(claims);
+    const { req, res, next } = makeReqRes(`Bearer ${token}`);
+
+    requireAuth()(req as Request, res as unknown as Response, next as unknown as NextFunction);
+
+    expect(next.called).toBe(true);
+    expect((req as Request).accessToken).toBe(token);
+  });
+
   it('handles base64url padding correctly (payload length not divisible by 4)', () => {
     // 'sub' value chosen so payload length % 4 != 0 to exercise the padding branch
     const claims: CognitoClaims = { sub: 'u1' };

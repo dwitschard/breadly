@@ -226,6 +226,7 @@ jobs:
           fi
 
       - name: Write job summary
+        if: inputs.post-pr-comment
         run: |
           PREVIEW_URL="${{ steps.gw.outputs.cloudfront_url }}/preview/${{ inputs.slug }}/"
           echo "## Preview Environment" >> "$GITHUB_STEP_SUMMARY"

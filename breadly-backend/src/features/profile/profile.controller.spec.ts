@@ -20,7 +20,32 @@ const minimalClaims = {
   'cognito:groups': [],
 };
 
+const userInfoResponse = {
+  sub: 'user-abc',
+  email: 'bob@example.com',
+  email_verified: 'true',
+};
+
 describe('GET /api/profile', () => {
+  const originalCognitoIssuer = process.env['COGNITO_ISSUER'];
+
+  beforeEach(() => {
+    process.env['COGNITO_ISSUER'] = 'https://cognito.example.com';
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => userInfoResponse,
+    } as Response);
+  });
+
+  afterEach(() => {
+    if (originalCognitoIssuer !== undefined) {
+      process.env['COGNITO_ISSUER'] = originalCognitoIssuer;
+    } else {
+      delete process.env['COGNITO_ISSUER'];
+    }
+    jest.restoreAllMocks();
+  });
+
   it('returns 401 when no Authorization header is provided', async () => {
     const res = await request.get('/api/profile');
     expect(res.status).toBe(401);
@@ -32,16 +57,45 @@ describe('GET /api/profile', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns the whitelisted profile fields for a valid token', async () => {
+  it('returns profile with email from UserInfo endpoint', async () => {
+    const token = makeToken({ sub: 'user-abc', 'cognito:groups': [] });
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        sub: 'user-abc',
+        email: 'real@example.com',
+        email_verified: 'true',
+        name: 'Bob Builder',
+      }),
+    } as Response);
+
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe('real@example.com');
+    expect(res.body.emailVerified).toBe(true);
+    expect(res.body.name).toBe('Bob Builder');
+  });
+
+  it('falls back to JWT claims when UserInfo fails', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 401,
+    } as Response);
+
     const token = makeToken(minimalClaims);
     const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      sub: 'user-abc',
-      email: 'bob@example.com',
-      emailVerified: true,
-      roles: [],
-    });
+    expect(res.body.email).toBe('bob@example.com');
+    expect(res.body.emailVerified).toBe(true);
+  });
+
+  it('calls Cognito UserInfo with the access token', async () => {
+    const token = makeToken(minimalClaims);
+    await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://cognito.example.com/oauth2/userInfo',
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
   });
 
   it('maps cognito:groups to roles', async () => {
@@ -51,14 +105,19 @@ describe('GET /api/profile', () => {
     expect(res.body.roles).toEqual(['admin', 'editor']);
   });
 
-  it('includes optional fields when present in claims', async () => {
-    const token = makeToken({
-      ...minimalClaims,
-      name: 'Bob Builder',
-      given_name: 'Bob',
-      family_name: 'Builder',
-      picture: 'https://example.com/pic.jpg',
-    });
+  it('includes optional fields when present in UserInfo', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...userInfoResponse,
+        name: 'Bob Builder',
+        given_name: 'Bob',
+        family_name: 'Builder',
+        picture: 'https://example.com/pic.jpg',
+      }),
+    } as Response);
+
+    const token = makeToken(minimalClaims);
     const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
@@ -69,7 +128,12 @@ describe('GET /api/profile', () => {
     });
   });
 
-  it('omits optional fields when absent from claims', async () => {
+  it('omits optional fields when absent from both UserInfo and claims', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ sub: 'user-abc', email: 'bob@example.com', email_verified: 'true' }),
+    } as Response);
+
     const token = makeToken(minimalClaims);
     const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -79,7 +143,12 @@ describe('GET /api/profile', () => {
     expect(res.body).not.toHaveProperty('picture');
   });
 
-  it('defaults emailVerified to false when claim is absent', async () => {
+  it('defaults emailVerified to false when absent from both', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ sub: 'user-abc' }),
+    } as Response);
+
     const withoutVerified = Object.fromEntries(
       Object.entries(minimalClaims).filter(([k]) => k !== 'email_verified'),
     );
