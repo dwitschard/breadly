@@ -3,6 +3,7 @@
 output "preview_url" {
   description = "Full HTTPS URL of the preview environment frontend."
   value       = "${var.cloudfront_url}/preview/${var.branch_slug}/"
+  sensitive   = true
 }
 
 output "cognito_user_pool_id" {

@@ -23,6 +23,7 @@ output "cognito_user_pool_client_id" {
 output "cognito_hosted_ui_domain" {
   description = "Passed through from the cognito module for operator convenience."
   value       = var.cognito_hosted_ui_domain
+  sensitive   = true
 }
 
 output "api_execution_arn" {

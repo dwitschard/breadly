@@ -49,6 +49,7 @@ output "cognito_client_id" {
 output "cognito_hosted_ui_domain" {
   description = "Hosted UI base URL for the shared preview Cognito pool."
   value       = module.cognito.hosted_ui_domain
+  sensitive   = true
 }
 
 output "cognito_user_pool_id" {
