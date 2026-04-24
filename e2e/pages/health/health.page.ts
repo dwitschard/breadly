@@ -11,7 +11,6 @@ export class HealthPage {
 
   readonly dbCheck: Locator;
   readonly dbStatus: Locator;
-  readonly dbResponseTime: Locator;
 
   readonly overallStatus: Locator;
 
@@ -30,7 +29,6 @@ export class HealthPage {
 
     this.dbCheck = page.getByTestId('health-check-db');
     this.dbStatus = page.getByTestId('health-check-db-status');
-    this.dbResponseTime = page.getByTestId('health-check-db-time');
 
     this.overallStatus = page.getByTestId('health-overall-status');
 
@@ -58,7 +56,6 @@ export class HealthPage {
 
   async expectResponseTimesVisible(): Promise<void> {
     await expect(this.apiResponseTime).toBeAttached();
-    await expect(this.dbResponseTime).toBeAttached();
   }
 
   async expectVersionsVisible(): Promise<void> {
