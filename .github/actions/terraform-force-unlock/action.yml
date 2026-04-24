@@ -1,0 +1,51 @@
+# terraform-force-unlock/action.yml
+#
+# Composite action — releases stale DynamoDB state locks left behind by
+# crashed or cancelled CI runners.
+#
+# Attempts a lightweight `terraform plan` with a short lock timeout.
+# If the plan fails with "Error acquiring the state lock", extracts the
+# lock ID and runs `terraform force-unlock`.
+#
+# Usage: add this step before any `terraform destroy` or `terraform apply`
+# that runs outside the terraform-action composite (which has its own
+# built-in lock release).
+
+name: Terraform Force Unlock
+description: Releases stale Terraform state locks before a destructive operation.
+
+inputs:
+  working_dir:
+    description: Path to the Terraform root module.
+    required: true
+  extra_tf_vars:
+    description: Additional -var flags as a single string (must match the root module's required vars).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Release stale state lock
+      shell: bash
+      working-directory: ${{ inputs.working_dir }}
+      run: |
+        set +e
+        OUTPUT=$(terraform plan -lock-timeout=10s -input=false ${{ inputs.extra_tf_vars }} 2>&1)
+        EXIT=$?
+        set -e
+
+        if [ $EXIT -ne 0 ] && echo "$OUTPUT" | grep -q "Error acquiring the state lock"; then
+          LOCK_ID=$(echo "$OUTPUT" | grep -oP 'ID:\s+\K[0-9a-f-]+')
+          if [ -n "$LOCK_ID" ]; then
+            echo "::warning::Releasing stale state lock: $LOCK_ID"
+            terraform force-unlock -force "$LOCK_ID"
+          else
+            echo "::error::State lock detected but could not extract lock ID"
+            echo "$OUTPUT"
+            exit 1
+          fi
+        elif [ $EXIT -ne 0 ]; then
+          # Not a lock error — ignore; the real command will surface it.
+          echo "Plan failed (not a lock error) — continuing."
+        fi

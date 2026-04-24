@@ -161,12 +161,20 @@ jobs:
           mkdir -p /tmp/empty-dist
           echo "TF_VAR_frontend_dist_path=/tmp/empty-dist" >> "$GITHUB_ENV"
 
+      - name: Select workspace
+        working-directory: infrastructure/aws/deploy
+        shell: bash
+        run: terraform workspace select ${{ env.TARGET_ENV }}
+
+      - name: Release stale state lock
+        uses: ./.github/actions/terraform-force-unlock
+        with:
+          working_dir: infrastructure/aws/deploy
+
       - name: Terraform destroy (application)
         working-directory: infrastructure/aws/deploy
         shell: bash
-        run: |
-          terraform workspace select ${{ env.TARGET_ENV }}
-          terraform destroy -auto-approve
+        run: terraform destroy -auto-approve
 
   # ---------------------------------------------------------------------------
   # Teardown Preview Gateway (preview only, after all branch stacks)
@@ -197,9 +205,17 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
+      - name: Select workspace
+        working-directory: infrastructure/aws/preview/gateway
+        shell: bash
+        run: terraform workspace select preview
+
+      - name: Release stale state lock
+        uses: ./.github/actions/terraform-force-unlock
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+
       - name: Terraform destroy (shared gateway)
         working-directory: infrastructure/aws/preview/gateway
         shell: bash
-        run: |
-          terraform workspace select preview
-          terraform destroy -auto-approve
+        run: terraform destroy -auto-approve

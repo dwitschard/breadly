@@ -43,31 +43,12 @@ runs:
       run: echo "Update Terraform state if needed"
 
     # Release stale DynamoDB state locks left behind by crashed CI runners.
-    # Attempts a plan with a short lock timeout; if it fails with a stale lock,
-    # extracts the lock ID and force-unlocks before the real plan runs.
     - name: Release stale state lock
       if: inputs.local_backend == 'false'
-      shell: bash
-      working-directory: ${{ inputs.working_dir }}
-      run: |
-        set +e
-        OUTPUT=$(terraform plan -lock-timeout=10s -input=false ${{ inputs.extra_tf_vars }} 2>&1)
-        EXIT=$?
-        set -e
-        if [ $EXIT -ne 0 ] && echo "$OUTPUT" | grep -q "Error acquiring the state lock"; then
-          LOCK_ID=$(echo "$OUTPUT" | grep -oP 'ID:\s+\K[0-9a-f-]+')
-          if [ -n "$LOCK_ID" ]; then
-            echo "::warning::Releasing stale state lock: $LOCK_ID"
-            terraform force-unlock -force "$LOCK_ID"
-          else
-            echo "::error::State lock detected but could not extract lock ID"
-            echo "$OUTPUT"
-            exit 1
-          fi
-        elif [ $EXIT -ne 0 ]; then
-          # Not a lock error — let the real plan step handle it
-          :
-        fi
+      uses: ./.github/actions/terraform-force-unlock
+      with:
+        working_dir: ${{ inputs.working_dir }}
+        extra_tf_vars: ${{ inputs.extra_tf_vars }}
 
     # -detailed-exitcode:
     #   0 → no changes  → apply is skipped

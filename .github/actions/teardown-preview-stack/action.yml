@@ -96,6 +96,12 @@ runs:
         fi
         echo "TF_VAR_cloudfront_url=https://placeholder.cloudfront.net" >> "$GITHUB_ENV"
 
+    - name: Release stale state lock
+      if: steps.workspace.outputs.exists == 'true'
+      uses: ./.github/actions/terraform-force-unlock
+      with:
+        working_dir: infrastructure/aws/preview/deploy
+
     - name: Terraform destroy (branch stack)
       if: steps.workspace.outputs.exists == 'true'
       shell: bash
