@@ -7,16 +7,17 @@ output "preview_url" {
 }
 
 output "cognito_user_pool_id" {
-  description = "ID of the per-branch Cognito User Pool."
-  value       = module.cognito.user_pool_id
+  description = "ID of the shared preview Cognito User Pool."
+  value       = data.terraform_remote_state.gateway.outputs.cognito_user_pool_id
 }
 
 output "cognito_user_pool_client_id" {
-  description = "Client ID of the per-branch Cognito User Pool app client."
-  value       = module.cognito.client_id
+  description = "Client ID of the shared preview Cognito User Pool app client."
+  value       = data.terraform_remote_state.gateway.outputs.cognito_client_id
 }
 
 output "cognito_hosted_ui_domain" {
-  description = "Base URL of the per-branch Cognito Hosted UI."
-  value       = module.cognito.hosted_ui_domain
+  description = "Base URL of the shared preview Cognito Hosted UI."
+  value       = data.terraform_remote_state.gateway.outputs.cognito_hosted_ui_domain
+  sensitive   = true
 }

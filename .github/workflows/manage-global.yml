@@ -17,6 +17,10 @@ name: Manage Global Infrastructure
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/aws/global/**'
 
 env:
   PROJECT_NAME: breadly
