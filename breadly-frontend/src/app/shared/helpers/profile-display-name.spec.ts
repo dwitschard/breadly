@@ -19,23 +19,23 @@ describe('profileDisplayName', () => {
   });
 
   it('falls back to givenName when name is undefined', () => {
-    const profile: Profile = {
+    const profile = {
       sub: '1',
       email: 'a@b.com',
       emailVerified: true,
       givenName: 'Alice',
       roles: [],
-    };
+    } as unknown as Profile;
     expect(profileDisplayName(profile)).toBe('Alice');
   });
 
   it('falls back to email when both name and givenName are undefined', () => {
-    const profile: Profile = {
+    const profile = {
       sub: '1',
       email: 'a@b.com',
       emailVerified: true,
       roles: [],
-    };
+    } as unknown as Profile;
     expect(profileDisplayName(profile)).toBe('a@b.com');
   });
 

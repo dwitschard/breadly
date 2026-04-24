@@ -8,6 +8,7 @@ const mockProfile: Profile = {
   sub: 'user-1',
   email: 'alice@example.com',
   emailVerified: true,
+  name: 'Alice',
   roles: ['admin'],
 };
 

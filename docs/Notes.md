@@ -8,16 +8,17 @@
 ## Next Tasks
 
 ## ToDo
+- [ ] Fix Playwright Test Setup with Name Claim
 - [ ] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
   - [ ] Verify Teardown works properly now
-- [ ] Sign Up Form needs to have a Username Field
+- [~] Sign Up Form needs to have a Username Field
 
 ### Next
 - [ ] Domain Integration
   - [~] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
   - [~] Only 3 Cognitos should be running -> prod, dev, preview
   - [~] Cognito should run on own domains
-  - [ ] Fix Users to have a username -> when signing up
+  - [~] Fix Users to have a username -> when signing up
   - [ ] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
 
 

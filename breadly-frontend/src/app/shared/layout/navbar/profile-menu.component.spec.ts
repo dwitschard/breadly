@@ -77,7 +77,7 @@ describe('ProfileMenuComponent', () => {
 
     it('falls back to givenName when name is absent', async () => {
       await setup({
-        profile: { ...mockProfile, name: undefined, givenName: 'Ali' },
+        profile: { ...mockProfile, name: undefined as unknown as string, givenName: 'Ali' },
         isLoggedIn: true,
       });
 

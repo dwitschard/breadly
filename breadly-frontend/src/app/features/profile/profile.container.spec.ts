@@ -15,7 +15,7 @@ describe('ProfileContainerComponent', () => {
   it('shows profile data when a profile is provided', async () => {
     await setup({ profile: mockProfile });
 
-    expect(screen.getByTestId('profile-display-name')).toHaveTextContent('alice@example.com');
+    expect(screen.getByTestId('profile-display-name')).toHaveTextContent('Alice');
     expect(screen.getByTestId('profile-user-id')).toHaveTextContent('user-1');
   });
 
@@ -43,6 +43,7 @@ describe('ProfileContainerComponent', () => {
     sub: 'user-1',
     email: 'alice@example.com',
     emailVerified: true,
+    name: 'Alice',
     roles: [],
   };
 
