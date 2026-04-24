@@ -21,6 +21,19 @@ test.describe('Sign in and out', () => {
 
     await page.waitForURL('**/login**');
 
+    // Verify the Cognito Hosted UI is on the correct auth domain
+    const currentUrl = page.url();
+    const baseUrl = process.env['E2E_BASE_URL'] ?? '';
+    let expectedAuthDomain: string;
+    if (baseUrl.includes('preview')) {
+      expectedAuthDomain = 'preview.auth.appdock.ch';
+    } else if (baseUrl.includes('dev.')) {
+      expectedAuthDomain = 'dev.auth.appdock.ch';
+    } else {
+      expectedAuthDomain = 'auth.appdock.ch';
+    }
+    expect(currentUrl).toContain(expectedAuthDomain);
+
     const loginPage = new LoginPage(page);
     await loginPage.fillCognitoCredentials(username, password);
     await loginPage.expectLoggedIn();

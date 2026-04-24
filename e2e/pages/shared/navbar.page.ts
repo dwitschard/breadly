@@ -74,4 +74,9 @@ export class NavbarPage {
     await this.openProfileMenu();
     await expect(this.healthButton).toBeVisible();
   }
+
+  async expectDisplayName(name: string): Promise<void> {
+    await this.openProfileMenu();
+    await expect(this.displayName).toContainText(name);
+  }
 }

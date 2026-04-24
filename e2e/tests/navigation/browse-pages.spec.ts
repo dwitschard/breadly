@@ -14,6 +14,8 @@ test.describe('Browse pages', () => {
     await navbar.navigateToRecipes();
     await expect(page.getByTestId('recipes-title')).toBeVisible();
 
+    await navbar.expectDisplayName('Demo User');
+
     await navbar.navigateToProfile();
     await expect(page.getByTestId('profile-title')).toBeVisible();
 

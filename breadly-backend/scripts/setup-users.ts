@@ -38,6 +38,7 @@ import {
   AdminSetUserPasswordCommand,
   AdminAddUserToGroupCommand,
   AdminListGroupsForUserCommand,
+  AdminUpdateUserAttributesCommand,
   CreateGroupCommand,
   GetGroupCommand,
   MessageActionType,
@@ -69,7 +70,7 @@ const SETUP_CONFIG: SetupConfig = {
     description: role.description,
   })),
   users: [
-    { email: 'admin@breadly.app', description: 'Application admin', groups: [Roles.ADMIN.name] },
+    { email: 'admin@breadly.app', name: 'Admin User', description: 'Application admin', groups: [Roles.ADMIN.name] },
   ],
 };
 
@@ -87,6 +88,8 @@ interface GroupDefinition {
 interface UserDefinition {
   /** Cognito username — must match the email used in Terraform var.admin_email. */
   email: string;
+  /** Display name stored as the Cognito `name` standard attribute. */
+  name: string;
   /** Human-readable label shown during the setup prompts. */
   description: string;
   /** Names of groups (from SetupConfig.groups) this user must belong to. */
@@ -310,6 +313,7 @@ async function setupUser(
         UserAttributes: [
           { Name: 'email', Value: user.email },
           { Name: 'email_verified', Value: 'true' },
+          { Name: 'name', Value: user.name },
         ],
       }),
     );
@@ -332,6 +336,15 @@ async function setupUser(
   );
 
   console.log(`  Done — account is now active and can log in.`);
+
+  // Ensure the display name is up to date (handles pre-existing users).
+  await client.send(
+    new AdminUpdateUserAttributesCommand({
+      UserPoolId: userPoolId,
+      Username: user.email,
+      UserAttributes: [{ Name: 'name', Value: user.name }],
+    }),
+  );
 
   // Always sync group memberships after password setup.
   await syncUserGroups(client, userPoolId, user);

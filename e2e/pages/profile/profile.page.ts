@@ -40,4 +40,8 @@ export class ProfilePage {
   async expectLoaded(): Promise<void> {
     await expect(this.heading).toBeVisible();
   }
+
+  async expectDisplayName(name: string): Promise<void> {
+    await expect(this.displayName).toContainText(name);
+  }
 }

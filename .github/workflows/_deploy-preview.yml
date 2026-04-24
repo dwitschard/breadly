@@ -175,11 +175,13 @@ jobs:
         run: |
           USER_POOL_ID="${{ steps.cognito.outputs.user_pool_id }}"
 
-          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --message-action SUPPRESS || true
+          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --message-action SUPPRESS --user-attributes Name=name,Value="Demo User" Name=email,Value="demo@breadly.app" Name=email_verified,Value=true || true
+          aws cognito-idp admin-update-user-attributes --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --user-attributes Name=name,Value="Demo User"
           aws cognito-idp admin-set-user-password --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --password "${{ secrets.PREVIEW_DEMO_PASSWORD }}" --permanent
           aws cognito-idp admin-add-user-to-group --user-pool-id "$USER_POOL_ID" --username "demo@breadly.app" --group-name "USER"
 
-          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --message-action SUPPRESS || true
+          aws cognito-idp admin-create-user --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --message-action SUPPRESS --user-attributes Name=name,Value="Admin User" Name=email,Value="admin@breadly.app" Name=email_verified,Value=true || true
+          aws cognito-idp admin-update-user-attributes --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --user-attributes Name=name,Value="Admin User"
           aws cognito-idp admin-set-user-password --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" --permanent
           aws cognito-idp admin-add-user-to-group --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --group-name "ADMIN"
 
