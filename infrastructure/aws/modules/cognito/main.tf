@@ -17,10 +17,31 @@ locals {
 resource "aws_cognito_user_pool" "this" {
   name = var.name
 
-  # Ensure Terraform destroys the domains and waits for propagation before
-  # deleting the pool. Without this, Cognito rejects deletion with
-  # "User pool cannot be deleted. It has a domain configured."
-  depends_on = [time_sleep.wait_for_domain_delete]
+  # Cognito requires all domains to be deleted before the pool can be removed.
+  # Terraform sometimes destroys the pool before the domain resources finish
+  # deleting. This provisioner ensures domains are gone before Terraform
+  # attempts pool deletion.
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<-EOT
+      for DOMAIN in $(aws cognito-idp describe-user-pool --user-pool-id ${self.id} --query 'UserPool.Domain' --output text 2>/dev/null); do
+        if [ "$DOMAIN" != "None" ] && [ -n "$DOMAIN" ]; then
+          echo "Deleting Cognito domain: $DOMAIN"
+          aws cognito-idp delete-user-pool-domain --user-pool-id ${self.id} --domain "$DOMAIN" || true
+          echo "Waiting 30s for domain deletion to propagate..."
+          sleep 30
+        fi
+      done
+      for DOMAIN in $(aws cognito-idp describe-user-pool --user-pool-id ${self.id} --query 'UserPool.CustomDomain' --output text 2>/dev/null); do
+        if [ "$DOMAIN" != "None" ] && [ -n "$DOMAIN" ]; then
+          echo "Deleting Cognito custom domain: $DOMAIN"
+          aws cognito-idp delete-user-pool-domain --user-pool-id ${self.id} --domain "$DOMAIN" || true
+          echo "Waiting 30s for custom domain deletion to propagate..."
+          sleep 30
+        fi
+      done
+    EOT
+  }
 
   # Require email as the sign-in attribute.
   username_attributes      = ["email"]
@@ -81,21 +102,6 @@ resource "aws_cognito_user_pool_client" "this" {
 
   callback_urls = [for url in local.frontend_callback_urls : "${url}/oidc-callback"]
   logout_urls   = local.frontend_callback_urls
-}
-
-# ---------------------------------------------------------------------------
-# Destroy-time delay — Cognito custom domain deletion can be asynchronous
-# (especially for custom domains backed by CloudFront). This sleep ensures the
-# domain is fully removed before Terraform attempts to delete the user pool.
-# ---------------------------------------------------------------------------
-
-resource "time_sleep" "wait_for_domain_delete" {
-  destroy_duration = "30s"
-
-  depends_on = [
-    aws_cognito_user_pool_domain.this,
-    aws_cognito_user_pool_domain.custom,
-  ]
 }
 
 # Cognito Hosted UI domain — required to expose the /oauth2/authorize and
