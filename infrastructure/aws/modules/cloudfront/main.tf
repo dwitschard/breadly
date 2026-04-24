@@ -107,7 +107,7 @@ resource "aws_cloudfront_function" "preview_spa_rewrite" {
 # ---------------------------------------------------------------------------
 
 resource "time_sleep" "wait_for_distribution_delete" {
-  destroy_duration = "3m"
+  destroy_duration = "5m"
 
   depends_on = [aws_cloudfront_distribution.this]
 }
