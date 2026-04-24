@@ -317,6 +317,39 @@ resource "aws_route53_record" "redirect_aaaa" {
   }
 }
 
+# Placeholder A/AAAA records for parent subdomains (auth.<domain>, breadly.<domain>).
+# AWS Cognito custom domains require the parent domain to have a resolvable A record.
+# Without these, `preview.auth.<domain>` and `dev.auth.<domain>` would fail to create
+# when `prod` has not yet been deployed. These records point to the redirect distribution
+# as a safe default; deploy/ overrides them for the prod workspace.
+resource "aws_route53_record" "parent_a" {
+  for_each = toset([local.auth_domain, local.app_domain])
+
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = each.value
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.redirect.domain_name
+    zone_id                = aws_cloudfront_distribution.redirect.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "parent_aaaa" {
+  for_each = toset([local.auth_domain, local.app_domain])
+
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = each.value
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.redirect.domain_name
+    zone_id                = aws_cloudfront_distribution.redirect.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
 # ---------------------------------------------------------------------------
 # SSM Parameter Store — outputs for consumption by deploy/ and preview/gateway/
 # ---------------------------------------------------------------------------

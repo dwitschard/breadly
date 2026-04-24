@@ -227,9 +227,10 @@ module "cdn" {
 # ---------------------------------------------------------------------------
 
 resource "aws_route53_record" "app_a" {
-  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
-  name    = local.env_domain
-  type    = "A"
+  zone_id         = data.aws_ssm_parameter.hosted_zone_id.value
+  name            = local.env_domain
+  type            = "A"
+  allow_overwrite = true
 
   alias {
     name                   = module.cdn.cloudfront_raw_domain_name
@@ -239,9 +240,10 @@ resource "aws_route53_record" "app_a" {
 }
 
 resource "aws_route53_record" "app_aaaa" {
-  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
-  name    = local.env_domain
-  type    = "AAAA"
+  zone_id         = data.aws_ssm_parameter.hosted_zone_id.value
+  name            = local.env_domain
+  type            = "AAAA"
+  allow_overwrite = true
 
   alias {
     name                   = module.cdn.cloudfront_raw_domain_name
@@ -252,9 +254,10 @@ resource "aws_route53_record" "app_aaaa" {
 
 # Cognito custom domain DNS record (A record only, no AAAA)
 resource "aws_route53_record" "cognito_a" {
-  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
-  name    = local.cognito_custom_domain
-  type    = "A"
+  zone_id         = data.aws_ssm_parameter.hosted_zone_id.value
+  name            = local.cognito_custom_domain
+  type            = "A"
+  allow_overwrite = true
 
   alias {
     name                   = module.cognito.cognito_cloudfront_domain
