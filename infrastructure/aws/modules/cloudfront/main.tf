@@ -44,6 +44,9 @@ resource "aws_cloudfront_origin_access_control" "this" {
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
+
+  # Wait for CloudFront to fully release the OAC before Terraform deletes it.
+  depends_on = [time_sleep.wait_for_distribution_delete]
 }
 
 # ---------------------------------------------------------------------------
@@ -57,6 +60,9 @@ resource "aws_cloudfront_origin_access_control" "preview" {
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
+
+  # Wait for CloudFront to fully release the OAC before Terraform deletes it.
+  depends_on = [time_sleep.wait_for_distribution_delete]
 }
 
 # ---------------------------------------------------------------------------
@@ -93,18 +99,24 @@ resource "aws_cloudfront_function" "preview_spa_rewrite" {
 }
 
 # ---------------------------------------------------------------------------
+# Destroy-time delay — CloudFront distribution deletion is asynchronous.
+# Terraform marks the distribution as destroyed once the API returns, but AWS
+# may still consider the OAC "in use" for several minutes. This sleep sits
+# between the distribution and the OACs in the dependency graph, giving
+# CloudFront time to fully release them.
+# ---------------------------------------------------------------------------
+
+resource "time_sleep" "wait_for_distribution_delete" {
+  destroy_duration = "3m"
+
+  depends_on = [aws_cloudfront_distribution.this]
+}
+
+# ---------------------------------------------------------------------------
 # CloudFront Distribution
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudfront_distribution" "this" {
-  # Explicit dependency ensures Terraform destroys the distribution before the
-  # OACs. The implicit reference lives inside a conditional dynamic block,
-  # which Terraform may not track reliably for destroy ordering.
-  depends_on = [
-    aws_cloudfront_origin_access_control.this,
-    aws_cloudfront_origin_access_control.preview,
-  ]
-
   comment             = var.name
   enabled             = true
   is_ipv6_enabled     = true
