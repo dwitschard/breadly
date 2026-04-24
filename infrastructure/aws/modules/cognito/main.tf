@@ -17,6 +17,29 @@ locals {
 resource "aws_cognito_user_pool" "this" {
   name = var.name
 
+  # Cognito requires all domains to be deleted before the pool can be removed.
+  # Terraform sometimes destroys the pool before the domain resources finish
+  # deleting, causing "InvalidParameterException: User pool cannot be deleted.
+  # It has a domain configured." This provisioner ensures domains are gone
+  # before Terraform attempts pool deletion.
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<-EOT
+      for DOMAIN in $(aws cognito-idp describe-user-pool --user-pool-id ${self.id} --query 'UserPool.Domain' --output text 2>/dev/null); do
+        if [ "$DOMAIN" != "None" ] && [ -n "$DOMAIN" ]; then
+          echo "Deleting Cognito domain: $DOMAIN"
+          aws cognito-idp delete-user-pool-domain --user-pool-id ${self.id} --domain "$DOMAIN" || true
+        fi
+      done
+      for DOMAIN in $(aws cognito-idp describe-user-pool --user-pool-id ${self.id} --query 'UserPool.CustomDomain' --output text 2>/dev/null); do
+        if [ "$DOMAIN" != "None" ] && [ -n "$DOMAIN" ]; then
+          echo "Deleting Cognito custom domain: $DOMAIN"
+          aws cognito-idp delete-user-pool-domain --user-pool-id ${self.id} --domain "$DOMAIN" || true
+        fi
+      done
+    EOT
+  }
+
   # Require email as the sign-in attribute.
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
