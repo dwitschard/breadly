@@ -34,3 +34,13 @@ output "ses_config_set_prod" {
   description = "Name of the SES configuration set for the prod environment."
   value       = aws_ses_configuration_set.prod.name
 }
+
+output "oac_main_id" {
+  description = "CloudFront Origin Access Control ID for per-environment frontend S3 buckets."
+  value       = aws_cloudfront_origin_access_control.main.id
+}
+
+output "oac_preview_id" {
+  description = "CloudFront Origin Access Control ID for the shared preview frontend S3 bucket."
+  value       = aws_cloudfront_origin_access_control.preview.id
+}

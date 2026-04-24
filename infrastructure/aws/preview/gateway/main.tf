@@ -27,6 +27,10 @@ data "aws_ssm_parameter" "domain_name" {
   name = "/${var.project_name}/global/domain-name"
 }
 
+data "aws_ssm_parameter" "oac_preview_id" {
+  name = "/${var.project_name}/global/oac-preview-id"
+}
+
 locals {
   preview_domain      = "preview.${data.aws_ssm_parameter.app_domain.value}"
   domain_name         = data.aws_ssm_parameter.domain_name.value
@@ -119,6 +123,9 @@ module "cdn" {
   # Custom domain configuration.
   domain_aliases      = [local.preview_domain]
   acm_certificate_arn = data.aws_ssm_parameter.certificate_arn.value
+
+  # OAC from global stack.
+  preview_oac_id = data.aws_ssm_parameter.oac_preview_id.value
 
   tags = {
     Component = "preview-cdn"

@@ -34,82 +34,6 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
 }
 
 # ---------------------------------------------------------------------------
-# Origin Access Control — main S3 bucket (standard mode only)
-# ---------------------------------------------------------------------------
-
-resource "aws_cloudfront_origin_access_control" "this" {
-  count = var.preview_only ? 0 : 1
-
-  name                              = var.name
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-
-  # CloudFront distribution deletion is asynchronous — AWS may still consider
-  # the OAC "in use" for several minutes after Terraform destroys the
-  # distribution. This provisioner retries deletion for up to 10 minutes.
-  provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
-      for i in $(seq 1 40); do
-        ERROR=$(aws cloudfront delete-origin-access-control \
-          --id ${self.id} \
-          --if-match $(aws cloudfront get-origin-access-control --id ${self.id} --query 'ETag' --output text 2>/dev/null) 2>&1) && exit 0
-        if echo "$ERROR" | grep -q "OriginAccessControlInUse"; then
-          echo "OAC still in use, waiting 15s... (attempt $i/40)"
-          sleep 15
-        elif echo "$ERROR" | grep -q "NoSuchOriginAccessControl"; then
-          echo "OAC already deleted."
-          exit 0
-        else
-          echo "Unexpected error: $ERROR"
-          exit 1
-        fi
-      done
-      echo "OAC still in use after 10 minutes — giving up."
-      exit 1
-    EOT
-  }
-}
-
-# ---------------------------------------------------------------------------
-# Origin Access Control — shared preview S3 bucket
-# ---------------------------------------------------------------------------
-
-resource "aws_cloudfront_origin_access_control" "preview" {
-  count = local.has_preview_bucket ? 1 : 0
-
-  name                              = "${var.name}-preview-v2"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-
-  # Same async-delete workaround as the main OAC above.
-  provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
-      for i in $(seq 1 40); do
-        ERROR=$(aws cloudfront delete-origin-access-control \
-          --id ${self.id} \
-          --if-match $(aws cloudfront get-origin-access-control --id ${self.id} --query 'ETag' --output text 2>/dev/null) 2>&1) && exit 0
-        if echo "$ERROR" | grep -q "OriginAccessControlInUse"; then
-          echo "OAC still in use, waiting 15s... (attempt $i/40)"
-          sleep 15
-        elif echo "$ERROR" | grep -q "NoSuchOriginAccessControl"; then
-          echo "OAC already deleted."
-          exit 0
-        else
-          echo "Unexpected error: $ERROR"
-          exit 1
-        fi
-      done
-      echo "OAC still in use after 10 minutes — giving up."
-      exit 1
-    EOT
-  }
-}
-
-# ---------------------------------------------------------------------------
 # CloudFront Function — Preview SPA Rewrite
 #
 # Rewrites /preview/<slug>/... URIs to include the slug as S3 key prefix.
@@ -160,7 +84,7 @@ resource "aws_cloudfront_distribution" "this" {
     content {
       domain_name              = var.bucket_regional_domain_name
       origin_id                = "s3-${var.bucket_id}"
-      origin_access_control_id = aws_cloudfront_origin_access_control.this[0].id
+      origin_access_control_id = var.oac_id
     }
   }
 
@@ -183,7 +107,7 @@ resource "aws_cloudfront_distribution" "this" {
     content {
       domain_name              = var.preview_bucket_regional_domain_name
       origin_id                = "s3-preview"
-      origin_access_control_id = aws_cloudfront_origin_access_control.preview[0].id
+      origin_access_control_id = var.preview_oac_id
     }
   }
 

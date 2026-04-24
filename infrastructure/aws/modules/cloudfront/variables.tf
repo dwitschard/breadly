@@ -58,6 +58,18 @@ variable "preview_bucket_regional_domain_name" {
   default     = ""
 }
 
+variable "oac_id" {
+  description = "Origin Access Control ID for the main S3 bucket origin. Required when preview_only = false."
+  type        = string
+  default     = ""
+}
+
+variable "preview_oac_id" {
+  description = "Origin Access Control ID for the shared preview S3 bucket origin. Required when preview_only = true."
+  type        = string
+  default     = ""
+}
+
 variable "domain_aliases" {
   description = "Custom domain aliases for the CloudFront distribution. When non-empty, the ACM certificate is used."
   type        = list(string)

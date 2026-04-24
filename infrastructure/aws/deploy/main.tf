@@ -50,6 +50,10 @@ data "aws_ssm_parameter" "ses_config_set" {
   name = "/${var.project_name}/global/ses-config-set-${terraform.workspace == "prod" ? "prod" : "dev"}"
 }
 
+data "aws_ssm_parameter" "oac_main_id" {
+  name = "/${var.project_name}/global/oac-main-id"
+}
+
 # ---------------------------------------------------------------------------
 # Locals
 # ---------------------------------------------------------------------------
@@ -217,6 +221,9 @@ module "cdn" {
   # Custom domain configuration.
   domain_aliases      = local.domain_aliases
   acm_certificate_arn = data.aws_ssm_parameter.certificate_arn.value
+
+  # OAC from global stack.
+  oac_id = data.aws_ssm_parameter.oac_main_id.value
 
   tags = {
     Component = "cdn"

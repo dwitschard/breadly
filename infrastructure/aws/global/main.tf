@@ -363,6 +363,32 @@ resource "aws_route53_record" "parent_aaaa" {
 }
 
 # ---------------------------------------------------------------------------
+# CloudFront Origin Access Controls — shared across all environments.
+#
+# OACs are managed here (not in per-environment stacks) because CloudFront
+# distribution deletion is asynchronous. If an OAC lives in the same state as
+# its distribution, `terraform destroy` tries to delete the OAC while AWS
+# still considers it "in use", causing flaky CI failures. By hosting OACs in
+# the long-lived global stack, per-environment destroys never touch them.
+# ---------------------------------------------------------------------------
+
+resource "aws_cloudfront_origin_access_control" "main" {
+  name                              = "${var.project_name}-main"
+  description                       = "OAC for per-environment frontend S3 buckets"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+resource "aws_cloudfront_origin_access_control" "preview" {
+  name                              = "${var.project_name}-preview"
+  description                       = "OAC for the shared preview frontend S3 bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# ---------------------------------------------------------------------------
 # SSM Parameter Store — outputs for consumption by deploy/ and preview/gateway/
 # ---------------------------------------------------------------------------
 
@@ -406,4 +432,16 @@ resource "aws_ssm_parameter" "ses_config_set_prod" {
   name  = "/${var.project_name}/global/ses-config-set-prod"
   type  = "String"
   value = aws_ses_configuration_set.prod.name
+}
+
+resource "aws_ssm_parameter" "oac_main_id" {
+  name  = "/${var.project_name}/global/oac-main-id"
+  type  = "String"
+  value = aws_cloudfront_origin_access_control.main.id
+}
+
+resource "aws_ssm_parameter" "oac_preview_id" {
+  name  = "/${var.project_name}/global/oac-preview-id"
+  type  = "String"
+  value = aws_cloudfront_origin_access_control.preview.id
 }
