@@ -12,6 +12,7 @@
   - [~] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
   - [~] Only 3 Cognitos should be running -> prod, dev, preview
   - [~] Cognito should run on own domains
+  - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 
 
 - [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.
@@ -20,6 +21,7 @@
 
 - [ ] Integrate AWS-SES (Simple-Email-Service) into the Backend to easily produce E-Mails from the Application
   - [ ] Template + Text must be controlled by Codebase
+  - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
 
 
 - [ ] Dynamo Setup

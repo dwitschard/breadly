@@ -162,7 +162,10 @@ module "cognito" {
 
   name                       = "${var.project_name}-preview"
   aws_region                 = var.aws_region
-  frontend_urls              = "${local.preview_url}/preview/*"
+  # The gateway's App Client is not used by preview branches (each branch creates
+  # its own client in preview/deploy). Keep a placeholder callback so the client
+  # resource is valid; it will never receive actual OIDC redirects.
+  frontend_urls              = local.preview_url
   enable_admin_password_auth = true
   custom_domain              = local.preview_auth_domain
   certificate_arn            = data.aws_ssm_parameter.certificate_arn.value

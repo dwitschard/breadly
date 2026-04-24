@@ -8,7 +8,7 @@
 # Reads the preview gateway remote state to get the shared API Gateway ID.
 #
 # Dependency order (no circular dependencies):
-#   1. module.cognito        — per-branch Cognito User Pool + App Client + Hosted UI.
+#   1. aws_cognito_user_pool_client — per-branch App Client on the shared User Pool.
 #   2. module.backend        — per-branch private Lambda (authenticated routes).
 #   3. module.backend_public — per-branch public Lambda (unauthenticated /public/* routes).
 #   4. module.api_gateway_routes — adds 2 routes to the shared API Gateway for this branch.
@@ -50,6 +50,46 @@ data "terraform_remote_state" "gateway" {
 }
 
 # ---------------------------------------------------------------------------
+# Per-branch Cognito App Client on the shared User Pool
+# ---------------------------------------------------------------------------
+# Each preview branch gets its own App Client with a branch-specific callback
+# URL. The User Pool and Hosted UI domain are shared (managed by preview/gateway).
+# Cognito does NOT support wildcards in callback URLs, so a per-branch client
+# is required.
+
+resource "aws_cognito_user_pool_client" "this" {
+  name         = "${local.name_prefix}-client"
+  user_pool_id = data.terraform_remote_state.gateway.outputs.cognito_user_pool_id
+
+  generate_secret = false
+
+  explicit_auth_flows = [
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
+  ]
+
+  access_token_validity  = 1
+  id_token_validity      = 1
+  refresh_token_validity = 30
+
+  token_validity_units {
+    access_token  = "hours"
+    id_token      = "hours"
+    refresh_token = "days"
+  }
+
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "email"]
+  supported_identity_providers         = ["COGNITO"]
+
+  callback_urls = ["${local.frontend_url}/oidc-callback"]
+  logout_urls   = [local.frontend_url]
+}
+
+# ---------------------------------------------------------------------------
 # Per-branch private Lambda (authenticated routes)
 # ---------------------------------------------------------------------------
 
@@ -85,7 +125,7 @@ module "backend_public" {
 
   extra_env_vars = {
     COGNITO_ISSUER      = data.terraform_remote_state.gateway.outputs.cognito_issuer_url
-    COGNITO_CLIENT_ID   = data.terraform_remote_state.gateway.outputs.cognito_client_id
+    COGNITO_CLIENT_ID   = aws_cognito_user_pool_client.this.id
     PREVIEW_PATH_PREFIX = "/preview/${var.branch_slug}"
     ENV_NAME            = "preview-${var.branch_slug}"
   }
@@ -110,7 +150,7 @@ module "api_gateway_routes" {
   public_lambda_function_arn  = module.backend_public.function_arn
   public_lambda_function_name = module.backend_public.function_name
   cognito_issuer_url          = data.terraform_remote_state.gateway.outputs.cognito_issuer_url
-  cognito_user_pool_client_id = data.terraform_remote_state.gateway.outputs.cognito_client_id
+  cognito_user_pool_client_id = aws_cognito_user_pool_client.this.id
   aws_region                  = var.aws_region
   aws_account_id              = var.aws_account_id
 

@@ -12,8 +12,8 @@ output "cognito_user_pool_id" {
 }
 
 output "cognito_user_pool_client_id" {
-  description = "Client ID of the shared preview Cognito User Pool app client."
-  value       = data.terraform_remote_state.gateway.outputs.cognito_client_id
+  description = "Client ID of the per-branch Cognito App Client."
+  value       = aws_cognito_user_pool_client.this.id
 }
 
 output "cognito_hosted_ui_domain" {
