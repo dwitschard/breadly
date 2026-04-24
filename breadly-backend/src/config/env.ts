@@ -14,6 +14,7 @@ export const env = {
   PORT: optional('PORT', '3000'),
   get MONGODB_CONNECTION_STRING(): string { return lazy('MONGODB_CONNECTION_STRING'); },
   get COGNITO_ISSUER(): string | undefined { return process.env['COGNITO_ISSUER']; },
+  get COGNITO_USERINFO_URL(): string | undefined { return process.env['COGNITO_USERINFO_URL']; },
   COGNITO_CLIENT_ID: process.env['COGNITO_CLIENT_ID'],
   PREVIEW_PATH_PREFIX: process.env['PREVIEW_PATH_PREFIX'],
   ENV_NAME: optional('ENV_NAME', 'local'),

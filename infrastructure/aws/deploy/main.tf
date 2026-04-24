@@ -131,6 +131,7 @@ module "backend" {
     SES_CONFIGURATION_SET = local.ses_configuration_set
     APP_URL               = local.cloudfront_url
     ENV_NAME              = terraform.workspace
+    COGNITO_USERINFO_URL  = "${module.cognito.hosted_ui_domain}/oauth2/userInfo"
   }
 
   extra_policy_arns = {

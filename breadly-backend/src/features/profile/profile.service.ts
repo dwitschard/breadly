@@ -14,16 +14,14 @@ interface UserInfoResponse {
 }
 
 export const fetchUserInfo = async (accessToken: string): Promise<UserInfoResponse | null> => {
-  const issuer = env.COGNITO_ISSUER;
-  if (!issuer) {
-    logger.warn('COGNITO_ISSUER not configured, skipping UserInfo fetch');
+  const userInfoUrl = env.COGNITO_USERINFO_URL;
+  if (!userInfoUrl) {
+    logger.warn('COGNITO_USERINFO_URL not configured, skipping UserInfo fetch');
     return null;
   }
 
-  const url = `${issuer}/oauth2/userInfo`;
-
   try {
-    const response = await fetch(url, {
+    const response = await fetch(userInfoUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 

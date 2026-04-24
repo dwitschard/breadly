@@ -27,10 +27,10 @@ const userInfoResponse = {
 };
 
 describe('GET /api/profile', () => {
-  const originalCognitoIssuer = process.env['COGNITO_ISSUER'];
+  const originalCognitoUserinfoUrl = process.env['COGNITO_USERINFO_URL'];
 
   beforeEach(() => {
-    process.env['COGNITO_ISSUER'] = 'https://cognito.example.com';
+    process.env['COGNITO_USERINFO_URL'] = 'https://auth.example.com/oauth2/userInfo';
     jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => userInfoResponse,
@@ -38,10 +38,10 @@ describe('GET /api/profile', () => {
   });
 
   afterEach(() => {
-    if (originalCognitoIssuer !== undefined) {
-      process.env['COGNITO_ISSUER'] = originalCognitoIssuer;
+    if (originalCognitoUserinfoUrl !== undefined) {
+      process.env['COGNITO_USERINFO_URL'] = originalCognitoUserinfoUrl;
     } else {
-      delete process.env['COGNITO_ISSUER'];
+      delete process.env['COGNITO_USERINFO_URL'];
     }
     jest.restoreAllMocks();
   });
@@ -93,7 +93,7 @@ describe('GET /api/profile', () => {
     const token = makeToken(minimalClaims);
     await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://cognito.example.com/oauth2/userInfo',
+      'https://auth.example.com/oauth2/userInfo',
       { headers: { Authorization: `Bearer ${token}` } },
     );
   });

@@ -13,6 +13,7 @@
   - [~] Only 3 Cognitos should be running -> prod, dev, preview
   - [~] Cognito should run on own domains
   - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
+  - [ ] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
 
 
 - [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.

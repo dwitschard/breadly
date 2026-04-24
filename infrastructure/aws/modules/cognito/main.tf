@@ -71,7 +71,7 @@ resource "aws_cognito_user_pool_client" "this" {
   # Enable OAuth2 / OIDC authorization code flow (required for PKCE).
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                 = ["openid", "email"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
   supported_identity_providers         = ["COGNITO"]
 
   callback_urls = [for url in local.frontend_callback_urls : "${url}/oidc-callback"]

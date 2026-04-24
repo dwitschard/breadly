@@ -54,6 +54,6 @@ describe('buildAuthConfig', () => {
 
     const config = buildAuthConfig(issuer, clientId);
 
-    expect(config.scope).toBe('openid email');
+    expect(config.scope).toBe('openid email profile');
   });
 });

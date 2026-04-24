@@ -97,25 +97,25 @@ describe('profile.service', () => {
   });
 
   describe('fetchUserInfo', () => {
-    const originalCognitoIssuer = process.env['COGNITO_ISSUER'];
+    const originalCognitoUserInfoUrl = process.env['COGNITO_USERINFO_URL'];
 
     afterEach(() => {
-      if (originalCognitoIssuer !== undefined) {
-        process.env['COGNITO_ISSUER'] = originalCognitoIssuer;
+      if (originalCognitoUserInfoUrl !== undefined) {
+        process.env['COGNITO_USERINFO_URL'] = originalCognitoUserInfoUrl;
       } else {
-        delete process.env['COGNITO_ISSUER'];
+        delete process.env['COGNITO_USERINFO_URL'];
       }
       jest.restoreAllMocks();
     });
 
-    it('returns null when COGNITO_ISSUER is not set', async () => {
-      delete process.env['COGNITO_ISSUER'];
+    it('returns null when COGNITO_USERINFO_URL is not set', async () => {
+      delete process.env['COGNITO_USERINFO_URL'];
       const result = await fetchUserInfo('some-token');
       expect(result).toBeNull();
     });
 
     it('returns user info on successful response', async () => {
-      process.env['COGNITO_ISSUER'] = 'https://cognito.example.com';
+      process.env['COGNITO_USERINFO_URL'] = 'https://auth.example.com/oauth2/userInfo';
       const mockResponse = { sub: 'u1', email: 'test@example.com', email_verified: 'true' };
       jest.spyOn(global, 'fetch').mockResolvedValue({
         ok: true,
@@ -125,13 +125,13 @@ describe('profile.service', () => {
       const result = await fetchUserInfo('valid-token');
       expect(result).toEqual(mockResponse);
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://cognito.example.com/oauth2/userInfo',
+        'https://auth.example.com/oauth2/userInfo',
         { headers: { Authorization: 'Bearer valid-token' } },
       );
     });
 
     it('returns null on non-ok response', async () => {
-      process.env['COGNITO_ISSUER'] = 'https://cognito.example.com';
+      process.env['COGNITO_USERINFO_URL'] = 'https://auth.example.com/oauth2/userInfo';
       jest.spyOn(global, 'fetch').mockResolvedValue({
         ok: false,
         status: 401,
@@ -142,7 +142,7 @@ describe('profile.service', () => {
     });
 
     it('returns null on network error', async () => {
-      process.env['COGNITO_ISSUER'] = 'https://cognito.example.com';
+      process.env['COGNITO_USERINFO_URL'] = 'https://auth.example.com/oauth2/userInfo';
       jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
 
       const result = await fetchUserInfo('some-token');

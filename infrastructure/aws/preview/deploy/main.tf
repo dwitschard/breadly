@@ -82,7 +82,7 @@ resource "aws_cognito_user_pool_client" "this" {
 
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                 = ["openid", "email"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
   supported_identity_providers         = ["COGNITO"]
 
   callback_urls = ["${local.frontend_url}/oidc-callback"]
@@ -102,7 +102,8 @@ module "backend" {
   mongodb_uri   = var.mongodb_uri
 
   extra_env_vars = {
-    PREVIEW_PATH_PREFIX = "/preview/${var.branch_slug}"
+    PREVIEW_PATH_PREFIX  = "/preview/${var.branch_slug}"
+    COGNITO_USERINFO_URL = "${data.terraform_remote_state.gateway.outputs.cognito_hosted_ui_domain}/oauth2/userInfo"
   }
 
   tags = {
