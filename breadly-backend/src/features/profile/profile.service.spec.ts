@@ -7,6 +7,7 @@ describe('profile.service', () => {
       sub: 'user-abc',
       email: 'bob@example.com',
       email_verified: true,
+      name: 'Bob',
       'cognito:groups': ['admin'],
     };
 
@@ -19,22 +20,22 @@ describe('profile.service', () => {
     });
 
     it('prefers userInfo email over claims email', () => {
-      const userInfo = { sub: 'user-abc', email: 'real@example.com', email_verified: true };
-      const claims: CognitoClaims = { sub: 'user-abc', email: 'stale@example.com' };
+      const userInfo = { sub: 'user-abc', email: 'real@example.com', email_verified: true, name: 'Bob' };
+      const claims: CognitoClaims = { sub: 'user-abc', email: 'stale@example.com', name: 'Bob' };
       const profile = toProfile(claims, userInfo);
       expect(profile.email).toBe('real@example.com');
     });
 
     it('prefers userInfo emailVerified over claims', () => {
-      const userInfo = { sub: 'user-abc', email_verified: 'true' };
-      const claims: CognitoClaims = { sub: 'user-abc', email_verified: false };
+      const userInfo = { sub: 'user-abc', email_verified: 'true', name: 'Bob' };
+      const claims: CognitoClaims = { sub: 'user-abc', email_verified: false, name: 'Bob' };
       const profile = toProfile(claims, userInfo);
       expect(profile.emailVerified).toBe(true);
     });
 
     it('handles userInfo email_verified as string "false"', () => {
-      const userInfo = { sub: 'user-abc', email_verified: 'false' };
-      const claims: CognitoClaims = { sub: 'user-abc', email_verified: true };
+      const userInfo = { sub: 'user-abc', email_verified: 'false', name: 'Bob' };
+      const claims: CognitoClaims = { sub: 'user-abc', email_verified: true, name: 'Bob' };
       const profile = toProfile(claims, userInfo);
       expect(profile.emailVerified).toBe(false);
     });
@@ -46,13 +47,13 @@ describe('profile.service', () => {
     });
 
     it('defaults emailVerified to false when absent from both', () => {
-      const claims: CognitoClaims = { sub: 'u1' };
+      const claims: CognitoClaims = { sub: 'u1', name: 'U1' };
       const profile = toProfile(claims);
       expect(profile.emailVerified).toBe(false);
     });
 
     it('defaults roles to empty array when cognito:groups is absent', () => {
-      const claims: CognitoClaims = { sub: 'u1', email: 'a@b.com', email_verified: true };
+      const claims: CognitoClaims = { sub: 'u1', email: 'a@b.com', email_verified: true, name: 'U1' };
       const profile = toProfile(claims);
       expect(profile.roles).toEqual([]);
     });
@@ -73,7 +74,7 @@ describe('profile.service', () => {
         family_name: 'Builder',
         picture: 'https://example.com/pic.jpg',
       };
-      const userInfo = { sub: 'user-abc' };
+      const userInfo = { sub: 'user-abc', name: 'Bob Builder' };
       const profile = toProfile(claims, userInfo);
       expect(profile.name).toBe('Bob Builder');
       expect(profile.givenName).toBe('Bob');
@@ -81,16 +82,16 @@ describe('profile.service', () => {
       expect(profile.picture).toBe('https://example.com/pic.jpg');
     });
 
-    it('omits optional fields when absent from both', () => {
+    it('sets name from claims when absent from userInfo', () => {
       const profile = toProfile(minimalClaims);
-      expect(profile.name).toBeUndefined();
+      expect(profile.name).toBe('Bob');
       expect(profile.givenName).toBeUndefined();
       expect(profile.familyName).toBeUndefined();
       expect(profile.picture).toBeUndefined();
     });
 
     it('defaults email to empty string when absent from both', () => {
-      const claims: CognitoClaims = { sub: 'u1' };
+      const claims: CognitoClaims = { sub: 'u1', name: 'U1' };
       const profile = toProfile(claims, null);
       expect(profile.email).toBe('');
     });

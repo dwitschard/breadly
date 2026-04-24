@@ -7,7 +7,7 @@ interface UserInfoResponse {
   sub: string;
   email?: string;
   email_verified?: string | boolean;
-  name?: string;
+  name: string;
   given_name?: string;
   family_name?: string;
   picture?: string;
@@ -52,10 +52,10 @@ export const toProfile = (claims: CognitoClaims, userInfo?: UserInfoResponse | n
     sub: claims.sub,
     email,
     emailVerified,
+    name,
     roles: claims['cognito:groups'] ?? [],
   };
 
-  if (name !== undefined) profile.name = name;
   if (givenName !== undefined) profile.givenName = givenName;
   if (familyName !== undefined) profile.familyName = familyName;
   if (picture !== undefined) profile.picture = picture;

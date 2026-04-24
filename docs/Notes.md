@@ -7,14 +7,17 @@
 
 ## Next Tasks
 
+## ToDo
+- [ ] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
+  - [ ] Verify Teardown works properly now
+- [ ] Sign Up Form needs to have a Username Field
+
 ### Next
 - [ ] Domain Integration
   - [~] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
   - [~] Only 3 Cognitos should be running -> prod, dev, preview
   - [~] Cognito should run on own domains
-  - [ ] Fix Teardown of Environments using Domains
-  - [ ] Fix Feature to have a username
-  - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
+  - [ ] Fix Users to have a username -> when signing up
   - [ ] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
 
 
@@ -49,6 +52,7 @@
 - [~] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
 - [~] In Profile also add email address of user (not only verification status). Include E-Mail in JWT Token
 
+- [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
 - [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)

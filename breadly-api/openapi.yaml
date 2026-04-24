@@ -414,6 +414,7 @@ components:
         - sub
         - email
         - emailVerified
+        - name
         - roles
       properties:
         sub:

@@ -61,6 +61,20 @@ resource "aws_cognito_user_pool" "this" {
     email_sending_account = "COGNITO_DEFAULT"
   }
 
+  # Require the standard "name" attribute at signup so the Hosted UI collects it
+  # and Cognito includes it in the ID token / userInfo response.
+  schema {
+    attribute_data_type = "String"
+    name                = "name"
+    required            = true
+    mutable             = true
+
+    string_attribute_constraints {
+      min_length = 1
+      max_length = 256
+    }
+  }
+
   tags = var.tags
 }
 
