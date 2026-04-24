@@ -44,33 +44,6 @@ resource "aws_cloudfront_origin_access_control" "this" {
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
-
-  # CloudFront distribution deletion is asynchronous. Terraform may attempt to
-  # delete this OAC before the distribution fully releases it, causing
-  # "OriginAccessControlInUse". This provisioner polls until the OAC can
-  # actually be deleted (i.e., no distribution references it anymore).
-  provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
-      for i in $(seq 1 20); do
-        ERROR=$(aws cloudfront delete-origin-access-control \
-          --id ${self.id} \
-          --if-match $(aws cloudfront get-origin-access-control --id ${self.id} --query 'ETag' --output text 2>/dev/null) 2>&1) && exit 0
-        if echo "$ERROR" | grep -q "OriginAccessControlInUse"; then
-          echo "OAC still in use, waiting 15s... (attempt $i/20)"
-          sleep 15
-        elif echo "$ERROR" | grep -q "NoSuchOriginAccessControl"; then
-          echo "OAC already deleted."
-          exit 0
-        else
-          echo "Unexpected error: $ERROR"
-          exit 1
-        fi
-      done
-      echo "OAC still in use after 5 minutes — giving up."
-      exit 1
-    EOT
-  }
 }
 
 # ---------------------------------------------------------------------------
@@ -84,30 +57,6 @@ resource "aws_cloudfront_origin_access_control" "preview" {
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
-
-  # Same async-delete workaround as the main OAC above.
-  provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
-      for i in $(seq 1 20); do
-        ERROR=$(aws cloudfront delete-origin-access-control \
-          --id ${self.id} \
-          --if-match $(aws cloudfront get-origin-access-control --id ${self.id} --query 'ETag' --output text 2>/dev/null) 2>&1) && exit 0
-        if echo "$ERROR" | grep -q "OriginAccessControlInUse"; then
-          echo "OAC still in use, waiting 15s... (attempt $i/20)"
-          sleep 15
-        elif echo "$ERROR" | grep -q "NoSuchOriginAccessControl"; then
-          echo "OAC already deleted."
-          exit 0
-        else
-          echo "Unexpected error: $ERROR"
-          exit 1
-        fi
-      done
-      echo "OAC still in use after 5 minutes — giving up."
-      exit 1
-    EOT
-  }
 }
 
 # ---------------------------------------------------------------------------
@@ -148,6 +97,14 @@ resource "aws_cloudfront_function" "preview_spa_rewrite" {
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudfront_distribution" "this" {
+  # Explicit dependency ensures Terraform destroys the distribution before the
+  # OACs. The implicit reference lives inside a conditional dynamic block,
+  # which Terraform may not track reliably for destroy ordering.
+  depends_on = [
+    aws_cloudfront_origin_access_control.this,
+    aws_cloudfront_origin_access_control.preview,
+  ]
+
   comment             = var.name
   enabled             = true
   is_ipv6_enabled     = true
