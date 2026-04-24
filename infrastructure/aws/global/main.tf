@@ -17,8 +17,9 @@ locals {
   www_domain     = "www.${var.domain_name}"
   www_app_domain = "www.${local.app_domain}"
 
-  # ACM certificate SANs
-  certificate_sans = [
+  # ACM certificate SANs — sorted to prevent ordering diffs that trigger
+  # unnecessary certificate replacement.
+  certificate_sans = sort([
     local.app_domain,
     "*.${local.app_domain}",
     var.domain_name,
@@ -26,7 +27,7 @@ locals {
     "dev.${local.auth_domain}",
     "preview.${local.auth_domain}",
     local.www_domain,
-  ]
+  ])
 }
 
 # ---------------------------------------------------------------------------
@@ -46,11 +47,22 @@ resource "aws_acm_certificate" "wildcard" {
   provider = aws.us_east_1
 
   domain_name               = local.app_domain
-  subject_alternative_names = slice(local.certificate_sans, 1, length(local.certificate_sans))
+  subject_alternative_names = [for san in local.certificate_sans : san if san != local.app_domain]
   validation_method         = "DNS"
 
   lifecycle {
     create_before_destroy = true
+    # This certificate is referenced by CloudFront distributions in other
+    # Terraform states (deploy/, preview/gateway/) via the SSM parameter.
+    # Replacing it in a single apply will fail with ResourceInUseException
+    # because those external distributions still hold the old cert ARN.
+    #
+    # To rotate the certificate (e.g. add a SAN):
+    #   1. Remove prevent_destroy, apply global (creates new cert, fails to delete old)
+    #   2. Apply deploy/ and preview/gateway/ (updates their CloudFront to new cert)
+    #   3. Apply global again (deletes old cert)
+    #   4. Re-add prevent_destroy
+    prevent_destroy = true
   }
 
   tags = {
