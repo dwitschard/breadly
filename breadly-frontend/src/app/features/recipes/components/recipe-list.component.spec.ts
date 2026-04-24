@@ -1,6 +1,11 @@
 import { RecipeListComponent } from './recipe-list.component';
 import { Recipe } from '../../../generated/api';
-import { renderWithProviders, screen, userEvent, within } from '../../../../testing/render-with-providers';
+import {
+  renderWithProviders,
+  screen,
+  userEvent,
+  within,
+} from '../../../../testing/render-with-providers';
 
 describe('RecipeListComponent', () => {
   const user = userEvent.setup();

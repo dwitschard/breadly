@@ -23,8 +23,15 @@ data "aws_ssm_parameter" "app_domain" {
   name = "/${var.project_name}/global/app-domain"
 }
 
+data "aws_ssm_parameter" "domain_name" {
+  name = "/${var.project_name}/global/domain-name"
+}
+
 locals {
-  preview_domain = "preview.${data.aws_ssm_parameter.app_domain.value}"
+  preview_domain      = "preview.${data.aws_ssm_parameter.app_domain.value}"
+  domain_name         = data.aws_ssm_parameter.domain_name.value
+  preview_auth_domain = "preview.auth.${local.domain_name}"
+  preview_url         = "https://${local.preview_domain}"
 }
 
 # ---------------------------------------------------------------------------
@@ -142,6 +149,38 @@ resource "aws_route53_record" "preview_aaaa" {
   alias {
     name                   = module.cdn.cloudfront_raw_domain_name
     zone_id                = module.cdn.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Cognito — shared User Pool for all preview branches
+# ---------------------------------------------------------------------------
+
+module "cognito" {
+  source = "../../modules/cognito"
+
+  name                       = "${var.project_name}-preview"
+  aws_region                 = var.aws_region
+  frontend_urls              = "${local.preview_url}/preview/*"
+  enable_admin_password_auth = true
+  custom_domain              = local.preview_auth_domain
+  certificate_arn            = data.aws_ssm_parameter.certificate_arn.value
+
+  tags = {
+    Component = "preview-cognito"
+  }
+}
+
+# DNS A record for the shared preview Cognito custom domain
+resource "aws_route53_record" "cognito_a" {
+  zone_id = data.aws_ssm_parameter.hosted_zone_id.value
+  name    = local.preview_auth_domain
+  type    = "A"
+
+  alias {
+    name                   = module.cognito.cognito_cloudfront_domain
+    zone_id                = "Z2FDTNDATAQYW2" # Global CloudFront hosted zone ID
     evaluate_target_health = false
   }
 }

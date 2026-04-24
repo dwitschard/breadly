@@ -46,11 +46,7 @@ describe('ProfileContainerComponent', () => {
     roles: [],
   };
 
-  async function setup(options: {
-    profile: Profile | null;
-    loading?: boolean;
-    load?: () => void;
-  }) {
+  async function setup(options: { profile: Profile | null; loading?: boolean; load?: () => void }) {
     const { profile, loading = false, load = vi.fn() } = options;
 
     const profileSignal = signal<Profile | null>(profile);
@@ -63,9 +59,7 @@ describe('ProfileContainerComponent', () => {
     };
 
     return renderWithProviders(ProfileContainerComponent, {
-      componentProviders: [
-        { provide: ProfileService, useValue: fakeProfileService },
-      ],
+      componentProviders: [{ provide: ProfileService, useValue: fakeProfileService }],
     });
   }
 });

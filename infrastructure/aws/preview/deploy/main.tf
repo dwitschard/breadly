@@ -37,7 +37,7 @@ locals {
 }
 
 # ---------------------------------------------------------------------------
-# Read preview gateway state — retrieves shared API Gateway ID
+# Read preview gateway state — retrieves shared API Gateway ID and Cognito
 # ---------------------------------------------------------------------------
 
 data "terraform_remote_state" "gateway" {
@@ -46,24 +46,6 @@ data "terraform_remote_state" "gateway" {
     bucket = "${var.project_name}-preview-tfstate"
     key    = "env:/preview/gateway/terraform.tfstate"
     region = var.aws_region
-  }
-}
-
-# ---------------------------------------------------------------------------
-# Per-branch Cognito User Pool
-# ---------------------------------------------------------------------------
-
-module "cognito" {
-  source = "../../modules/cognito"
-
-  name                       = local.name_prefix
-  aws_region                 = var.aws_region
-  frontend_urls              = local.frontend_url
-  enable_admin_password_auth = true
-
-  tags = {
-    Component   = "preview"
-    BranchSlug  = var.branch_slug
   }
 }
 
@@ -102,8 +84,8 @@ module "backend_public" {
   mongodb_uri   = var.mongodb_uri
 
   extra_env_vars = {
-    COGNITO_ISSUER      = module.cognito.issuer_url
-    COGNITO_CLIENT_ID   = module.cognito.client_id
+    COGNITO_ISSUER      = data.terraform_remote_state.gateway.outputs.cognito_issuer_url
+    COGNITO_CLIENT_ID   = data.terraform_remote_state.gateway.outputs.cognito_client_id
     PREVIEW_PATH_PREFIX = "/preview/${var.branch_slug}"
     ENV_NAME            = "preview-${var.branch_slug}"
   }
@@ -127,8 +109,8 @@ module "api_gateway_routes" {
   lambda_function_name        = module.backend.function_name
   public_lambda_function_arn  = module.backend_public.function_arn
   public_lambda_function_name = module.backend_public.function_name
-  cognito_issuer_url          = module.cognito.issuer_url
-  cognito_user_pool_client_id = module.cognito.client_id
+  cognito_issuer_url          = data.terraform_remote_state.gateway.outputs.cognito_issuer_url
+  cognito_user_pool_client_id = data.terraform_remote_state.gateway.outputs.cognito_client_id
   aws_region                  = var.aws_region
   aws_account_id              = var.aws_account_id
 

@@ -27,7 +27,7 @@ import { HealthResponse } from '../../../generated/api';
             "
           ></span>
           <span data-testid="health-check-api-time" class="text-sm text-gray-600">{{
-            health().checks.api.responseTime ?? ''
+            apiResponseTime() ?? ''
           }}</span>
         </span>
       </li>
@@ -49,9 +49,6 @@ import { HealthResponse } from '../../../generated/api';
                 : ('HEALTH.ERROR' | translate)
             "
           ></span>
-          <span data-testid="health-check-db-time" class="text-sm text-gray-600">{{
-            health().checks.database.responseTime ?? ''
-          }}</span>
         </span>
       </li>
     </ul>
@@ -73,4 +70,5 @@ import { HealthResponse } from '../../../generated/api';
 })
 export class HealthDashboardComponent {
   readonly health = input.required<HealthResponse>();
+  readonly apiResponseTime = input<string>();
 }

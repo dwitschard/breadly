@@ -27,6 +27,12 @@ describe('HealthContainerComponent', () => {
     expect(screen.getByTestId('health-check-db')).toBeInTheDocument();
   });
 
+  it('passes apiResponseTime from service to dashboard', async () => {
+    await setup({ health: mockHealth, apiResponseTime: '142ms' });
+
+    expect(screen.getByTestId('health-check-api-time')).toHaveTextContent('142ms');
+  });
+
   it('renders version-info with frontend and backend versions', async () => {
     await setup({ health: mockHealth });
 
@@ -52,20 +58,29 @@ describe('HealthContainerComponent', () => {
   const mockHealth: HealthResponse = {
     status: 'ok' as HealthResponse.StatusEnum,
     checks: {
-      api: { status: 'ok' as any, responseTime: '10ms' },
-      database: { status: 'ok' as any, responseTime: '5ms' },
+      api: { status: 'ok' as any },
+      database: { status: 'ok' as any },
     },
   };
 
   const mockVersion: VersionInfo = { version: 'abc1234', releaseUrl: '' };
 
-  async function setup(options: {
-    health?: HealthResponse;
-    isLoading?: boolean;
-    healthError?: unknown;
-    reload?: () => void;
-  } = {}) {
-    const { health, isLoading = false, healthError = undefined, reload = vi.fn() } = options;
+  async function setup(
+    options: {
+      health?: HealthResponse;
+      isLoading?: boolean;
+      healthError?: unknown;
+      reload?: () => void;
+      apiResponseTime?: string;
+    } = {},
+  ) {
+    const {
+      health,
+      isLoading = false,
+      healthError = undefined,
+      reload = vi.fn(),
+      apiResponseTime,
+    } = options;
 
     const fakeHealthService = {
       healthResource: {
@@ -75,13 +90,12 @@ describe('HealthContainerComponent', () => {
       },
       frontendVersionResource: { value: signal<VersionInfo | undefined>(mockVersion) },
       backendVersionResource: { value: signal<VersionInfo | undefined>(mockVersion) },
+      apiResponseTime: signal<string | undefined>(apiResponseTime),
       reload,
     };
 
     return renderWithProviders(HealthContainerComponent, {
-      componentProviders: [
-        { provide: HealthFeatureService, useValue: fakeHealthService },
-      ],
+      componentProviders: [{ provide: HealthFeatureService, useValue: fakeHealthService }],
     });
   }
 });

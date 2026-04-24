@@ -35,3 +35,23 @@ output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID; used for cache invalidations."
   value       = module.cdn.cloudfront_distribution_id
 }
+
+output "cognito_issuer_url" {
+  description = "OIDC issuer URL for the shared preview Cognito pool."
+  value       = module.cognito.issuer_url
+}
+
+output "cognito_client_id" {
+  description = "App Client ID for the shared preview Cognito pool."
+  value       = module.cognito.client_id
+}
+
+output "cognito_hosted_ui_domain" {
+  description = "Hosted UI base URL for the shared preview Cognito pool."
+  value       = module.cognito.hosted_ui_domain
+}
+
+output "cognito_user_pool_id" {
+  description = "User Pool ID for the shared preview Cognito pool."
+  value       = module.cognito.user_pool_id
+}

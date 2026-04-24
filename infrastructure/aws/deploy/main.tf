@@ -72,13 +72,13 @@ locals {
   frontend_urls = terraform.workspace == "dev" ? "http://localhost:4200,${local.cloudfront_url}" : local.cloudfront_url
 
   # SES sender email per environment
-  ses_sender_email       = "noreply@${local.env_domain}"
+  ses_sender_email       = "noreply@${terraform.workspace == "prod" ? local.domain_name : "${terraform.workspace}.${local.domain_name}"}"
   ses_configuration_set  = data.aws_ssm_parameter.ses_config_set.value
 
-  # Cognito custom domain (prod only)
+  # Cognito custom domain (workspace-specific)
   auth_domain      = "auth.${local.domain_name}"
-  cognito_custom_domain  = terraform.workspace == "prod" ? local.auth_domain : ""
-  cognito_certificate_arn = terraform.workspace == "prod" ? data.aws_ssm_parameter.certificate_arn.value : ""
+  cognito_custom_domain  = terraform.workspace == "prod" ? local.auth_domain : "${terraform.workspace}.${local.auth_domain}"
+  cognito_certificate_arn = data.aws_ssm_parameter.certificate_arn.value
 }
 
 # ---------------------------------------------------------------------------
@@ -250,12 +250,10 @@ resource "aws_route53_record" "app_aaaa" {
   }
 }
 
-# Cognito custom domain DNS record (prod only — A record only, no AAAA)
+# Cognito custom domain DNS record (A record only, no AAAA)
 resource "aws_route53_record" "cognito_a" {
-  count = terraform.workspace == "prod" ? 1 : 0
-
   zone_id = data.aws_ssm_parameter.hosted_zone_id.value
-  name    = local.auth_domain
+  name    = local.cognito_custom_domain
   type    = "A"
 
   alias {

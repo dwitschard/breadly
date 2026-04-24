@@ -45,7 +45,10 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
       } @else if (healthService.healthResource.error()) {
         <app-error-banner [message]="'HEALTH.LOAD_ERROR' | translate" />
       } @else if (health()) {
-        <health-dashboard [health]="health()!" />
+        <health-dashboard
+          [health]="health()!"
+          [apiResponseTime]="healthService.apiResponseTime()"
+        />
       }
 
       <section class="mt-8">

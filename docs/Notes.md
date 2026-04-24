@@ -7,11 +7,11 @@
 
 ## Next Tasks
 
+### Next
 - [ ] Domain Integration
-  - [ ] URL of dev-cognito still wrong -> `dev.auth.appdock.ch`
-  - [ ] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.appdock.ch` and share between all apps
-  - [ ] Create SES Email Identities that are verified to receive emails -> icloud-email addresses
-  
+  - [ ] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
+  - [ ] Only 3 Cognitos should be running -> prod, dev, preview
+  - [ ] Cognito should run on own domains
 
 - [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.
   - [ ] It should call API's of the Domain Backend(s) at defined triggers (scheduled)
@@ -38,11 +38,13 @@
 - [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
-- [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
 - [ ] Time missing when reloading `Systemstatus`
-- [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
+
 - [ ] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
 - [ ] In Profile also add email address of user (not only verification status). Include E-Mail in JWT Token
+
+- [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
+- [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
 - [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
     - [ ] if necessary -> implement custom error code in valid range
 

@@ -12,8 +12,8 @@
 locals {
   app_domain     = "${var.app_subdomain}.${var.domain_name}"
   auth_domain    = "auth.${var.domain_name}"
-  email_domain   = "email.${local.app_domain}"
-  dmarc_domain   = "_dmarc.${local.app_domain}"
+  email_domain   = "email.${var.domain_name}"
+  dmarc_domain   = "_dmarc.${var.domain_name}"
   www_domain     = "www.${var.domain_name}"
   www_app_domain = "www.${local.app_domain}"
 
@@ -23,6 +23,8 @@ locals {
     "*.${local.app_domain}",
     var.domain_name,
     local.auth_domain,
+    "dev.${local.auth_domain}",
+    "preview.${local.auth_domain}",
     local.www_domain,
   ]
 }
@@ -87,7 +89,7 @@ resource "aws_acm_certificate_validation" "wildcard" {
 # ---------------------------------------------------------------------------
 
 resource "aws_ses_domain_identity" "this" {
-  domain = local.app_domain
+  domain = var.domain_name
 }
 
 resource "aws_ses_domain_dkim" "this" {
@@ -97,7 +99,7 @@ resource "aws_ses_domain_dkim" "this" {
 # SES domain verification TXT record
 resource "aws_route53_record" "ses_verification" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "_amazonses.${local.app_domain}"
+  name    = "_amazonses.${var.domain_name}"
   type    = "TXT"
   ttl     = 300
   records = [aws_ses_domain_identity.this.verification_token]
@@ -108,7 +110,7 @@ resource "aws_route53_record" "ses_dkim" {
   count = 3
 
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "${aws_ses_domain_dkim.this.dkim_tokens[count.index]}._domainkey.${local.app_domain}"
+  name    = "${aws_ses_domain_dkim.this.dkim_tokens[count.index]}._domainkey.${var.domain_name}"
   type    = "CNAME"
   ttl     = 300
   records = ["${aws_ses_domain_dkim.this.dkim_tokens[count.index]}.dkim.amazonses.com"]
@@ -152,6 +154,12 @@ resource "aws_ses_domain_identity_verification" "this" {
   domain = aws_ses_domain_identity.this.domain
 
   depends_on = [aws_route53_record.ses_verification]
+}
+
+# SES email identity for testing in sandbox mode.
+# After apply, the email owner must click the verification link sent by AWS.
+resource "aws_ses_email_identity" "test_recipient" {
+  email = "floete-argon.8h@icloud.com"
 }
 
 # ---------------------------------------------------------------------------
