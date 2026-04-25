@@ -49,8 +49,11 @@ export class NavbarPage {
   }
 
   async openProfileMenu(): Promise<void> {
-    await this.profileMenuTrigger.click();
-    await this.profileMenuDropdown.waitFor({ state: 'visible' });
+    const isAlreadyOpen = await this.profileMenuDropdown.isVisible().catch(() => false);
+    if (!isAlreadyOpen) {
+      await this.profileMenuTrigger.click();
+      await this.profileMenuDropdown.waitFor({ state: 'visible' });
+    }
   }
 
   async logout(): Promise<void> {
