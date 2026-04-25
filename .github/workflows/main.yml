@@ -162,8 +162,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # Deploy to dev (only after both releases succeed)
   # ---------------------------------------------------------------------------
-  deploy-dev:
-    name: Deploy Dev
+  deploy:
+    name: Deploy
     needs: [build-backend, release-backend, release-frontend]
     uses: ./.github/workflows/_deploy.yml
     permissions:
