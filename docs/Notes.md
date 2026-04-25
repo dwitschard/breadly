@@ -25,9 +25,39 @@
 
 - [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.
   - [ ] It should call API's of the Domain Backend(s) at defined triggers (scheduled)
+  - [ ] Fix this Error when Scheduling happens
+        ```json
+        {
+            "level": 50,
+            "time": 1777139303422,
+            "pid": 6,
+            "hostname": "169.254.63.57",
+            "userId": "bootsleute.ansammlung.2b@icloud.com",
+            "error": {
+                "$fault": "client",
+                "$metadata": {
+                    "httpStatusCode": 403,
+                    "requestId": "d442a2f3-4be7-47d4-ab0a-fc299c7c2d6f",
+                    "attempts": 1,
+                    "totalRetryDelay": 0
+                },
+                "name": "AccessDenied",
+                "Type": "Sender",
+                "Code": "AccessDenied",
+                "message": "User `arn:aws:sts::864899858036:assumed-role/breadly-dev-backend-lambda-role/breadly-dev-backend' is not authorized to perform `ses:SendEmail' on resource `arn:aws:ses:eu-central-1:864899858036:identity/bootsleute.ansammlung.2b@icloud.com'",
+                "Error": {
+                    "Type": "Sender",
+                    "Code": "AccessDenied",
+                    "Message": "User `arn:aws:sts::864899858036:assumed-role/breadly-dev-backend-lambda-role/breadly-dev-backend' is not authorized to perform `ses:SendEmail' on resource `arn:aws:ses:eu-central-1:864899858036:identity/bootsleute.ansammlung.2b@icloud.com'"
+                }
+            },
+            "msg": "Failed to send batch email"
+        }
+        ```
 
 
 - [ ] Integrate AWS-SES (Simple-Email-Service) into the Backend to easily produce E-Mails from the Application
+  - [ ] Switch Sender Email to sth. like `mail.dev@appdock.ch`, currently `"noreply@${terraform.workspace == "prod" ? local.domain_name : "${terraform.workspace}.${local.domain_name}"}"`
   - [ ] Template + Text must be controlled by Codebase
   - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
 

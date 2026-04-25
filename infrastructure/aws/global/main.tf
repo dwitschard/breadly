@@ -34,6 +34,8 @@ locals {
 # Route53 — look up hosted zone auto-created by domain registration
 # ---------------------------------------------------------------------------
 
+data "aws_caller_identity" "current" {}
+
 data "aws_route53_zone" "main" {
   name         = var.domain_name
   private_zone = false
@@ -198,7 +200,7 @@ data "aws_iam_policy_document" "ses_send" {
       "ses:SendRawEmail",
     ]
     resources = [
-      aws_ses_domain_identity.this.arn,
+      "arn:aws:ses:${var.aws_region}:${data.aws_caller_identity.current.account_id}:identity/*",
       aws_ses_configuration_set.dev.arn,
       aws_ses_configuration_set.prod.arn,
     ]
