@@ -4,8 +4,8 @@
   "description": "Operational scripts for the Breadly backend — run manually by developers, never deployed.",
   "type": "module",
   "scripts": {
-    "setup-users:dev":     "tsx setup-users.ts dev",
-    "setup-users:prod":    "tsx setup-users.ts prod"
+    "setup-users:dev":     "aws login && tsx setup-users.ts dev",
+    "setup-users:prod":    "aws login && tsx setup-users.ts prod"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1008.0"
