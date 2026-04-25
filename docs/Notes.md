@@ -8,7 +8,8 @@
 ## Next Tasks
 
 ## ToDo
-- [ ] Fix Playwright Test Setup with Name Claim
+- [ ] Fix Playwright Test with Name Claim
+- [ ] Check Preview Branches still work from feature-branch trigger
 - [ ] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
   - [ ] Verify Teardown works properly now
 - [~] Sign Up Form needs to have a Username Field
@@ -53,6 +54,7 @@
 - [~] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
 - [~] In Profile also add email address of user (not only verification status). Include E-Mail in JWT Token
 
+- [ ] Reloading Pages that require a specific role (such as `Systemübersicht`) the user is redirected to the main page instead of the one he is authorized to
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
