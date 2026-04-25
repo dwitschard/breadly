@@ -59,8 +59,14 @@ export function buildStorageState(
 ): { cookies: []; origins: { origin: string; localStorage: StorageStateEntry[] }[] } {
   const expiresAt = Date.now() + tokens.expiresIn * 1000;
 
+  // Use the ID token as the access_token in localStorage.
+  // The USER_PASSWORD_AUTH flow produces access tokens without openid/profile/email
+  // scopes, so the backend's Cognito UserInfo endpoint rejects them. The backend
+  // auth middleware only base64-decodes the JWT payload (no signature verification),
+  // so the ID token — which contains all user claims (name, email, groups, etc.) —
+  // works as a drop-in replacement for programmatic E2E auth.
   const localStorage: StorageStateEntry[] = [
-    { name: 'access_token', value: tokens.accessToken },
+    { name: 'access_token', value: tokens.idToken },
     { name: 'id_token', value: tokens.idToken },
     { name: 'expires_at', value: String(expiresAt) },
     { name: 'granted_scopes', value: 'openid email profile' },
