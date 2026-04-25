@@ -6,6 +6,17 @@ End-to-end tests run against a deployed preview environment using Playwright and
 
 Tests authenticate identically to real users — via the Cognito Hosted UI in a headless browser. No SDK shortcuts, no synthetic tokens.
 
+### Why Not Use the Cognito SDK Directly?
+
+The AWS SDK's `USER_PASSWORD_AUTH` flow (via `InitiateAuthCommand`) was the original approach but produces fundamentally broken tokens for this application:
+
+- **Missing scopes.** The `USER_PASSWORD_AUTH` flow returns access tokens without `openid`, `profile`, or `email` scopes. These scopes are only granted through the Hosted UI / authorization code flow.
+- **UserInfo endpoint rejects the token.** The backend calls Cognito's UserInfo endpoint with the access token to fetch profile data. Without the required scopes, UserInfo returns an error.
+- **Fallback yields incomplete claims.** The backend falls back to decoding JWT claims from the access token, but `USER_PASSWORD_AUTH` access tokens only contain `sub` and `cognito:groups` — not `name`, `email`, or other profile attributes.
+- **Result.** Profile pages load but display name and email are empty. Tests that assert on user identity (display name in navbar, profile page fields) fail.
+
+The only way to get tokens with full scopes is the authorization code flow through the Hosted UI — which is exactly what real users do. The headless browser login replicates this flow precisely.
+
 ### Global Setup (`global-setup.ts`)
 
 Runs once before all tests. For each test user (`demo@breadly.app`, `admin@breadly.app`):
@@ -67,7 +78,7 @@ Role: `user`. Navigates to the profile page and verifies:
 - Display name matches "Demo User".
 - Email matches "demo@breadly.app".
 
-This test validates that the tokens carry full user claims (name, email) — the original motivation for the headless browser login approach.
+This test validates that the tokens carry full user claims — the original motivation for the headless browser login approach.
 
 ### `health/view-health.spec.ts` — View health dashboard
 
