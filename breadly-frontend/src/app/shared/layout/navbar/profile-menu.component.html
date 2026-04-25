@@ -31,14 +31,16 @@
         [attr.aria-label]="'NAV.ACCOUNT_OPTIONS' | translate"
         class="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg z-50"
       >
-        <div class="px-4 py-3 border-b border-gray-100" role="presentation">
-          <p data-testid="nav-display-name" class="text-sm font-semibold text-gray-900 truncate">
-            {{ displayName() }}
-          </p>
-          <p data-testid="nav-display-email" class="text-xs text-gray-500 truncate">
-            {{ profile()?.email }}
-          </p>
-        </div>
+        @if (profile()) {
+          <div class="px-4 py-3 border-b border-gray-100" role="presentation">
+            <p data-testid="nav-display-name" class="text-sm font-semibold text-gray-900 truncate">
+              {{ displayName() }}
+            </p>
+            <p data-testid="nav-display-email" class="text-xs text-gray-500 truncate">
+              {{ profile()?.email }}
+            </p>
+          </div>
+        }
         <div class="py-1" role="presentation">
           @if (isAdmin()) {
             <button
