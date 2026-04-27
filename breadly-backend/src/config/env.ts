@@ -24,5 +24,8 @@ export const env = {
   API_GATEWAY_ENDPOINT: optional('API_GATEWAY_ENDPOINT', ''),
   SES_SENDER_EMAIL: optional('SES_SENDER_EMAIL', 'floete-argon.8h@icloud.com'),
   get SES_CONFIGURATION_SET(): string | undefined { return process.env['SES_CONFIGURATION_SET']; },
+  get SENDER_DISPLAY_NAME(): string {
+    return env.ENV_NAME === 'production' ? 'Breadly' : 'Breadly Dev';
+  },
   APP_URL: optional('APP_URL', 'http://localhost:4200'),
 };

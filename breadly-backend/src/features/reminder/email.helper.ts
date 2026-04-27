@@ -27,6 +27,16 @@ export const loadTemplate = (templateName: string): string => {
   return readFileSync(templatePath, 'utf-8');
 };
 
+export const generateTextBody = (htmlBody: string): string => {
+  return htmlBody
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export const interpolate = (template: string, variables: Record<string, string>): string => {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
     return variables[key] ?? match;
@@ -40,13 +50,17 @@ export const sendEmail = async (params: {
   sender?: string;
 }): Promise<void> => {
   const sender = params.sender ?? env.SES_SENDER_EMAIL;
+  const displayName = env.SENDER_DISPLAY_NAME;
 
   const command = new SendEmailCommand({
-    Source: sender,
+    From: { Email: sender, DisplayName: displayName },
     Destination: { ToAddresses: [params.to] },
     Message: {
       Subject: { Data: params.subject, Charset: 'UTF-8' },
-      Body: { Html: { Data: params.htmlBody, Charset: 'UTF-8' } },
+      Body: {
+        Html: { Data: params.htmlBody, Charset: 'UTF-8' },
+        Text: { Data: generateTextBody(params.htmlBody), Charset: 'UTF-8' },
+      },
     },
     ...(env.SES_CONFIGURATION_SET ? { ConfigurationSetName: env.SES_CONFIGURATION_SET } : {}),
   });
