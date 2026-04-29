@@ -33,7 +33,7 @@ test.describe('View health dashboard', () => {
    });
 
   test('admin can reload health page without being redirected to home', async ({ page }) => {
-    await page.goto('/health');
+    await page.goto('health');
     await page.waitForURL('**/health**');
     
     const health = new HealthPage(page);

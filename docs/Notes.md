@@ -6,6 +6,9 @@
 - [ ] How to continuously update AGENTS.md Files? In Dev Cycle Loop?
 
 ## Next Tasks
+- [ ] Preview Cognito should have one app client for local development for AI to verify e2e tests
+  - [ ] Fix local E2E-Tests so that they are concise
+
 
 ## To Verify
 - [~] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
