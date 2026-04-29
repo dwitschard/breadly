@@ -53,7 +53,7 @@ export const sendEmail = async (params: {
   const displayName = env.SENDER_DISPLAY_NAME;
 
   const command = new SendEmailCommand({
-    From: { Email: sender, DisplayName: displayName },
+    Source: `${displayName ? `${displayName} <${sender}>` : sender}`,
     Destination: { ToAddresses: [params.to] },
     Message: {
       Subject: { Data: params.subject, Charset: 'UTF-8' },
