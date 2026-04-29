@@ -7,7 +7,7 @@
 
 ## Next Tasks
 - [ ] Preview Cognito should have one app client for local development for AI to verify e2e tests
-  - [ ] Fix local E2E-Tests so that they are concise
+  - [ ] Fix local E2E-Tests so that they are concise -> No E-Mail Claim / Name when logging in with local app client?
 
 
 ## To Verify
