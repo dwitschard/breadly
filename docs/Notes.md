@@ -20,7 +20,7 @@
   - [x] Only 3 Cognitos should be running -> prod, dev, preview
   - [x] Cognito should run on own domains
   - [~] Fix Users to have a username -> when signing up
-  - [ ] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
+  - [~] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
 
 
 - [x] Create a domain agnostic Backend that acts as a scheduler.
@@ -29,10 +29,9 @@
 
 
 - [x] Integrate AWS-SES (Simple-Email-Service) into the Backend to easily produce E-Mails from the Application
-  - [ ] Switch Sender Email to sth. like `mail.dev@appdock.ch`, currently `"noreply@${terraform.workspace == "prod" ? local.domain_name : "${terraform.workspace}.${local.domain_name}"}"`
+  - [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
   - [ ] Template + Text must be controlled by Codebase
   - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
-  - [ ] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
 
 
 - [ ] Dynamo Setup

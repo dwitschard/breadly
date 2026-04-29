@@ -60,8 +60,8 @@ describe('email.helper', () => {
 
       it('replaces HTML entities with spaces', () => {
         const result = generateTextBody('&amp;&quot;');
-        expect(result).toBe('  ');
-       });
+        expect(result).toBe('');
+      });
 
      it('collapses multiple whitespace', () => {
        const result = generateTextBody('<p>  Hello    World  </p>');

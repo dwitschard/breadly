@@ -17,7 +17,7 @@ test.describe('View health dashboard', () => {
     await health.expectOverallStatusVisible();
 
     await health.expectVersionsVisible();
-  });
+   });
 
   test('admin can reload health data', async ({ page }) => {
     const navbar = new NavbarPage(page);
@@ -30,5 +30,18 @@ test.describe('View health dashboard', () => {
 
     await health.expectLoaded();
     await health.expectAllOperational();
+   });
+
+  test('admin can reload health page without being redirected to home', async ({ page }) => {
+    await page.goto('/health');
+    await page.waitForURL('**/health**');
+    
+    const health = new HealthPage(page);
+    await health.expectLoaded();
+    
+    await page.reload();
+    await page.waitForURL('**/health**');
+    
+    await health.expectLoaded();
+   });
   });
-});

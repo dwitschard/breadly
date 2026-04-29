@@ -32,7 +32,7 @@ export const generateTextBody = (htmlBody: string): string => {
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/&[^;]+;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 };
