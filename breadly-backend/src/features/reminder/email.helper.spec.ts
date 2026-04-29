@@ -94,11 +94,11 @@ describe('email.helper', () => {
 
       expect(mockSend).toHaveBeenCalledTimes(1);
       const command = mockSend.mock.calls[0][0];
+      expect(command.input.Source).toContain('@');
       expect(command.input.Destination.ToAddresses).toEqual(['alice@example.com']);
       expect(command.input.Message.Subject.Data).toBe('Test Subject');
       expect(command.input.Message.Body.Html.Data).toBe('<html>Hello</html>');
       expect(command.input.Message.Body.Text.Data).toBe('Hello');
-      expect(command.input.From.Email).toContain('@');
       });
 
     it('includes ConfigurationSetName when SES_CONFIGURATION_SET is set', async () => {
