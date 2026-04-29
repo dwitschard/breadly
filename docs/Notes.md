@@ -7,33 +7,22 @@
 
 ## Next Tasks
 
-## ToDo
-- [x] Fix Playwright Test with Name Claim
-- [x] Check Preview Branches still work from feature-branch trigger
+## To Verify
 - [~] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
-  - [~] Verify Teardown works properly now
-- [~] Sign Up Form needs to have a Username Field
+  - [ ] Verify Teardown works properly now
+
+- [~] Domain Integration
+  - [ ] Verify Prod Domain
+
+- [~] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
+
+- [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
+
+- [~] Reloading Pages that require a specific role (such as `Systemübersicht`) the user is redirected to the main page instead of the one he is authorized to
+
+- [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
 
 ### Next
-- [ ] Domain Integration
-  - [~] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
-  - [x] Only 3 Cognitos should be running -> prod, dev, preview
-  - [x] Cognito should run on own domains
-  - [~] Fix Users to have a username -> when signing up
-  - [~] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
-
-
-- [x] Create a domain agnostic Backend that acts as a scheduler.
-  - [x] It should call API's of the Domain Backend(s) at defined triggers (scheduled)
-  - [ ] Add DLQ for AWS EventBridge Notifications that caused an error! -> Trigger Admin f.e
-
-
-- [x] Integrate AWS-SES (Simple-Email-Service) into the Backend to easily produce E-Mails from the Application
-  - [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
-  - [ ] Template + Text must be controlled by Codebase
-  - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
-
-
 - [ ] Dynamo Setup
   - [ ] DynamoDB Table Design for User
   - [ ] Terraform Setup 
@@ -46,17 +35,10 @@
     - [ ] Also remove ApplicationDatabase
 
 ## UI
-- [x] Add general User-Information into Dropdown Header <- currently empty because of not available name/email
-- [x] Switch `Systemstatus` to Menu-Item in the Profile itself, only available for `ADMIN`
-- [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
-- [x] Time missing when reloading `Systemstatus`
+- [ ] Add DLQ for AWS EventBridge Notifications that caused an error! -> Trigger Admin f.e
 
-- [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
-- [x] In Profile also add email address of user (not only verification status). Include E-Mail in JWT Token
-
-- [ ] Reloading Pages that require a specific role (such as `Systemübersicht`) the user is redirected to the main page instead of the one he is authorized to
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
@@ -65,14 +47,17 @@
 
 
 ## Ideas
+- [ ] Can Template be registered in AWS and being referenced? Challenge current approach
+  - [ ] if not possible -> Template Visible in Local Dev Mode?
 - [ ] Create Architecture Document with Mermaid Diagrams and update it after every feature change
   - [ ] Infrastructure
   - [ ] Software Architecture
 - [ ] Implement a custom ui for login / registration
-- [ ] Git Worktree Setup for multiple Agents to build things on different branches without conflicts
-- [ ] decide on ui library / elements
+- [ ] Decide on UI Library / Elements
 - [ ] Think about how to split different applications (or later potentially even domains) into different Lambda's
-  - [ ] Impact on Terraform probably quite large, gain? 
+  - [ ] Impact on Terraform probably quite large, gain?
+
+## Backlog
 - [ ] Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
     - Not easily possible, requires loop through BFF
     - Probably not relevant for now
@@ -96,6 +81,9 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
+- [x] Integrate Email Sending Capability for Application (AWS SES)
+- [x] Integrate Scheduling Capability for Application (AWS EventBridge)
+- [x] Domain Integration for all Environments including IDP (AWS Cognito)
 - [x] Switch Testing in Frontend to use TestingLibrary
 - [x] E2E Testing Setup
 - [x] Build Open API Spec for FE and BE differently

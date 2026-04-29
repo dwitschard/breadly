@@ -1,9 +1,9 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { AuthService } from './auth.service';
 import { ProfileService } from '../shared/services/profile.service';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { filter, map } from 'rxjs';
+import { filter, map, Observable, of, switchMap } from 'rxjs';
 
 export interface AuthGuardOptions {
   roles?: string[];
@@ -15,32 +15,38 @@ export function withAuth(options: AuthGuardOptions = {}): CanActivateFn {
     const router = inject(Router);
     const profileService = inject(ProfileService);
 
-    if (!authService.isLoggedIn()) {
-      return router.createUrlTree(['/login'], {
-        queryParams: { returnUrl: state.url },
-       });
-      }
+    return toObservable(authService.isLoggedIn).pipe(
+      switchMap((loggedIn) => {
+        if (!loggedIn) {
+          return of(
+            router.createUrlTree(['/login'], {
+              queryParams: { returnUrl: state.url },
+            }),
+          ) as Observable<boolean | UrlTree>;
+        }
 
-    if (options.roles?.length) {
-      if (profileService.loading()) {
-        return toObservable(profileService.loading).pipe(
-          filter((loading) => !loading),
-          map(() => {
-            const userRoles = profileService.profile()?.roles ?? [];
-            return options.roles!.some((role) => userRoles.includes(role))
-              ? true
-              : router.createUrlTree(['/']);
-           }),
-          );
-         }
+        if (options.roles?.length) {
+          if (profileService.loading()) {
+            return toObservable(profileService.loading).pipe(
+              filter((loading) => !loading),
+              map(() => {
+                const userRoles = profileService.profile()?.roles ?? [];
+                return options.roles!.some((role) => userRoles.includes(role))
+                  ? true
+                  : router.createUrlTree(['/']);
+              }),
+            );
+          }
 
-        const userRoles = profileService.profile()?.roles ?? [];
-        const hasRole = options.roles!.some((role) => userRoles.includes(role));
-        if (!hasRole) {
-          return router.createUrlTree(['/']);
-         }
-       }
+          const userRoles = profileService.profile()?.roles ?? [];
+          const hasRole = options.roles!.some((role) => userRoles.includes(role));
+          if (!hasRole) {
+            return of(router.createUrlTree(['/'])) as Observable<boolean | UrlTree>;
+          }
+        }
 
-       return true;
-       };
-      }
+        return of(true) as Observable<boolean | UrlTree>;
+      }),
+    );
+  };
+}
