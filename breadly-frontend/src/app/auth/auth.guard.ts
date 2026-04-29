@@ -1,42 +1,54 @@
-import { inject } from '@angular/core';
+import { inject, Injector } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
+import { combineLatest, filter, map, Observable, skipWhile, take } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ProfileService } from '../shared/services/profile.service';
-import { toObservable } from '@angular/core/rxjs-interop';
-import { filter, map, Observable, of, switchMap, take } from 'rxjs';
 
 export interface AuthGuardOptions {
   roles?: string[];
 }
 
 export function withAuth(options: AuthGuardOptions = {}): CanActivateFn {
-  return (_, state) => {
+  return (_, state): boolean | UrlTree | Observable<boolean | UrlTree> => {
     const authService = inject(AuthService);
     const router = inject(Router);
-    const profileService = inject(ProfileService);
 
-    return toObservable(authService.isLoggedIn).pipe(
-      filter((loggedIn) => loggedIn),
+    if (!authService.isLoggedIn()) {
+      return router.createUrlTree(['/login'], {
+        queryParams: { returnUrl: state.url },
+      });
+    }
+
+    if (!options.roles?.length) {
+      return true;
+    }
+
+    const profileService = inject(ProfileService);
+    const injector = inject(Injector);
+
+    // Fast path: profile already loaded.
+    const currentProfile = profileService.profile();
+    if (currentProfile !== null) {
+      const hasRole = options.roles.some((role) => currentProfile.roles.includes(role));
+      return hasRole || router.createUrlTree(['/']);
+    }
+
+    // Async path: profile not loaded yet (page reload race condition).
+    // skipWhile drops the initial idle state [null, false] before load() has started.
+    // filter waits until loading completes (profile present, or load finished with error).
+    return combineLatest([
+      toObservable(profileService.profile, { injector }),
+      toObservable(profileService.loading, { injector }),
+    ]).pipe(
+      skipWhile(([profile, loading]) => profile === null && !loading),
+      filter(([profile, loading]) => profile !== null || !loading),
       take(1),
-      switchMap(() =>
-        options.roles?.length
-          ? toObservable(profileService.loading).pipe(
-              filter((loading) => !loading),
-              take(1),
-              switchMap(() =>
-                toObservable(profileService.profile).pipe(
-                  take(1),
-                  map((profile) => {
-                    const roles = profile?.roles ?? [];
-                    return options.roles!.some((r) => roles.includes(r))
-                      ? true
-                      : router.createUrlTree(['/']);
-                  }),
-                ),
-              ),
-            )
-          : of(true),
-      ),
-    ) as Observable<boolean | UrlTree>;
+      map(([profile]) => {
+        const userRoles = profile?.roles ?? [];
+        const hasRole = options.roles!.some((role) => userRoles.includes(role));
+        return hasRole || router.createUrlTree(['/']);
+      }),
+    );
   };
 }
