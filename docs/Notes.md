@@ -7,7 +7,8 @@
 
 ## Next Tasks
 - [ ] Preview Cognito should have one app client for local development for AI to verify e2e tests
-  - [ ] Fix local E2E-Tests so that they are concise -> No E-Mail Claim / Name when logging in with local app client?
+  - [ ] Fix local E2E-Tests so that they are concise
+    - [ ] /profile Call from Backend to IDP is not working for local development
 
 
 ## To Verify
@@ -26,8 +27,14 @@
 - [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
 
 ### Next
+
+- [ ] Create Design System Components
+  - [ ] Everything configurable via Config (JSON or similar)
+  - [ ] Add Dumb Components -> check Design System Starter for reference
+  - [ ] Create a Storybook for it
+
 - [ ] Dynamo Setup
-  - [ ] DynamoDB Table Design for User
+  - [ ] DynamoDB Table Design for User (Username, Last Login, Settings, )
   - [ ] Terraform Setup 
   - [ ] Implement DB Connection in Backend
   - [ ] Add it to /health Endpoint

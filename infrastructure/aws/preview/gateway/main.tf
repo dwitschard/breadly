@@ -182,6 +182,45 @@ module "cognito" {
   }
 }
 
+# ---------------------------------------------------------------------------
+# Cognito — dedicated app client for localhost development
+# ---------------------------------------------------------------------------
+# Separate from the per-branch clients so localhost access is an explicit,
+# auditable choice scoped only to this preview pool. Cognito enforces the
+# callback URL strictly, so this client cannot be used from any other origin.
+
+resource "aws_cognito_user_pool_client" "localhost" {
+  name         = "${var.project_name}-preview-localhost-client"
+  user_pool_id = module.cognito.user_pool_id
+
+  generate_secret = false
+
+  explicit_auth_flows = [
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
+  ]
+
+  access_token_validity  = 1
+  id_token_validity      = 1
+  refresh_token_validity = 30
+
+  token_validity_units {
+    access_token  = "hours"
+    id_token      = "hours"
+    refresh_token = "days"
+  }
+
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
+  supported_identity_providers         = ["COGNITO"]
+
+  callback_urls = ["http://localhost:4200/oidc-callback"]
+  logout_urls   = ["http://localhost:4200"]
+}
+
 # DNS A record for the shared preview Cognito custom domain
 resource "aws_route53_record" "cognito_a" {
   zone_id = data.aws_ssm_parameter.hosted_zone_id.value
