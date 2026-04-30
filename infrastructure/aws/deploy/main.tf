@@ -204,6 +204,52 @@ module "scheduler" {
 }
 
 # ---------------------------------------------------------------------------
+# Admin Alerts — CloudWatch alarm + SNS email for scheduler failures
+# ---------------------------------------------------------------------------
+
+resource "aws_ssm_parameter" "admin_notification_email" {
+  name  = "/${var.project_name}/${terraform.workspace}/admin-notification-email"
+  type  = "SecureString"
+  value = var.admin_notification_email
+
+  tags = { Component = "scheduler" }
+}
+
+resource "aws_sns_topic" "scheduler_alerts" {
+  name = "${local.name_prefix}-scheduler-alerts"
+  tags = { Component = "scheduler" }
+}
+
+# Requires one-time manual confirmation click after the first deploy.
+resource "aws_sns_topic_subscription" "admin_email" {
+  topic_arn = aws_sns_topic.scheduler_alerts.arn
+  protocol  = "email"
+  endpoint  = var.admin_notification_email
+}
+
+resource "aws_cloudwatch_metric_alarm" "scheduler_dropped" {
+  alarm_name          = "${local.name_prefix}-scheduler-invocation-dropped"
+  alarm_description   = "EventBridge Scheduler dropped an invocation after exhausting all retries."
+  namespace           = "AWS/Scheduler"
+  metric_name         = "InvocationDroppedCount"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ScheduleGroup = module.scheduler.schedule_group_name
+  }
+
+  alarm_actions = [aws_sns_topic.scheduler_alerts.arn]
+  ok_actions    = []
+
+  tags = { Component = "scheduler" }
+}
+
+# ---------------------------------------------------------------------------
 # CDN — CloudFront distribution with custom domain
 # ---------------------------------------------------------------------------
 

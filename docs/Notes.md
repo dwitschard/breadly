@@ -7,8 +7,9 @@
 
 ## Next Tasks
 - [ ] Preview Cognito should have one app client for local development for AI to verify e2e tests
-  - [ ] Fix local E2E-Tests so that they are concise
-    - [ ] /profile Call from Backend to IDP is not working for local development
+  - [ ] /profile Call from Backend to IDP is not working for local development
+  - [ ] Revisit all `explicit_auth_flows` Variables and restrict as good as possible - E2E still needs all flows?
+    - [ ] Probably `["ALLOW_ADMIN_USER_PASSWORD_AUTH", "ALLOW_USER_PASSWORD_AUTH"]` can be removed
 
 
 ## To Verify
@@ -47,7 +48,7 @@
 ## UI
 
 ## Bugs
-- [ ] Add DLQ for AWS EventBridge Notifications that caused an error! -> Trigger Admin f.e
+- [~] Add DLQ for AWS EventBridge Notifications that caused an error! -> Trigger Admin f.e
 
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
