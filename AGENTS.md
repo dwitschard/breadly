@@ -103,6 +103,32 @@ Skip this phase **only** for pure refactoring, documentation-only changes, test-
 
 E2E tests validate that the **most common user journeys** work correctly across the full stack (frontend + backend + infrastructure). They are not the place for exhaustive error-case coverage — that belongs in unit and integration tests.
 
+#### One journey per spec
+
+Each spec file must contain **exactly one `test()`** that chains all user actions for that feature in a single sequential journey. Do not split a feature's behaviour across multiple `test()` blocks — this produces isolated action tests, not user journeys.
+
+**Before (incorrect — 3 separate tests):**
+```ts
+test('admin sees health data', async ({ page }) => { /* navigate + assert */ });
+test('admin can reload data', async ({ page }) => { /* navigate + reload + assert */ });
+test('admin page persists on reload', async ({ page }) => { /* navigate + page.reload + assert */ });
+```
+
+**After (correct — one chained journey):**
+```ts
+test('admin views health dashboard, reloads data, and reloads the page', async ({ page }) => {
+  await navbar.navigateToHealth();
+  await health.expectLoaded();
+  await health.expectAllOperational();
+  await health.expectVersionsVisible();
+  await health.reload();
+  await health.expectLoaded();
+  await page.reload();
+  await page.waitForURL('**/health**');
+  await health.expectLoaded();
+});
+```
+
 #### E2E artifacts required per feature
 
 1. **Page Object** in `e2e/pages/<feature>/` — encapsulates selectors (`data-testid`) and user actions.
