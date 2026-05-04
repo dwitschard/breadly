@@ -6,23 +6,12 @@
 - [ ] How to continuously update AGENTS.md Files? In Dev Cycle Loop?
 
 ## Next Tasks
-- [x] Preview Cognito should have one app client for local development for AI to verify e2e tests
-  - [x] /profile Call from Backend to IDP is not working for local development
-  - [~] Revisit all `explicit_auth_flows` Variables and restrict as good as possible - E2E still needs all flows?
-
 
 ## To Verify
 - [~] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
   - [ ] Verify Teardown works properly now
 
-- [~] Domain Integration
-  - [ ] Verify Prod Domain
-
-- [~] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
-
 - [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
-
-- [~] Reloading Pages that require a specific role (such as `Systemübersicht`) the user is redirected to the main page instead of the one he is authorized to
 
 - [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
 
@@ -47,10 +36,7 @@
 ## UI
 
 ## Bugs
-- [~] Add DLQ for AWS EventBridge Notifications that caused an error! -> Trigger Admin f.e
-
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
-- [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
 - [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
     - [ ] if necessary -> implement custom error code in valid range
@@ -91,6 +77,7 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
+- [x] Minor Bugs (Reload Issue, Playwright Setup locally, )
 - [x] Integrate Email Sending Capability for Application (AWS SES)
 - [x] Integrate Scheduling Capability for Application (AWS EventBridge)
 - [x] Domain Integration for all Environments including IDP (AWS Cognito)

@@ -160,6 +160,7 @@ jobs:
           echo "TF_VAR_dist_zip_path=/dev/null" >> "$GITHUB_ENV"
           mkdir -p /tmp/empty-dist
           echo "TF_VAR_frontend_dist_path=/tmp/empty-dist" >> "$GITHUB_ENV"
+          echo "TF_VAR_admin_notification_email=${{ vars.ADMIN_NOTIFICATION_EMAIL }}" >> "$GITHUB_ENV"
 
       - name: Select workspace
         working-directory: infrastructure/aws/deploy
