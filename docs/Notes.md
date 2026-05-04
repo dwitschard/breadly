@@ -6,10 +6,9 @@
 - [ ] How to continuously update AGENTS.md Files? In Dev Cycle Loop?
 
 ## Next Tasks
-- [ ] Preview Cognito should have one app client for local development for AI to verify e2e tests
-  - [ ] /profile Call from Backend to IDP is not working for local development
-  - [ ] Revisit all `explicit_auth_flows` Variables and restrict as good as possible - E2E still needs all flows?
-    - [ ] Probably `["ALLOW_ADMIN_USER_PASSWORD_AUTH", "ALLOW_USER_PASSWORD_AUTH"]` can be removed
+- [x] Preview Cognito should have one app client for local development for AI to verify e2e tests
+  - [x] /profile Call from Backend to IDP is not working for local development
+  - [~] Revisit all `explicit_auth_flows` Variables and restrict as good as possible - E2E still needs all flows?
 
 
 ## To Verify

@@ -173,7 +173,6 @@ module "cognito" {
   # its own client in preview/deploy). Keep a placeholder callback so the client
   # resource is valid; it will never receive actual OIDC redirects.
   frontend_urls              = local.preview_url
-  enable_admin_password_auth = true
   custom_domain              = local.preview_auth_domain
   certificate_arn            = data.aws_ssm_parameter.certificate_arn.value
 
@@ -198,8 +197,6 @@ resource "aws_cognito_user_pool_client" "localhost" {
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
-    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
-    "ALLOW_USER_PASSWORD_AUTH",
   ]
 
   access_token_validity  = 1
