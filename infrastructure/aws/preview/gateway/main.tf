@@ -173,13 +173,49 @@ module "cognito" {
   # its own client in preview/deploy). Keep a placeholder callback so the client
   # resource is valid; it will never receive actual OIDC redirects.
   frontend_urls              = local.preview_url
-  enable_admin_password_auth = true
   custom_domain              = local.preview_auth_domain
   certificate_arn            = data.aws_ssm_parameter.certificate_arn.value
 
   tags = {
     Component = "preview-cognito"
   }
+}
+
+# ---------------------------------------------------------------------------
+# Cognito — dedicated app client for localhost development
+# ---------------------------------------------------------------------------
+# Separate from the per-branch clients so localhost access is an explicit,
+# auditable choice scoped only to this preview pool. Cognito enforces the
+# callback URL strictly, so this client cannot be used from any other origin.
+
+resource "aws_cognito_user_pool_client" "localhost" {
+  name         = "${var.project_name}-preview-localhost-client"
+  user_pool_id = module.cognito.user_pool_id
+
+  generate_secret = false
+
+  explicit_auth_flows = [
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+  ]
+
+  access_token_validity  = 1
+  id_token_validity      = 1
+  refresh_token_validity = 30
+
+  token_validity_units {
+    access_token  = "hours"
+    id_token      = "hours"
+    refresh_token = "days"
+  }
+
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
+  supported_identity_providers         = ["COGNITO"]
+
+  callback_urls = ["http://localhost:4200/oidc-callback"]
+  logout_urls   = ["http://localhost:4200"]
 }
 
 # DNS A record for the shared preview Cognito custom domain

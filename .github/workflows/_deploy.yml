@@ -144,7 +144,9 @@ jobs:
           project_name: ${{ env.PROJECT_NAME }}
 
       - name: Export Terraform secrets
-        run: echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
+        run: |
+          echo "TF_VAR_mongodb_uri=${{ secrets.MONGODB_URI }}" >> "$GITHUB_ENV"
+          echo "TF_VAR_admin_notification_email=${{ vars.ADMIN_NOTIFICATION_EMAIL }}" >> "$GITHUB_ENV"
 
       - name: Terraform apply
         uses: ./.github/actions/terraform-action

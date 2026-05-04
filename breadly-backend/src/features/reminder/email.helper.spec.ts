@@ -1,5 +1,11 @@
 import { SESClient } from '@aws-sdk/client-ses';
-import { loadTemplate, interpolate, sendEmail, setSesClient } from './email.helper.js';
+import {
+  loadTemplate,
+  interpolate,
+  sendEmail,
+  generateTextBody,
+  setSesClient,
+} from './email.helper.js';
 
 jest.mock('fs', () => ({
   readFileSync: jest.fn().mockReturnValue('<html>Hello {{userName}}, visit {{appUrl}}</html>'),
@@ -36,6 +42,33 @@ describe('email.helper', () => {
     });
   });
 
+  describe('generateTextBody', () => {
+     it('strips HTML tags', () => {
+       const result = generateTextBody('<p>Hello</p><p>World</p>');
+       expect(result).toBe('Hello World');
+       });
+
+     it('removes style blocks', () => {
+       const result = generateTextBody('<style>body{margin:0}</style><p>Text</p>');
+       expect(result).toBe('Text');
+       });
+
+     it('removes script blocks', () => {
+       const result = generateTextBody('<script>alert(1)</script><p>Text</p>');
+       expect(result).toBe('Text');
+       });
+
+     it('collapses multiple whitespace', () => {
+       const result = generateTextBody('<p>  Hello    World  </p>');
+       expect(result).toBe('Hello World');
+       });
+
+     it('handles empty input', () => {
+       const result = generateTextBody('');
+       expect(result).toBe('');
+       });
+     });
+
   describe('sendEmail', () => {
     const mockSend = jest.fn();
 
@@ -52,15 +85,16 @@ describe('email.helper', () => {
         to: 'alice@example.com',
         subject: 'Test Subject',
         htmlBody: '<html>Hello</html>',
-      });
+       });
 
       expect(mockSend).toHaveBeenCalledTimes(1);
       const command = mockSend.mock.calls[0][0];
+      expect(command.input.Source).toContain('@');
       expect(command.input.Destination.ToAddresses).toEqual(['alice@example.com']);
       expect(command.input.Message.Subject.Data).toBe('Test Subject');
       expect(command.input.Message.Body.Html.Data).toBe('<html>Hello</html>');
-      expect(command.input.ConfigurationSetName).toBeUndefined();
-    });
+      expect(command.input.Message.Body.Text.Data).toBe('Hello');
+      });
 
     it('includes ConfigurationSetName when SES_CONFIGURATION_SET is set', async () => {
       mockSend.mockResolvedValueOnce({});

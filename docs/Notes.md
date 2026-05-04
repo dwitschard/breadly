@@ -6,64 +6,35 @@
 - [ ] How to continuously update AGENTS.md Files? In Dev Cycle Loop?
 
 ## Next Tasks
+- [x] Preview Cognito should have one app client for local development for AI to verify e2e tests
+  - [x] /profile Call from Backend to IDP is not working for local development
+  - [~] Revisit all `explicit_auth_flows` Variables and restrict as good as possible - E2E still needs all flows?
 
-## ToDo
-- [x] Fix Playwright Test with Name Claim
-- [x] Check Preview Branches still work from feature-branch trigger
+
+## To Verify
 - [~] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
-  - [~] Verify Teardown works properly now
-- [~] Sign Up Form needs to have a Username Field
+  - [ ] Verify Teardown works properly now
+
+- [~] Domain Integration
+  - [ ] Verify Prod Domain
+
+- [~] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
+
+- [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
+
+- [~] Reloading Pages that require a specific role (such as `Systemübersicht`) the user is redirected to the main page instead of the one he is authorized to
+
+- [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
 
 ### Next
-- [ ] Domain Integration
-  - [~] Switch E-Mail domain from `email.breadly.appdock.ch` to `email.apdock.ch` and share between all apps
-  - [x] Only 3 Cognitos should be running -> prod, dev, preview
-  - [x] Cognito should run on own domains
-  - [~] Fix Users to have a username -> when signing up
-  - [ ] Teardown Temporary Preview Branch right after Playwright Tests are done (simultaneous with Release Backend and CI Frontend) on Main Branch
 
-
-- [ ] Create a domain agnostic Backend (Lambda) that acts as a scheduler.
-  - [ ] It should call API's of the Domain Backend(s) at defined triggers (scheduled)
-  - [ ] Fix this Error when Scheduling happens
-        ```json
-        {
-            "level": 50,
-            "time": 1777139303422,
-            "pid": 6,
-            "hostname": "169.254.63.57",
-            "userId": "bootsleute.ansammlung.2b@icloud.com",
-            "error": {
-                "$fault": "client",
-                "$metadata": {
-                    "httpStatusCode": 403,
-                    "requestId": "d442a2f3-4be7-47d4-ab0a-fc299c7c2d6f",
-                    "attempts": 1,
-                    "totalRetryDelay": 0
-                },
-                "name": "AccessDenied",
-                "Type": "Sender",
-                "Code": "AccessDenied",
-                "message": "User `arn:aws:sts::864899858036:assumed-role/breadly-dev-backend-lambda-role/breadly-dev-backend' is not authorized to perform `ses:SendEmail' on resource `arn:aws:ses:eu-central-1:864899858036:identity/bootsleute.ansammlung.2b@icloud.com'",
-                "Error": {
-                    "Type": "Sender",
-                    "Code": "AccessDenied",
-                    "Message": "User `arn:aws:sts::864899858036:assumed-role/breadly-dev-backend-lambda-role/breadly-dev-backend' is not authorized to perform `ses:SendEmail' on resource `arn:aws:ses:eu-central-1:864899858036:identity/bootsleute.ansammlung.2b@icloud.com'"
-                }
-            },
-            "msg": "Failed to send batch email"
-        }
-        ```
-
-
-- [ ] Integrate AWS-SES (Simple-Email-Service) into the Backend to easily produce E-Mails from the Application
-  - [ ] Switch Sender Email to sth. like `mail.dev@appdock.ch`, currently `"noreply@${terraform.workspace == "prod" ? local.domain_name : "${terraform.workspace}.${local.domain_name}"}"`
-  - [ ] Template + Text must be controlled by Codebase
-  - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
-
+- [ ] Create Design System Components
+  - [ ] Everything configurable via Config (JSON or similar)
+  - [ ] Add Dumb Components -> check Design System Starter for reference
+  - [ ] Create a Storybook for it
 
 - [ ] Dynamo Setup
-  - [ ] DynamoDB Table Design for User
+  - [ ] DynamoDB Table Design for User (Username, Last Login, Settings, )
   - [ ] Terraform Setup 
   - [ ] Implement DB Connection in Backend
   - [ ] Add it to /health Endpoint
@@ -74,17 +45,10 @@
     - [ ] Also remove ApplicationDatabase
 
 ## UI
-- [x] Add general User-Information into Dropdown Header <- currently empty because of not available name/email
-- [x] Switch `Systemstatus` to Menu-Item in the Profile itself, only available for `ADMIN`
-- [x] Use Icons for Buttons (Aktualisieren, Löschen, Hinzufügen)
 
 ## Bugs
-- [x] Time missing when reloading `Systemstatus`
+- [~] Add DLQ for AWS EventBridge Notifications that caused an error! -> Trigger Admin f.e
 
-- [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
-- [x] In Profile also add email address of user (not only verification status). Include E-Mail in JWT Token
-
-- [ ] Reloading Pages that require a specific role (such as `Systemübersicht`) the user is redirected to the main page instead of the one he is authorized to
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] E2E Tests not yet full user journeys, adapt existing tests, write findings in AGENTS.md
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
@@ -93,11 +57,17 @@
 
 
 ## Ideas
+- [ ] Can Template be registered in AWS and being referenced? Challenge current approach
+  - [ ] if not possible -> Template Visible in Local Dev Mode?
+- [ ] Create Architecture Document with Mermaid Diagrams and update it after every feature change
+  - [ ] Infrastructure
+  - [ ] Software Architecture
 - [ ] Implement a custom ui for login / registration
-- [ ] Git Worktree Setup for multiple Agents to build things on different branches without conflicts
-- [ ] decide on ui library / elements
+- [ ] Decide on UI Library / Elements
 - [ ] Think about how to split different applications (or later potentially even domains) into different Lambda's
-  - [ ] Impact on Terraform probably quite large, gain? 
+  - [ ] Impact on Terraform probably quite large, gain?
+
+## Backlog
 - [ ] Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
     - Not easily possible, requires loop through BFF
     - Probably not relevant for now
@@ -121,6 +91,9 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
+- [x] Integrate Email Sending Capability for Application (AWS SES)
+- [x] Integrate Scheduling Capability for Application (AWS EventBridge)
+- [x] Domain Integration for all Environments including IDP (AWS Cognito)
 - [x] Switch Testing in Frontend to use TestingLibrary
 - [x] E2E Testing Setup
 - [x] Build Open API Spec for FE and BE differently

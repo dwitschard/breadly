@@ -43,3 +43,9 @@ variable "mongodb_uri" {
   type        = string
   sensitive   = true
 }
+
+variable "admin_notification_email" {
+  description = "Email address for admin failure notifications. Set via ADMIN_NOTIFICATION_EMAIL GitHub Secret."
+  type        = string
+  sensitive   = true
+}

@@ -56,3 +56,14 @@ output "cognito_user_pool_id" {
   description = "User Pool ID for the shared preview Cognito pool."
   value       = module.cognito.user_pool_id
 }
+
+output "cognito_localhost_client_id" {
+  description = "App Client ID for localhost development against the preview Cognito pool."
+  value       = aws_cognito_user_pool_client.localhost.id
+}
+
+output "cognito_localhost_userinfo_url" {
+  description = "Cognito UserInfo endpoint URL for localhost development."
+  value       = "${module.cognito.hosted_ui_domain}/oauth2/userInfo"
+  sensitive   = true
+}

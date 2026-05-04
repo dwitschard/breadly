@@ -11,11 +11,14 @@
 #   build-frontend-preview  Reuses _ci-frontend.yml with e2e-main base-href.
 #   deploy-preview          Reuses _deploy-preview.yml with slug "e2e-main".
 #   e2e                     Reuses _run-e2e.yml (Playwright E2E tests against the temporary preview).
-#   build-frontend-dev      Reuses _ci-frontend.yml with / base-href (for dev deploy).
-#   release-backend         Creates GitHub Release with backend.zip.
-#   release-frontend        Creates GitHub Release with dist.zip.
-#   deploy-dev              Calls _deploy.yml to deploy to dev.
-#   teardown                Destroys the temporary stack via teardown-preview-stack action (always runs).
+#   release-backend         Creates GitHub Release with backend.zip (parallel with E2E).
+#   release-frontend        Creates GitHub Release with dist.zip (parallel with E2E).
+#   deploy-dev              Calls _deploy.yml to deploy to dev (after releases).
+#   teardown                Destroys the temporary stack via teardown-preview-stack action (immediately after E2E).
+#
+# Timing: teardown runs immediately after E2E completes, parallel with backend releases and dev deploy
+# to minimize preview environment cost. deploy-backend and deploy-frontend are updated to not depend on
+# the temporary preview and instead depend only on their respective backend and build artifacts.
 #
 # Required GitHub environment: preview, dev
 #   Secrets: AWS_OIDC_ROLE_ARN, AWS_ACCOUNT_ID, MONGODB_URI,
@@ -179,7 +182,7 @@ jobs:
   # ---------------------------------------------------------------------------
   teardown:
     name: Teardown Temporary Preview
-    needs: [deploy-preview, e2e, deploy]
+    needs: [e2e]
     if: always()
     runs-on: ubuntu-latest
     environment: preview
