@@ -17,11 +17,6 @@
 
 ### Next
 
-- [ ] Create Design System Components
-  - [ ] Everything configurable via Config (JSON or similar)
-  - [ ] Add Dumb Components -> check Design System Starter for reference
-  - [ ] Create a Storybook for it
-
 - [ ] Dynamo Setup
   - [ ] DynamoDB Table Design for User (Username, Last Login, Settings, )
   - [ ] Terraform Setup 
@@ -29,6 +24,10 @@
   - [ ] Add it to /health Endpoint
   - [ ] Create Dummy Data for preview branches
 
+- [ ] Create Design System Components
+  - [ ] Everything configurable via Config (JSON or similar)
+  - [ ] Add Dumb Components -> check Design System Starter for reference
+  - [ ] Create a Storybook for it
 
 - [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase

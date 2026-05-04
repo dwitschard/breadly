@@ -14,7 +14,10 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")",
       "Bash(npx tsc *)",
       "Bash(curl *)",
-      "Bash(E2E_BASE_URL=https://dev.breadly.appdock.ch npx playwright *)"
+      "Bash(E2E_BASE_URL=https://dev.breadly.appdock.ch npx playwright *)",
+      "Bash(xargs ls *)",
+      "WebSearch",
+      "WebFetch(domain:registry.terraform.io)"
     ]
   }
 }
