@@ -38,6 +38,11 @@ variable "frontend_dist_path" {
   type        = string
 }
 
+variable "storybook_dist_path" {
+  description = "Path to the compiled Storybook output directory (storybook-static/). Every file found recursively will be uploaded to S3."
+  type        = string
+}
+
 variable "mongodb_uri" {
   description = "MongoDB connection string for the private Lambda. Passed as the MONGODB_CONNECTION_STRING environment variable. Set via the MONGODB_URI GitHub Actions secret."
   type        = string

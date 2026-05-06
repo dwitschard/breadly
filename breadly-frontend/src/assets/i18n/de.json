@@ -74,6 +74,15 @@
     "LOGOUT_TITLE": "Abmeldung",
     "LOGOUT_MESSAGE": "Deine Sitzung wurde beendet. Verwende die Navigation, um dich erneut anzumelden."
   },
+  "COMPONENTS": {
+    "CHECKBOX_REQUIRED": "Pflichtfeld",
+    "RADIO_REQUIRED": "Pflichtfeld",
+    "DROPDOWN_PLACEHOLDER": "Auswählen",
+    "DROPDOWN_REQUIRED": "Bitte wählen",
+    "DIALOG_CLOSE": "Schließen",
+    "SIDEBAR_CLOSE": "Schließen",
+    "BADGE_COUNT": "{{count}} Benachrichtigungen"
+  },
   "CONFIG": {
     "ERROR_TITLE": "Konfigurationsfehler",
     "ERROR_MESSAGE": "Die Anwendungskonfiguration konnte nicht geladen werden. Bitte versuche es später erneut."

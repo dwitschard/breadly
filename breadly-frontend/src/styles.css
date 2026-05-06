@@ -1,3 +1,24 @@
-/* You can add global styles to this file, and also import other style files */
-
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap');
 @import 'tailwindcss';
+
+/* Class-based dark mode: .dark on <html> activates dark: variants */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Geist as primary sans-serif */
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* AppDock warm-neutral ramp — custom tokens not in Tailwind's default palette */
+  --color-warm-25:  #FDFCFA;
+  --color-warm-50:  #FAF8F5;
+  --color-warm-100: #F4F1EC;
+  --color-warm-200: #E9E4DC;
+  --color-warm-300: #D6CFC4;
+  --color-warm-400: #A8A096;
+  --color-warm-500: #78716C;
+  --color-warm-600: #57534E;
+  --color-warm-700: #3F3B36;
+  --color-warm-800: #292524;
+  --color-warm-900: #1C1917;
+  --color-warm-950: #0F0E0D;
+}

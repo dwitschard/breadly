@@ -17,7 +17,29 @@
       "Bash(E2E_BASE_URL=https://dev.breadly.appdock.ch npx playwright *)",
       "Bash(xargs ls *)",
       "WebSearch",
-      "WebFetch(domain:registry.terraform.io)"
+      "WebFetch(domain:registry.terraform.io)",
+      "Bash(zcat \"/home/V009403/.claude/projects/-Users-V009403-source-vontobel-private-breadly/86d84318-3f5a-47b0-9542-565f8ca2a9ff/tool-results/webfetch-1777976888687-5mkjq4.bin\")",
+      "Bash(tar -xO appdock/project/component-library.html)",
+      "Bash(tar -xO appdock/project/ds/colors_and_type.css)",
+      "Bash(tar -t)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Read(//tmp/**)",
+      "Bash(xxd /tmp/design_file.bin)",
+      "Bash(tar -tzf /Users/V009403/source-vontobel/private/breadly/docs/design-prd/AppDock-handoff.tar.gz)",
+      "Bash(tar -xzf /Users/V009403/source-vontobel/private/breadly/docs/design-prd/AppDock-handoff.tar.gz)",
+      "Bash(tar -tzf AppDock-handoff.tar.gz)",
+      "Bash(tar -xzf AppDock-handoff.tar.gz appdock/project/ds/colors_and_type.css)",
+      "Bash(tar -xzf AppDock-handoff.tar.gz appdock/project/ds/components.css)",
+      "Bash(npm info *)",
+      "Bash(python3 -c \"import sys,json; v=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(v[-10:]\\)\\)\")",
+      "Bash(node -e \"console.log\\(require\\('/Users/V009403/source-vontobel/private/breadly/breadly-frontend/node_modules/storybook/package.json'\\).version\\)\")",
+      "Bash(npm run *)",
+      "Bash(node *)",
+      "Bash(npm install *)",
+      "Bash(grep -v \"^│$\")",
+      "Bash(grep -v \"^│$\\\\| at \")",
+      "Bash(npm ci *)",
+      "Bash(npm view *)"
     ]
   }
 }

@@ -9,10 +9,12 @@
 # Jobs:
 #   build-backend           Reuses _ci-backend.yml (lint -> test -> build -> artifact).
 #   build-frontend-preview  Reuses _ci-frontend.yml with e2e-main base-href.
+#   build-storybook         Reuses _ci-storybook.yml (parallel, env-agnostic).
 #   deploy-preview          Reuses _deploy-preview.yml with slug "e2e-main".
 #   e2e                     Reuses _run-e2e.yml (Playwright E2E tests against the temporary preview).
 #   release-backend         Creates GitHub Release with backend.zip (parallel with E2E).
 #   release-frontend        Creates GitHub Release with dist.zip (parallel with E2E).
+#   release-storybook       Creates GitHub Release with storybook.zip (parallel with E2E).
 #   deploy-dev              Calls _deploy.yml to deploy to dev (after releases).
 #   teardown                Destroys the temporary stack via teardown-preview-stack action (immediately after E2E).
 #
@@ -63,6 +65,17 @@ jobs:
     with:
       base_href: /preview/e2e-main/
       artifact_name: frontend-dist-preview
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Build Storybook (reuses CI workflow — parallel, env-agnostic)
+  # ---------------------------------------------------------------------------
+  build-storybook:
+    name: CI Storybook
+    uses: ./.github/workflows/_ci-storybook.yml
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
 
   # ---------------------------------------------------------------------------
@@ -162,18 +175,44 @@ jobs:
             --title "frontend-${{ needs.build-frontend-dev.outputs.short_sha }}" \
             --generate-notes
 
+  release-storybook:
+    name: Release Storybook
+    needs: [build-storybook, e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-dist
+          path: storybook-dist/
+
+      - name: Package storybook as zip
+        run: zip -r storybook.zip storybook-dist/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create storybook-${{ needs.build-storybook.outputs.short_sha }} storybook.zip \
+            --title "storybook-${{ needs.build-storybook.outputs.short_sha }}" \
+            --generate-notes
+
   # ---------------------------------------------------------------------------
-  # Deploy to dev (only after both releases succeed)
+  # Deploy to dev (only after all releases succeed)
   # ---------------------------------------------------------------------------
   deploy:
     name: Deploy
-    needs: [build-backend, release-backend, release-frontend]
+    needs: [build-backend, release-backend, release-frontend, release-storybook]
     uses: ./.github/workflows/_deploy.yml
     permissions:
       id-token: write
       contents: read
     with:
       release_tag: backend-${{ needs.build-backend.outputs.short_sha }}
+      storybook_release_tag: storybook-${{ needs.build-storybook.outputs.short_sha }}
       environment: dev
     secrets: inherit
 

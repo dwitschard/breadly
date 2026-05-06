@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
@@ -6,15 +6,27 @@ import { TranslateModule } from '@ngx-translate/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslateModule],
   template: `
-    <div class="flex items-center justify-center p-8" aria-live="polite" aria-busy="true">
-      <div
-        class="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"
-        role="status"
-        [attr.aria-label]="'COMMON.LOADING' | translate"
-      >
-        <span class="sr-only">{{ 'COMMON.LOADING' | translate }}</span>
-      </div>
+    <div
+      [class]="spinnerClass()"
+      role="status"
+      data-testid="spinner"
+      [attr.aria-label]="'COMMON.LOADING' | translate"
+    >
+      <span class="sr-only">{{ 'COMMON.LOADING' | translate }}</span>
     </div>
   `,
 })
-export class SpinnerComponent {}
+export class SpinnerComponent {
+  readonly size = input<'sm' | 'md' | 'lg'>('md');
+
+  protected readonly spinnerClass = computed(() => {
+    const base =
+      'animate-spin rounded-full border-warm-200 border-t-amber-600 dark:border-warm-700 dark:border-t-amber-500';
+    const sizes: Record<string, string> = {
+      sm: 'h-4 w-4 border-2',
+      md: 'h-8 w-8 border-4',
+      lg: 'h-12 w-12 border-4',
+    };
+    return `${base} ${sizes[this.size()]}`;
+  });
+}

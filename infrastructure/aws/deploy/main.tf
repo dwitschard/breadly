@@ -54,6 +54,14 @@ data "aws_ssm_parameter" "oac_main_id" {
   name = "/${var.project_name}/global/oac-main-id"
 }
 
+data "aws_ssm_parameter" "appdock_hosted_zone_id" {
+  name = "/${var.project_name}/global/appdock-hosted-zone-id"
+}
+
+data "aws_ssm_parameter" "appdock_certificate_arn" {
+  name = "/${var.project_name}/global/appdock-certificate-arn"
+}
+
 # ---------------------------------------------------------------------------
 # Locals
 # ---------------------------------------------------------------------------
@@ -83,6 +91,9 @@ locals {
   auth_domain      = "auth.${local.domain_name}"
   cognito_custom_domain  = terraform.workspace == "prod" ? local.auth_domain : "${terraform.workspace}.${local.auth_domain}"
   cognito_certificate_arn = data.aws_ssm_parameter.certificate_arn.value
+
+  # Storybook domain on appdock.ch (shared platform domain)
+  storybook_domain = terraform.workspace == "prod" ? "storybook.appdock.ch" : "storybook.${terraform.workspace}.appdock.ch"
 }
 
 # ---------------------------------------------------------------------------
@@ -316,6 +327,130 @@ resource "aws_route53_record" "cognito_a" {
   alias {
     name                   = module.cognito.cognito_cloudfront_domain
     zone_id                = "Z2FDTNDATAQYW2" # Global CloudFront hosted zone ID
+    evaluate_target_health = false
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Storybook — S3 bucket + CloudFront + Route53 on appdock.ch
+#
+# The design system is shared across all appdock.ch applications.
+# ---------------------------------------------------------------------------
+
+module "storybook" {
+  source = "../modules/s3_static_site"
+
+  bucket_name   = "${local.name_prefix}-storybook"
+  dist_path     = var.storybook_dist_path
+  force_destroy = terraform.workspace != "prod"
+
+  tags = {
+    Component = "storybook"
+  }
+}
+
+data "aws_iam_policy_document" "storybook_oac" {
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${module.storybook.bucket_arn}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_cloudfront_distribution.storybook.arn]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "storybook" {
+  bucket = module.storybook.bucket_id
+  policy = data.aws_iam_policy_document.storybook_oac.json
+}
+
+resource "aws_cloudfront_distribution" "storybook" {
+  comment         = "${local.name_prefix}-storybook"
+  enabled         = true
+  is_ipv6_enabled = true
+  price_class     = "PriceClass_100"
+  aliases         = [local.storybook_domain]
+
+  origin {
+    domain_name              = module.storybook.bucket_regional_domain_name
+    origin_id                = "s3-storybook"
+    origin_access_control_id = data.aws_ssm_parameter.oac_main_id.value
+  }
+
+  default_root_object = "index.html"
+
+  default_cache_behavior {
+    target_origin_id       = "s3-storybook"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 86400
+    max_ttl     = 31536000
+  }
+
+  # Storybook uses client-side routing for story navigation; return index.html
+  # for any 403 (object not found in S3 via OAC) so deep links work.
+  custom_error_response {
+    error_code         = 403
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    acm_certificate_arn      = data.aws_ssm_parameter.appdock_certificate_arn.value
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+  }
+
+  tags = {
+    Component = "storybook"
+  }
+}
+
+resource "aws_route53_record" "storybook_a" {
+  zone_id = data.aws_ssm_parameter.appdock_hosted_zone_id.value
+  name    = local.storybook_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.storybook.domain_name
+    zone_id                = aws_cloudfront_distribution.storybook.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "storybook_aaaa" {
+  zone_id = data.aws_ssm_parameter.appdock_hosted_zone_id.value
+  name    = local.storybook_domain
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.storybook.domain_name
+    zone_id                = aws_cloudfront_distribution.storybook.hosted_zone_id
     evaluate_target_health = false
   }
 }

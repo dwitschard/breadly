@@ -47,7 +47,7 @@ describe('AuthService', () => {
       baseURISpy = vi
         .spyOn(document, 'baseURI', 'get')
         .mockReturnValue('https://example.cloudfront.net/');
-      const logOutSpy = vi.spyOn(oauthService, 'logOut');
+      const logOutSpy = vi.spyOn(oauthService, 'logOut').mockImplementation(() => {});
 
       service.logout();
 
@@ -61,7 +61,7 @@ describe('AuthService', () => {
       baseURISpy = vi
         .spyOn(document, 'baseURI', 'get')
         .mockReturnValue('https://example.cloudfront.net/preview/my-branch/');
-      const logOutSpy = vi.spyOn(oauthService, 'logOut');
+      const logOutSpy = vi.spyOn(oauthService, 'logOut').mockImplementation(() => {});
 
       service.logout();
 
@@ -73,7 +73,7 @@ describe('AuthService', () => {
 
     it('should set isLoggedIn to false', () => {
       baseURISpy = vi.spyOn(document, 'baseURI', 'get').mockReturnValue('https://example.com/');
-      vi.spyOn(oauthService, 'logOut');
+      vi.spyOn(oauthService, 'logOut').mockImplementation(() => {});
 
       service.logout();
 
@@ -82,7 +82,7 @@ describe('AuthService', () => {
 
     it('should clear the profile', () => {
       baseURISpy = vi.spyOn(document, 'baseURI', 'get').mockReturnValue('https://example.com/');
-      vi.spyOn(oauthService, 'logOut');
+      vi.spyOn(oauthService, 'logOut').mockImplementation(() => {});
       const clearSpy = vi.spyOn(TestBed.inject(ProfileService), 'clear');
 
       service.logout();

@@ -41,3 +41,9 @@ variable "project_name" {
     error_message = "project_name must be lowercase alphanumeric with hyphens, 2-21 chars, starting with a letter."
   }
 }
+
+variable "appdock_domain_name" {
+  description = "The appdock platform domain name shared across all apps (e.g. appdock.ch)."
+  type        = string
+  default     = "appdock.ch"
+}

@@ -77,6 +77,28 @@
           "options": {
             "setupFiles": ["src/test-setup.ts"]
           }
+        },
+        "storybook": {
+          "builder": "@storybook/angular:start-storybook",
+          "options": {
+            "configDir": ".storybook",
+            "browserTarget": "breadly-frontend:build",
+            "tsConfig": "tsconfig.storybook.json",
+            "compodoc": false,
+            "port": 6006,
+            "styles": ["src/styles.css"]
+          }
+        },
+        "build-storybook": {
+          "builder": "@storybook/angular:build-storybook",
+          "options": {
+            "configDir": ".storybook",
+            "browserTarget": "breadly-frontend:build",
+            "tsConfig": "tsconfig.storybook.json",
+            "compodoc": false,
+            "outputDir": "storybook-static",
+            "styles": ["src/styles.css"]
+          }
         }
       }
     }
