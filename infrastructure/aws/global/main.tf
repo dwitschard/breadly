@@ -449,11 +449,13 @@ resource "aws_ssm_parameter" "oac_preview_id" {
 }
 
 # ---------------------------------------------------------------------------
-# appdock.ch — ACM certificate and Route53 zone for the shared platform domain.
+# appdock.ch — ACM certificates and Route53 zone for the shared platform domain.
 #
-# The Storybook design system is hosted under appdock.ch (shared across all
-# apps on the platform). The certificate covers *.appdock.ch so any app
-# subdomain can be added without a new cert.
+# Two certificates:
+#   appdock_wildcard  — *.appdock.ch only; covers top-level subdomains.
+#                       Kept for any pre-existing usages; prevent_destroy = true.
+#   appdock_storybook — *.appdock.ch + explicit SANs for per-env storybook
+#                       subdomains. Used by the Storybook CloudFront distribution.
 # ---------------------------------------------------------------------------
 
 data "aws_route53_zone" "appdock" {
@@ -500,6 +502,49 @@ resource "aws_acm_certificate_validation" "appdock_wildcard" {
   validation_record_fqdns = [for r in aws_route53_record.appdock_cert_validation : r.fqdn]
 }
 
+resource "aws_acm_certificate" "appdock_storybook" {
+  provider    = aws.us_east_1
+  domain_name = "*.${var.appdock_domain_name}"
+  subject_alternative_names = [
+    "storybook.dev.${var.appdock_domain_name}",
+    "storybook.preview.${var.appdock_domain_name}",
+  ]
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+    prevent_destroy       = true
+  }
+
+  tags = {
+    Component = "global-appdock-cert"
+  }
+}
+
+resource "aws_route53_record" "appdock_storybook_cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.appdock_storybook.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+
+  zone_id = data.aws_route53_zone.appdock.zone_id
+  name    = each.value.name
+  type    = each.value.type
+  ttl     = 300
+  records = [each.value.record]
+
+  allow_overwrite = true
+}
+
+resource "aws_acm_certificate_validation" "appdock_storybook" {
+  provider                = aws.us_east_1
+  certificate_arn         = aws_acm_certificate.appdock_storybook.arn
+  validation_record_fqdns = [for r in aws_route53_record.appdock_storybook_cert_validation : r.fqdn]
+}
+
 resource "aws_ssm_parameter" "appdock_hosted_zone_id" {
   name  = "/${var.project_name}/global/appdock-hosted-zone-id"
   type  = "String"
@@ -509,5 +554,5 @@ resource "aws_ssm_parameter" "appdock_hosted_zone_id" {
 resource "aws_ssm_parameter" "appdock_certificate_arn" {
   name  = "/${var.project_name}/global/appdock-certificate-arn"
   type  = "String"
-  value = aws_acm_certificate_validation.appdock_wildcard.certificate_arn
+  value = aws_acm_certificate_validation.appdock_storybook.certificate_arn
 }
