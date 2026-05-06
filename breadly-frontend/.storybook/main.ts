@@ -10,7 +10,7 @@ const config: StorybookConfig = {
     name: '@storybook/angular',
     options: {},
   },
-  docs: { autodocs: 'tag' },
+  docs: {},
   webpackFinal: async (config) => {
     config.module?.rules?.push({
       test: /\.md$/,
