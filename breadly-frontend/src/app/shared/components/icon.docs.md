@@ -1,0 +1,1 @@
+Thin wrapper around Lucide Angular icons that enforces consistent size and stroke-width. The host element sets aria-hidden="true" — add a visually-hidden label to the parent when the icon carries meaning.

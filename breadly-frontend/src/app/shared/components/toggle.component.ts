@@ -49,7 +49,7 @@ export class ToggleComponent {
   );
 
   protected readonly thumbClass = computed(() =>
-    `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${this.on() ? 'translate-x-[18px]' : 'translate-x-0.5'}`,
+    `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-[left] duration-200 ${this.on() ? 'left-[18px]' : 'left-0.5'}`,
   );
 
   protected toggle(): void {

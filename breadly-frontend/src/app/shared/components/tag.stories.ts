@@ -1,10 +1,36 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { TagComponent } from './tag.component';
+import description from './tag.docs.md';
 
 const meta: Meta<TagComponent> = {
   title: 'Components/Tag',
   component: TagComponent,
   tags: ['autodocs'],
+  parameters: {
+    layout: 'centered',
+    docs: {
+      description: {
+        component: description,
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      description: 'Colour theme of the tag.',
+      control: { type: 'select' },
+      options: ['success', 'danger', 'neutral', 'info', 'disabled'],
+      table: {
+        type: { summary: "'success' | 'danger' | 'neutral' | 'info' | 'disabled'" },
+        defaultValue: { summary: "'neutral'" },
+        category: 'Inputs',
+      },
+    },
+    dot: {
+      description: 'Renders a small coloured dot before the label text.',
+      control: { type: 'boolean' },
+      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+    },
+  },
 };
 export default meta;
 type Story = StoryObj<TagComponent>;

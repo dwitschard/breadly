@@ -39,7 +39,9 @@
       "Bash(grep -v \"^│$\")",
       "Bash(grep -v \"^│$\\\\| at \")",
       "Bash(npm ci *)",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "WebFetch(domain:storybook.js.org)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

@@ -10,7 +10,14 @@ const config: StorybookConfig = {
     name: '@storybook/angular',
     options: {},
   },
-  docs: {},
+  docs: { autodocs: 'tag' },
+  webpackFinal: async (config) => {
+    config.module?.rules?.push({
+      test: /\.md$/,
+      type: 'asset/source',
+    });
+    return config;
+  },
 };
 
 export default config;

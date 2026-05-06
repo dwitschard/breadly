@@ -1,10 +1,31 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { HeadlineComponent } from './headline.component';
+import description from './headline.docs.md';
 
 const meta: Meta<HeadlineComponent> = {
   title: 'Components/Headline',
   component: HeadlineComponent,
   tags: ['autodocs'],
+  parameters: {
+    layout: 'centered',
+    docs: {
+      description: {
+        component: description,
+      },
+    },
+  },
+  argTypes: {
+    level: {
+      description: 'Typography style and semantic heading level.',
+      control: { type: 'select' },
+      options: ['display', 'h1', 'h2', 'h3', 'h4', 'body', 'muted', 'caption'],
+      table: {
+        type: { summary: "'display' | 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'muted' | 'caption'" },
+        defaultValue: { summary: "'body'" },
+        category: 'Inputs',
+      },
+    },
+  },
 };
 export default meta;
 type Story = StoryObj<HeadlineComponent>;
