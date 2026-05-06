@@ -205,7 +205,7 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy:
     name: Deploy
-    needs: [build-backend, release-backend, release-frontend, release-storybook]
+    needs: [build-backend, build-storybook, release-backend, release-frontend, release-storybook]
     uses: ./.github/workflows/_deploy.yml
     permissions:
       id-token: write
