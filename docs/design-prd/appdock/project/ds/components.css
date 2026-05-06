@@ -1,0 +1,266 @@
+/* ============================================================
+   AppDock Design System — Component primitives
+   Depends on colors_and_type.css
+   ============================================================ */
+
+/* ---------- BUTTONS — clean, modern, low-chrome ---------- */
+.ad-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 38px;
+  min-width: 44px;
+  padding: 0 var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms var(--ease-standard),
+              background-color 120ms var(--ease-standard),
+              border-color 120ms var(--ease-standard),
+              color 120ms var(--ease-standard);
+  white-space: nowrap;
+}
+.ad-btn:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.ad-btn:active { transform: scale(0.98); }
+
+/* Primary — solid amber, near-black text, crisp */
+.ad-btn-primary {
+  background: var(--accent);
+  color: #FBF7F1;
+  border-color: transparent;
+}
+.ad-btn-primary:hover { background: var(--accent-hover); }
+
+/* Ghost — quiet outline, no amber border by default */
+.ad-btn-ghost {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.ad-btn-ghost:hover {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Quiet — text-only, the most common variant for nav/back */
+.ad-btn-quiet {
+  background: transparent;
+  color: var(--fg-muted);
+  border-color: transparent;
+  padding: 0 var(--space-3);
+}
+.ad-btn-quiet:hover { background: var(--bg-sunken); color: var(--fg); }
+
+.ad-btn-sm { height: 30px; padding: 0 var(--space-3); font-size: var(--text-xs); border-radius: 8px; }
+.ad-btn-lg { height: 46px; padding: 0 var(--space-5); font-size: var(--text-md); border-radius: 12px; }
+
+/* Accent — near-black, high-contrast for hero CTAs */
+.ad-btn-accent {
+  background: #1F1B16;
+  color: #FBF7F1;
+  border-color: transparent;
+}
+.ad-btn-accent:hover { background: #2D2620; }
+[data-theme="dark"] .ad-btn-accent {
+  background: #FBF7F1;
+  color: #1F1B16;
+}
+[data-theme="dark"] .ad-btn-accent:hover { background: #ECE5DA; }
+
+/* ---------- INPUT ---------- */
+.ad-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--fg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+              box-shadow var(--dur-fast) var(--ease-standard);
+}
+.ad-input::placeholder { color: var(--fg-subtle); }
+.ad-input:hover { border-color: var(--border-strong); }
+.ad-input:focus {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+
+/* ---------- CARD ---------- */
+.ad-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+/* ---------- BADGE / PILL ---------- */
+.ad-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 22px;
+  padding: 0 var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1;
+  background: var(--accent-soft);
+  color: var(--amber-800);
+  border-radius: var(--radius-pill);
+  letter-spacing: var(--tracking-normal);
+}
+[data-theme="dark"] .ad-pill { color: var(--amber-300); }
+
+.ad-pill-neutral {
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+}
+
+/* ---------- DOCK ICON ---------- */
+.ad-dock {
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+.ad-dock-icon {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  color: var(--fg-muted);
+  transition: transform var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard),
+              border-color var(--dur-fast) var(--ease-standard),
+              color var(--dur-fast) var(--ease-standard);
+}
+.ad-dock-icon:hover {
+  transform: scale(1.03);
+  border-color: var(--border-strong);
+}
+.ad-dock-icon.is-active {
+  transform: scale(1.06);
+  background: var(--accent-soft);
+  color: var(--accent-press);
+}
+[data-theme="dark"] .ad-dock-icon.is-active { color: var(--amber-300); }
+.ad-dock-icon.is-active::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* "Coming soon" placeholder slot */
+.ad-dock-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1.5px dashed var(--amber-400);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber-500);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ad-dock-placeholder {
+    animation: ad-heartbeat 1800ms var(--ease-standard) infinite;
+  }
+}
+@keyframes ad-heartbeat {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.04); }
+}
+
+/* ---------- PHASE BAR (Breadly) ---------- */
+.ad-phasebar {
+  position: relative;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--phase-rest);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg);
+}
+.ad-phasebar.is-warm { background: var(--phase-warm); color: var(--amber-950); }
+.ad-phasebar.is-cold { background: var(--phase-cold); color: var(--warm-50); }
+.ad-phasebar-fill {
+  position: absolute; inset: 0;
+  background: var(--phase-warm-fill);
+  width: var(--fill, 0%);
+  transition: width var(--dur-base) var(--ease-out-soft);
+}
+.ad-phasebar-content {
+  position: relative; z-index: 1;
+  display: flex; justify-content: space-between; width: 100%;
+  align-items: center;
+}
+.ad-phasebar-tick {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ad-phasebar-tick.is-ticking {
+    animation: ad-tick-pulse var(--dur-tick) ease-out;
+  }
+}
+@keyframes ad-tick-pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- BREADLY RECIPE-CARD TOP EDGE ACCENT ----------
+   Flat amber stripe along the top edge — a quiet brand cue, not a texture. */
+.ad-wheat-stroke {
+  height: 3px;
+  background: var(--amber-600);
+  opacity: 0.85;
+}
+
+/* ---------- DRAWER ---------- */
+.ad-drawer {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: var(--bg-elevated);
+  border-top-left-radius: var(--radius-2xl);
+  border-top-right-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-drawer);
+  border-top: 1px solid var(--border);
+  transform: translateY(100%);
+  transition: transform var(--dur-base) var(--ease-out-soft);
+}
+.ad-drawer.is-open { transform: translateY(0); }

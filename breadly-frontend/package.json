@@ -10,7 +10,9 @@
     "generate-api": "npm run --prefix ../breadly-api lint && openapi-generator-cli generate -i ../breadly-api/openapi.yaml -g typescript-angular -o src/app/generated/api --additional-properties=ngVersion=21,supportsES6=true",
     "lint": "prettier --write \"src/**/*.{ts,html,css}\"",
     "test:ci": "ng test --no-watch",
-    "e2e": "npm run --prefix ../e2e test"
+    "e2e": "npm run --prefix ../e2e test",
+    "storybook": "ng run breadly-frontend:storybook",
+    "build-storybook": "ng run breadly-frontend:build-storybook"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
@@ -29,10 +31,14 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "@angular-devkit/build-angular": "^21.2.9",
     "@angular/build": "^21.2.1",
     "@angular/cli": "^21.2.1",
     "@angular/compiler-cli": "^21.2.0",
     "@openapitools/openapi-generator-cli": "^2.20.0",
+    "@storybook/addon-a11y": "^10.3.6",
+    "@storybook/addon-themes": "^10.3.6",
+    "@storybook/angular": "^10.3.6",
     "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/angular": "^19.2.1",
     "@testing-library/dom": "^10.4.1",
@@ -41,6 +47,9 @@
     "jsdom": "^28.0.0",
     "postcss": "^8.5.10",
     "prettier": "^3.8.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "storybook": "^10.3.6",
     "tailwindcss": "^4.1.12",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"

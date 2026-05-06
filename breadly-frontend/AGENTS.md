@@ -31,6 +31,8 @@ This document is the single source of truth for architecture decisions, coding c
 21. [Guards](#21-guards)
 22. [Generated Code Policy](#22-generated-code-policy)
 23. [E2E Testing & data-testid Conventions](#23-e2e-testing--data-testid-conventions)
+24. [Component Library](#24-component-library)
+25. [Storybook](#25-storybook)
 
 ---
 
@@ -477,8 +479,21 @@ The project uses Tailwind CSS v4 with PostCSS. No other CSS framework or compone
 - **Tailwind utilities only** — no custom CSS files per component
 - **Extract repeated patterns** with `@apply` when a utility combination is used 3+ times across the codebase
 - **No arbitrary values** — use Tailwind's design tokens exclusively (e.g., `p-4` not `p-[13px]`)
-- **No dark mode** — not in scope
+- **Dark mode via `dark:` prefix** — Tailwind's class-based dark strategy is active. The `dark` class on `<html>` toggles dark mode. Always pair light and dark variants: e.g. `bg-white dark:bg-warm-900`. Do not use `[data-theme="dark"]` selectors.
 - **Tailwind animations and transitions** — use Tailwind's `transition-*`, `duration-*`, `animate-*` utilities. Do not use `@angular/animations`
+- **Custom colour tokens** — the `warm-25`–`warm-950` neutral ramp is defined in `src/styles.css` via `@theme`. Use `bg-warm-*`, `text-warm-*`, `border-warm-*` etc. Do not substitute Tailwind's `stone` palette for `warm`.
+
+### Dark mode pattern
+
+Dark mode is toggled by adding/removing the `dark` class on `document.documentElement`. Use `ThemeService` (`shared/services/theme.service.ts`) to do this — never manipulate `classList` directly in components.
+
+```typescript
+// In a container or settings page:
+readonly theme = inject(ThemeService);
+toggleTheme() {
+  this.theme.setTheme(this.theme.theme() === 'light' ? 'dark' : 'light');
+}
+```
 
 ### Templates
 
@@ -1126,3 +1141,99 @@ sign-in-out.spec.ts      # Authentication flow
 | **New page/route** | Page Object + spec covering navigation and key content |
 | **New interactive element** | `data-testid` attribute on the element |
 | **API changes** | Update test data helpers if affected |
+
+---
+
+## 24. Component Library
+
+All shared UI components live in `src/app/shared/components/`. They are standalone Angular dumb components: no service injection, no application state, signals-based inputs/outputs, `ChangeDetectionStrategy.OnPush`, and pure Tailwind utility classes.
+
+### Selector prefix
+
+All shared components use the `app-` prefix: `<app-button>`, `<app-dialog>`, `<app-spinner>`, etc.
+
+### Component catalogue
+
+| Selector | File | Description |
+|----------|------|-------------|
+| `<app-badge>` | `badge.component.ts` | Icon with optional numeric count bubble (capped at 99+) |
+| `<app-button>` | `button.component.ts` | Primary / secondary / ghost button with loading and icon support |
+| `<app-checkbox>` | `checkbox.component.ts` | Styled checkbox with indeterminate state and helper text |
+| `<app-dialog>` | `dialog.component.ts` | Native `<dialog>` modal with destructive variant |
+| `<app-dropdown>` | `dropdown.component.ts` | Custom select control with option list and error state |
+| `<app-filter-tag>` | `filter-tag.component.ts` | Pill toggle chip for filter bars |
+| `<app-headline>` | `headline.component.ts` | Typography scale: `display`, `h1`–`h4`, `body`, `muted`, `caption` |
+| `<app-icon>` | `icon.component.ts` | Dynamic Lucide icon via `NgComponentOutlet` |
+| `<app-radio>` | `radio.component.ts` | Single radio button with label and error state |
+| `<app-radio-group>` | `radio-group.component.ts` | Labeled group of radio buttons |
+| `<app-segmented>` | `segmented.component.ts` | Horizontal segmented control (mutually exclusive) |
+| `<app-sidebar>` | `sidebar.component.ts` | Right-side slide-over drawer |
+| `<app-slider>` | `slider.component.ts` | Range input with label and value display |
+| `<app-spinner>` | `spinner.component.ts` | Loading indicator — sizes `sm` (16px) / `md` (32px) / `lg` (48px) |
+| `<app-tab-group>` | `tab-group.component.ts` | Horizontal tab row with active underline |
+| `<app-tag>` | `tag.component.ts` | Non-interactive status chip — variants: `success`, `danger`, `neutral`, `info`, `disabled` |
+| `<app-toggle>` | `toggle.component.ts` | Binary on/off switch with optional label |
+
+### Conventions
+
+- **Inputs/Outputs** — use `input()` / `output()` signals. Never `@Input()` / `@Output()` decorators.
+- **Content projection** — variable content (dialog body, sidebar body/footer, button label) is projected via `<ng-content>` slots.
+- **Icon input** — components that render a Lucide icon accept a `Type<unknown>` input (the icon component class) and render it via `NgComponentOutlet` with `ngComponentOutletInputs`.
+- **data-testid** — every key interactive or structural element carries a `data-testid` attribute. E2E selectors must use these.
+- **No CSS files** — no per-component `.scss` / `.css` files. All styling is Tailwind utility classes in the template.
+- **Dark mode** — every component exposes correct `dark:` variants. Verify both themes in Storybook before merging.
+- **Form controls** — `Checkbox`, `Radio`, `RadioGroup`, `Toggle`, `Slider`, `Dropdown` do not implement `ControlValueAccessor`. Parent containers manage form state via signals and listen to typed output events.
+
+---
+
+## 25. Storybook
+
+Storybook 10 (`@storybook/angular`) is installed for isolated component development and visual review.
+
+### Running Storybook
+
+```bash
+cd breadly-frontend
+npm run storybook          # dev server on http://localhost:6006
+npm run build-storybook    # static build in storybook-static/
+```
+
+Storybook runs independently of `ng serve` — it does not start the Angular dev server.
+
+### Configuration
+
+- **`.storybook/main.ts`** — framework (`@storybook/angular`), story glob, addons.
+- **`.storybook/preview.ts`** — global decorators, `@storybook/addon-themes` for the light/dark toggle.
+
+The `@storybook/addon-themes` decorator applies/removes the `dark` class on `<html>` so `dark:` Tailwind variants behave exactly as in the app.
+
+### Writing stories
+
+One `<name>.stories.ts` file per component, in the same directory as the component.
+
+```typescript
+import type { Meta, StoryObj } from '@storybook/angular';
+import { ButtonComponent } from './button.component';
+
+const meta: Meta<ButtonComponent> = {
+  title: 'Components/Button',
+  component: ButtonComponent,
+  tags: ['autodocs'],
+};
+export default meta;
+type Story = StoryObj<ButtonComponent>;
+
+export const Primary: Story = { args: { variant: 'primary' } };
+```
+
+- Use `args` for simple stories where inputs alone define the variant.
+- Use `render` for stories that require template markup (content projection, icon slots).
+- Cover **every design-spec variant and state**: default, hover, focus, disabled, error, loading.
+- Story titles follow the pattern `Components/<ComponentName>`.
+
+### Adding a new component
+
+1. Create `<name>.component.ts` in `shared/components/`.
+2. Create `<name>.stories.ts` alongside it (min. one story per variant).
+3. Create `<name>.component.spec.ts` alongside it (min. one test per interactive behaviour).
+4. Update the component catalogue table in Section 24 of this document.
