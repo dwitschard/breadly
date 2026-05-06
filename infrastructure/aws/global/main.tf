@@ -447,3 +447,67 @@ resource "aws_ssm_parameter" "oac_preview_id" {
   type  = "String"
   value = aws_cloudfront_origin_access_control.preview.id
 }
+
+# ---------------------------------------------------------------------------
+# appdock.ch — ACM certificate and Route53 zone for the shared platform domain.
+#
+# The Storybook design system is hosted under appdock.ch (shared across all
+# apps on the platform). The certificate covers *.appdock.ch so any app
+# subdomain can be added without a new cert.
+# ---------------------------------------------------------------------------
+
+data "aws_route53_zone" "appdock" {
+  name         = var.appdock_domain_name
+  private_zone = false
+}
+
+resource "aws_acm_certificate" "appdock_wildcard" {
+  provider          = aws.us_east_1
+  domain_name       = "*.${var.appdock_domain_name}"
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+    prevent_destroy       = true
+  }
+
+  tags = {
+    Component = "global-appdock-cert"
+  }
+}
+
+resource "aws_route53_record" "appdock_cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.appdock_wildcard.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+
+  zone_id = data.aws_route53_zone.appdock.zone_id
+  name    = each.value.name
+  type    = each.value.type
+  ttl     = 300
+  records = [each.value.record]
+
+  allow_overwrite = true
+}
+
+resource "aws_acm_certificate_validation" "appdock_wildcard" {
+  provider                = aws.us_east_1
+  certificate_arn         = aws_acm_certificate.appdock_wildcard.arn
+  validation_record_fqdns = [for r in aws_route53_record.appdock_cert_validation : r.fqdn]
+}
+
+resource "aws_ssm_parameter" "appdock_hosted_zone_id" {
+  name  = "/${var.project_name}/global/appdock-hosted-zone-id"
+  type  = "String"
+  value = data.aws_route53_zone.appdock.zone_id
+}
+
+resource "aws_ssm_parameter" "appdock_certificate_arn" {
+  name  = "/${var.project_name}/global/appdock-certificate-arn"
+  type  = "String"
+  value = aws_acm_certificate_validation.appdock_wildcard.certificate_arn
+}

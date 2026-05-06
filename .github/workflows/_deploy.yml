@@ -2,10 +2,10 @@
 #
 # Unified deployment pipeline for the Breadly application (dev/prod).
 # Deploys the Angular SPA (S3), Express API (Lambda), Cognito, API Gateway,
-# and CDN (CloudFront) via a single Terraform root module.
+# CDN (CloudFront), and Storybook design system via a single Terraform root module.
 #
 # Jobs
-#   deploy    Downloads both release assets and deploys via Terraform.
+#   deploy    Downloads all release assets and deploys via Terraform.
 #
 # Triggers
 #   workflow_call     Called by main.yml after E2E validation passes.
@@ -16,10 +16,10 @@
 #   Run manage-terraform.yml once per environment before the first deploy.
 #
 # Artifacts
-#   The workflow always needs both backend.zip and dist.zip. The caller passes
-#   its own release_tag; the workflow downloads backend.zip from the latest
-#   backend-* release and dist.zip from the latest frontend-* release, then
-#   overrides whichever one the caller's release_tag provides.
+#   All three release assets (backend.zip, dist.zip, storybook.zip) are always
+#   downloaded. If a specific release tag is provided it is used; otherwise the
+#   latest release of that type is fetched. This mirrors the existing pattern for
+#   backend and frontend and lets Terraform manage file uploads consistently.
 #
 # Required secrets/variables — see .github/workflows/README.md.
 #   Secrets:   AWS_OIDC_ROLE_ARN   AWS_ACCOUNT_ID   MONGODB_URI
@@ -34,6 +34,11 @@ on:
         description: "Release tag being deployed (e.g. backend-a1b2c3d or frontend-a1b2c3d)"
         required: true
         type: string
+      storybook_release_tag:
+        description: "Storybook release tag to deploy (e.g. storybook-a1b2c3d). Leave empty for latest."
+        required: false
+        type: string
+        default: ""
       environment:
         required: true
         type: string
@@ -47,6 +52,11 @@ on:
         default: ""
       frontend_release_tag:
         description: "Frontend release tag (leave empty for latest)"
+        required: false
+        type: string
+        default: ""
+      storybook_release_tag:
+        description: "Storybook release tag (leave empty for latest)"
         required: false
         type: string
         default: ""
@@ -127,10 +137,33 @@ jobs:
               $(gh release list --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("frontend-"))][0].tagName')
           fi
 
+      # Download the latest storybook release asset. If the caller provided a
+      # storybook-* tag, use that; otherwise fetch the latest.
+      - name: Download storybook artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.storybook_release_tag || github.event.inputs.storybook_release_tag }}"
+
+          if [[ -n "$TAG" ]]; then
+            echo "Downloading storybook.zip from release $TAG"
+            gh release download "$TAG" --pattern storybook.zip
+          else
+            echo "Downloading storybook.zip from latest storybook release"
+            gh release download --pattern storybook.zip \
+              $(gh release list --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("storybook-"))][0].tagName')
+          fi
+
       - name: Unpack frontend artifact
         run: |
           mkdir -p breadly-frontend/dist/browser/
           unzip dist.zip -d breadly-frontend/dist/browser/
+
+      - name: Unpack storybook artifact
+        run: |
+          mkdir -p storybook-dist/
+          unzip storybook.zip -d storybook-dist-zip/
+          mv storybook-dist-zip/storybook-dist/* storybook-dist/ 2>/dev/null || mv storybook-dist-zip/* storybook-dist/
 
       - name: Setup Terraform (deploy)
         uses: ./.github/actions/terraform-setup
@@ -155,6 +188,7 @@ jobs:
           extra_tf_vars: >-
             -var="dist_zip_path=${{ github.workspace }}/backend.zip"
             -var="frontend_dist_path=${{ github.workspace }}/breadly-frontend/dist/browser"
+            -var="storybook_dist_path=${{ github.workspace }}/storybook-dist"
 
       - name: Invalidate CloudFront cache
         working-directory: infrastructure/aws/deploy
@@ -164,8 +198,17 @@ jobs:
             --distribution-id "$DIST_ID" \
             --paths "/*"
 
+      - name: Invalidate storybook CloudFront cache
+        working-directory: infrastructure/aws/deploy
+        run: |
+          DIST_ID=$(terraform output -raw storybook_cloudfront_distribution_id)
+          aws cloudfront create-invalidation \
+            --distribution-id "$DIST_ID" \
+            --paths "/*"
+
       - name: Print deployment URLs
         working-directory: infrastructure/aws/deploy
         run: |
-          echo "CloudFront URL: $(terraform output -raw cloudfront_url)"
+          echo "App URL:        $(terraform output -raw cloudfront_url)"
+          echo "Storybook URL:  $(terraform output -raw storybook_url)"
           echo "API Gateway:    $(terraform output -raw api_gateway_endpoint)"

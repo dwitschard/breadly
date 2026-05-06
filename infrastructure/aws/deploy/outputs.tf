@@ -73,3 +73,20 @@ output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID for cache invalidations."
   value       = module.cdn.cloudfront_distribution_id
 }
+
+# --- Storybook ---
+
+output "storybook_bucket_name" {
+  description = "Name of the S3 bucket hosting the Storybook design system."
+  value       = module.storybook.bucket_id
+}
+
+output "storybook_cloudfront_distribution_id" {
+  description = "CloudFront distribution ID for storybook cache invalidations."
+  value       = aws_cloudfront_distribution.storybook.id
+}
+
+output "storybook_url" {
+  description = "Public HTTPS URL of the deployed Storybook site."
+  value       = "https://${local.storybook_domain}"
+}

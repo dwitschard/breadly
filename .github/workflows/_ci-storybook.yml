@@ -1,0 +1,79 @@
+# _ci-storybook.yml
+#
+# Reusable CI pipeline for the Breadly Storybook design system.
+# Builds the static Storybook site and produces a storybook-dist artifact.
+#
+# This is a private/reusable workflow — it does not trigger on push.
+# It is called by main.yml as a top-level parallel job (not embedded inside
+# _ci-frontend.yml) so storybook is built exactly once per pipeline run,
+# regardless of how many frontend builds are triggered (preview + dev).
+#
+# Jobs
+#   build    Install → generate API types → build-storybook → upload artifact
+#
+# Outputs
+#   short_sha   Short commit SHA (7 chars), used for release tagging by the caller.
+
+name: CI Storybook
+
+on:
+  workflow_call:
+    outputs:
+      short_sha:
+        description: "Short SHA of the commit (7 chars)"
+        value: ${{ jobs.build.outputs.short_sha }}
+
+  workflow_dispatch:
+
+concurrency:
+  group: build-storybook-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.sha.outputs.short }}
+    defaults:
+      run:
+        working-directory: breadly-frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "npm"
+          cache-dependency-path: breadly-frontend/package-lock.json
+
+      - name: Install API spec dependencies (breadly-api)
+        run: npm ci
+        working-directory: breadly-api
+
+      - name: Install dependencies (breadly-frontend)
+        run: npm ci
+
+      - name: Generate API types
+        run: npm run generate-api
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      - name: Upload storybook artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: storybook-dist
+          path: breadly-frontend/storybook-static/
+          retention-days: 1
