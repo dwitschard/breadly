@@ -22,3 +22,7 @@
   --color-warm-900: #1c1917;
   --color-warm-950: #0f0e0d;
 }
+
+body {
+  @apply bg-warm-50 dark:bg-warm-950 text-warm-900 dark:text-warm-50;
+}
