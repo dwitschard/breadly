@@ -7,7 +7,7 @@ const DEFAULT_SETTINGS: UserSettingsDto = { language: 'de', theme: 'light' };
 
 const pk = (userId: string): string => `USER#${userId}`;
 
-export const getSettings = async (userId: string): Promise<UserSettingsDto> => {
+export const getSettings = async (userId: string, email?: string): Promise<UserSettingsDto> => {
   const client = getDynamoClient();
   const result = await client.send(
     new GetCommand({
@@ -17,7 +17,7 @@ export const getSettings = async (userId: string): Promise<UserSettingsDto> => {
   );
 
   if (!result.Item) {
-    await upsertSettings(userId, DEFAULT_SETTINGS);
+    await upsertSettings(userId, DEFAULT_SETTINGS, email);
     return { ...DEFAULT_SETTINGS };
   }
 
@@ -30,6 +30,7 @@ export const getSettings = async (userId: string): Promise<UserSettingsDto> => {
 export const upsertSettings = async (
   userId: string,
   patch: Partial<UserSettingsDto>,
+  email?: string,
 ): Promise<UserSettingsDto> => {
   const client = getDynamoClient();
 
@@ -52,10 +53,14 @@ export const upsertSettings = async (
     theme: patch.theme ?? current.theme,
   };
 
+  const effectiveEmail = email ?? (existing.Item?.['email'] as string | undefined);
+  const item: Record<string, unknown> = { PK: pk(userId), SK: SETTINGS_SK, ...updated };
+  if (effectiveEmail) item['email'] = effectiveEmail;
+
   await client.send(
     new PutCommand({
       TableName: tableName(),
-      Item: { PK: pk(userId), SK: SETTINGS_SK, ...updated },
+      Item: item,
     }),
   );
 

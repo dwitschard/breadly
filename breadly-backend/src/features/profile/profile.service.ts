@@ -14,8 +14,8 @@ interface UserInfoResponse {
   picture?: string;
 }
 
-export const getUserSettings = (userId: string): Promise<UserSettingsDto> =>
-  getSettings(userId);
+export const getUserSettings = (userId: string, email?: string): Promise<UserSettingsDto> =>
+  getSettings(userId, email);
 
 export const updateUserSettings = (
   userId: string,

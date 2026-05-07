@@ -11,6 +11,11 @@ import { UserSettingsDto } from '../../generated/api';
       <h2 class="text-lg font-semibold">{{ 'PROFILE.SETTINGS_TITLE' | translate }}</h2>
 
       <div class="flex justify-between items-center">
+        <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.EMAIL' | translate }}</span>
+        <span data-testid="settings-email" class="text-sm">{{ email() }}</span>
+      </div>
+
+      <div class="flex justify-between items-center">
         <label for="language-select" class="text-sm font-medium text-gray-500">
           {{ 'PROFILE.LANGUAGE' | translate }}
         </label>
@@ -45,6 +50,7 @@ import { UserSettingsDto } from '../../generated/api';
   `,
 })
 export class SettingsComponent {
+  readonly email = input.required<string>();
   readonly language = input.required<UserSettingsDto.LanguageEnum>();
   readonly theme = input.required<UserSettingsDto.ThemeEnum>();
   readonly languageChange = output<string>();

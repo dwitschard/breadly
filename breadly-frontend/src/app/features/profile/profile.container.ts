@@ -13,6 +13,7 @@ import { SettingsComponent } from './settings.component';
     @if (profileService.profile()) {
       <div class="max-w-xl mx-auto px-6 pb-6">
         <profile-settings
+          [email]="profileService.profile()!.email"
           [language]="settingsService.language()"
           [theme]="settingsService.theme()"
           (languageChange)="settingsService.updateSetting('language', $event)"
