@@ -19,6 +19,7 @@
   - [~] Implement DB Connection in Backend
   - [~] Add it to /health Endpoint
   - [~] Create Dummy Data for preview branches
+  - [ ] Switch to email as PK identifier for users instead of cognito-id (easier to troubleshoot issues)
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)

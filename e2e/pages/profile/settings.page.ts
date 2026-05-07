@@ -19,11 +19,19 @@ export class SettingsPage {
   }
 
   async selectLanguage(value: 'de' | 'en'): Promise<void> {
+    const saved = this.page.waitForResponse(
+      r => r.url().includes('/profile/settings') && r.request().method() === 'PATCH',
+    );
     await this.languageSelect.selectOption(value);
+    await saved;
   }
 
   async selectTheme(value: 'light' | 'dark'): Promise<void> {
+    const saved = this.page.waitForResponse(
+      r => r.url().includes('/profile/settings') && r.request().method() === 'PATCH',
+    );
     await this.themeSelect.selectOption(value);
+    await saved;
   }
 
   async expectLanguage(value: 'de' | 'en'): Promise<void> {
