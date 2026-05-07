@@ -159,6 +159,7 @@ jobs:
         run: |
           echo "user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
           echo "client_id=$(terraform output -raw cognito_user_pool_client_id)" >> "$GITHUB_OUTPUT"
+          echo "dynamodb_table_name=$(terraform output -raw dynamodb_table_name)" >> "$GITHUB_OUTPUT"
 
       - name: Create Cognito user groups
         env:
@@ -184,6 +185,20 @@ jobs:
           aws cognito-idp admin-update-user-attributes --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --user-attributes Name=name,Value="Admin User"
           aws cognito-idp admin-set-user-password --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --password "${{ secrets.PREVIEW_ADMIN_PASSWORD }}" --permanent
           aws cognito-idp admin-add-user-to-group --user-pool-id "$USER_POOL_ID" --username "admin@breadly.app" --group-name "ADMIN"
+
+      # --- Seed DynamoDB test data ---
+
+      - name: Install backend dependencies (for seeding)
+        working-directory: breadly-backend
+        run: npm ci
+
+      - name: Seed DynamoDB test data
+        working-directory: breadly-backend
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+          DYNAMODB_TABLE_NAME: ${{ steps.cognito.outputs.dynamodb_table_name }}
+          COGNITO_USER_POOL_ID: ${{ steps.cognito.outputs.user_pool_id }}
+        run: npm run seed:dynamodb
 
       # --- Invalidate CDN cache ---
 

@@ -1,6 +1,13 @@
 import supertest from 'supertest';
 import { app } from '../../app.js';
 
+jest.mock('../../database/dynamodb.client.js', () => ({
+  ...jest.requireActual('../../database/dynamodb.client.js'),
+  pingDynamoDB: jest.fn().mockResolvedValue(true),
+  getDynamoClient: jest.fn(),
+  tableName: jest.fn().mockReturnValue('breadly-local'),
+}));
+
 const request = supertest(app);
 
 describe('Operation Controller', () => {
@@ -32,7 +39,8 @@ describe('Operation Controller', () => {
     expect(response.status).toEqual(200);
     expect(response.body).toHaveProperty('status');
     expect(response.body).toHaveProperty('checks.api.status', 'ok');
-    expect(response.body).toHaveProperty('checks.database');
+    expect(response.body).toHaveProperty('checks.mongodb');
+    expect(response.body).toHaveProperty('checks.dynamodb');
   });
 
   it('should return version info', async () => {

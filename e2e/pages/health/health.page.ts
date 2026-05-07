@@ -9,8 +9,11 @@ export class HealthPage {
   readonly apiStatus: Locator;
   readonly apiResponseTime: Locator;
 
-  readonly dbCheck: Locator;
-  readonly dbStatus: Locator;
+  readonly mongodbCheck: Locator;
+  readonly mongodbStatus: Locator;
+
+  readonly dynamodbCheck: Locator;
+  readonly dynamodbStatus: Locator;
 
   readonly overallStatus: Locator;
 
@@ -27,8 +30,11 @@ export class HealthPage {
     this.apiStatus = page.getByTestId('health-check-api-status');
     this.apiResponseTime = page.getByTestId('health-check-api-time');
 
-    this.dbCheck = page.getByTestId('health-check-db');
-    this.dbStatus = page.getByTestId('health-check-db-status');
+    this.mongodbCheck = page.getByTestId('health-check-mongodb');
+    this.mongodbStatus = page.getByTestId('health-check-mongodb-status');
+
+    this.dynamodbCheck = page.getByTestId('health-check-dynamodb');
+    this.dynamodbStatus = page.getByTestId('health-check-dynamodb-status');
 
     this.overallStatus = page.getByTestId('health-overall-status');
 
@@ -46,12 +52,14 @@ export class HealthPage {
   async expectLoaded(): Promise<void> {
     await expect(this.heading).toBeVisible();
     await expect(this.apiCheck).toBeVisible();
-    await expect(this.dbCheck).toBeVisible();
+    await expect(this.mongodbCheck).toBeVisible();
+    await expect(this.dynamodbCheck).toBeVisible();
   }
 
   async expectAllOperational(): Promise<void> {
     await expect(this.apiStatus).toHaveAttribute('data-status', 'ok');
-    await expect(this.dbStatus).toHaveAttribute('data-status', 'ok');
+    await expect(this.mongodbStatus).toHaveAttribute('data-status', 'ok');
+    await expect(this.dynamodbStatus).toHaveAttribute('data-status', 'ok');
   }
 
   async expectResponseTimesVisible(): Promise<void> {

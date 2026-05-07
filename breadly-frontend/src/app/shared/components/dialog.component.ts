@@ -16,9 +16,13 @@ import { SpinnerComponent } from './spinner.component';
   selector: 'app-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ButtonComponent, SpinnerComponent, TranslateModule],
-  styles: [`
-    dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
-  `],
+  styles: [
+    `
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+      }
+    `,
+  ],
   template: `
     <dialog
       #dialogRef
@@ -43,7 +47,10 @@ import { SpinnerComponent } from './spinner.component';
             />
           </svg>
         }
-        <h2 class="flex-1 text-lg font-medium text-warm-900 dark:text-warm-50" data-testid="dialog-title">
+        <h2
+          class="flex-1 text-lg font-medium text-warm-900 dark:text-warm-50"
+          data-testid="dialog-title"
+        >
           {{ title() }}
         </h2>
         <button
@@ -103,13 +110,13 @@ import { SpinnerComponent } from './spinner.component';
   `,
 })
 export class DialogComponent {
-  readonly title       = input.required<string>();
-  readonly open        = input<boolean>(false);
-  readonly loading     = input<boolean>(false);
+  readonly title = input.required<string>();
+  readonly open = input<boolean>(false);
+  readonly loading = input<boolean>(false);
   readonly destructive = input<boolean>(false);
 
-  readonly confirm   = output<void>();
-  readonly cancel    = output<void>();
+  readonly confirm = output<void>();
+  readonly cancel = output<void>();
   readonly dismissed = output<void>();
 
   protected readonly confirmClass = computed(() => {
@@ -120,8 +127,7 @@ export class DialogComponent {
       : `${base} bg-amber-600 text-amber-950 hover:bg-amber-700 focus-visible:ring-amber-400 dark:bg-amber-500 dark:text-amber-950 dark:hover:bg-amber-400`;
   });
 
-  private readonly dialogRef =
-    viewChild.required<ElementRef<HTMLDialogElement>>('dialogRef');
+  private readonly dialogRef = viewChild.required<ElementRef<HTMLDialogElement>>('dialogRef');
 
   constructor() {
     effect(() => {

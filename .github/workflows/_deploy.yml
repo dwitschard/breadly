@@ -212,3 +212,20 @@ jobs:
           echo "App URL:        $(terraform output -raw cloudfront_url)"
           echo "Storybook URL:  $(terraform output -raw storybook_url)"
           echo "API Gateway:    $(terraform output -raw api_gateway_endpoint)"
+
+      - name: Install backend dependencies (for seeding)
+        if: env.TARGET_ENV == 'dev'
+        working-directory: breadly-backend
+        run: npm ci
+
+      - name: Seed DynamoDB test data (dev only)
+        if: env.TARGET_ENV == 'dev'
+        env:
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          DYNAMODB_TABLE_NAME=$(terraform -chdir=infrastructure/aws/deploy output -raw dynamodb_table_name)
+          COGNITO_USER_POOL_ID=$(terraform -chdir=infrastructure/aws/deploy output -raw cognito_user_pool_id)
+          cd breadly-backend
+          DYNAMODB_TABLE_NAME="$DYNAMODB_TABLE_NAME" \
+          COGNITO_USER_POOL_ID="$COGNITO_USER_POOL_ID" \
+          npm run seed:dynamodb

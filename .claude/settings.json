@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"MANDATORY (AGENTS.md Phase 5): If you implemented or edited substantial code this session, you MUST run the code-reviewer before reporting complete. Invoke: Agent(subagent_type: general-purpose) with the full instructions from .claude/agents/code-reviewer.md. Skip only if: no code was changed, or the reviewer already ran this session.\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}

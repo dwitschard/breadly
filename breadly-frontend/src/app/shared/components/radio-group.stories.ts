@@ -22,7 +22,8 @@ const meta: Meta<RadioGroupComponent> = {
   },
   argTypes: {
     options: {
-      description: 'Array of options to render (required). Each option has value, label, and optional disabled flag.',
+      description:
+        'Array of options to render (required). Each option has value, label, and optional disabled flag.',
       control: { type: 'object' },
       table: { type: { summary: 'RadioOption[]' }, category: 'Inputs' },
     },
@@ -39,7 +40,11 @@ const meta: Meta<RadioGroupComponent> = {
     error: {
       description: 'Marks all radios as invalid and shows the helperText.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     helperText: {
       description: 'Validation message shown below the group when error is true.',
@@ -49,7 +54,11 @@ const meta: Meta<RadioGroupComponent> = {
     groupId: {
       description: 'ID prefix used for the aria-labelledby association.',
       control: { type: 'text' },
-      table: { type: { summary: 'string' }, defaultValue: { summary: "'radio-group'" }, category: 'Inputs' },
+      table: {
+        type: { summary: 'string' },
+        defaultValue: { summary: "'radio-group'" },
+        category: 'Inputs',
+      },
     },
     valueChange: {
       description: 'Emitted with the newly selected value when the user clicks a radio.',
@@ -64,5 +73,11 @@ export const Default: Story = {
   args: { options: OPTIONS, value: 'aktiv', label: 'Schritttyp' },
 };
 export const WithError: Story = {
-  args: { options: OPTIONS, value: '', label: 'Schritttyp', error: true, helperText: 'Pflichtfeld' },
+  args: {
+    options: OPTIONS,
+    value: '',
+    label: 'Schritttyp',
+    error: true,
+    helperText: 'Pflichtfeld',
+  },
 };

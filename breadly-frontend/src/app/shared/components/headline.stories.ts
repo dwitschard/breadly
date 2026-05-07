@@ -32,7 +32,10 @@ type Story = StoryObj<HeadlineComponent>;
 
 export const Display: Story = {
   args: { level: 'display' },
-  render: (args) => ({ props: args, template: `<app-headline level="display">Meine Rezepte</app-headline>` }),
+  render: (args) => ({
+    props: args,
+    template: `<app-headline level="display">Meine Rezepte</app-headline>`,
+  }),
 };
 export const H1: Story = {
   render: () => ({ template: `<app-headline level="h1">Meine Rezepte</app-headline>` }),

@@ -21,3 +21,8 @@ output "cognito_hosted_ui_domain" {
   value       = data.terraform_remote_state.gateway.outputs.cognito_hosted_ui_domain
   sensitive   = true
 }
+
+output "dynamodb_table_name" {
+  description = "Name of the per-branch DynamoDB user data table."
+  value       = aws_dynamodb_table.user_data.name
+}

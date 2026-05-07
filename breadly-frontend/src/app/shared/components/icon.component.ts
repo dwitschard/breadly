@@ -6,10 +6,7 @@ import { ChangeDetectionStrategy, Component, computed, input, Type } from '@angu
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgComponentOutlet],
   template: `
-    <ng-container
-      [ngComponentOutlet]="icon()"
-      [ngComponentOutletInputs]="iconInputs()"
-    />
+    <ng-container [ngComponentOutlet]="icon()" [ngComponentOutletInputs]="iconInputs()" />
   `,
   host: {
     '[attr.aria-hidden]': '"true"',
@@ -17,12 +14,12 @@ import { ChangeDetectionStrategy, Component, computed, input, Type } from '@angu
   },
 })
 export class IconComponent {
-  readonly icon        = input.required<Type<unknown>>();
-  readonly size        = input<number>(24);
+  readonly icon = input.required<Type<unknown>>();
+  readonly size = input<number>(24);
   readonly strokeWidth = input<number>(1.5);
 
   protected readonly iconInputs = computed(() => ({
-    size:        this.size(),
+    size: this.size(),
     strokeWidth: this.strokeWidth(),
   }));
 }

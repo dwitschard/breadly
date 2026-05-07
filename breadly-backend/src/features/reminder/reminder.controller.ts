@@ -14,8 +14,7 @@ const reminderController = Router();
 
 reminderController.get('/', async (req: Request, res: Response) => {
   const userId = req.user!.sub;
-  const nextToken = req.query['nextToken'] as string | undefined;
-  const result = await listReminders(userId, nextToken);
+  const result = await listReminders(userId);
   res.status(200).json(result);
 });
 

@@ -8,12 +8,8 @@
 ## Next Tasks
 
 ## To Verify
-- [~] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
-  - [ ] Verify Teardown works properly now
-
 - [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
-
-- [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
+- [ ] Check new E-Mail Address will not receive emails in SPAM Folder
 
 ### Next
 
@@ -26,11 +22,17 @@
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
-  - [ ] Add Dumb Components -> check Design System Starter for reference
-  - [ ] Create a Storybook for it
+  - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
+  - [~] Add Dumb Components -> check Design System Starter for reference
+  - [~] Create a Storybook for it
 
 - [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase
+
+- [ ] Think about DB Schema for Recipes -> What should be stored and how 
+
+- [ ] Importer of Recipes of public webpage
+  - [ ] scheduled to get latest updates
 
 ## UI
 

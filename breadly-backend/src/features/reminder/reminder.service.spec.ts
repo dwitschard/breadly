@@ -6,13 +6,25 @@ import {
   processBatchReminders,
 } from './reminder.service.js';
 import * as schedulerService from '../scheduler/scheduler.service.js';
+import * as reminderRepository from './reminder.repository.js';
 import * as emailHelper from './email.helper.js';
 
 jest.mock('../scheduler/scheduler.service.js');
+jest.mock('./reminder.repository.js');
 jest.mock('./email.helper.js');
 
 const mockScheduler = schedulerService as jest.Mocked<typeof schedulerService>;
+const mockRepo = reminderRepository as jest.Mocked<typeof reminderRepository>;
 const mockEmail = emailHelper as jest.Mocked<typeof emailHelper>;
+
+const activeReminder = {
+  id: 'local-reminder-user-123-abc',
+  recipeId: 'recipe-1',
+  scheduledAt: '2027-01-01T09:00:00.000Z',
+  title: 'Test',
+  message: 'Msg',
+  status: 'active' as const,
+};
 
 describe('reminder.service', () => {
   beforeEach(() => {
@@ -26,11 +38,15 @@ describe('reminder.service', () => {
       return result;
     });
     mockEmail.sendEmail.mockResolvedValue(undefined);
+    mockRepo.createRecord.mockResolvedValue(undefined);
+    mockRepo.deleteRecord.mockResolvedValue(undefined);
+    mockRepo.updateStatus.mockResolvedValue(undefined);
+    mockRepo.listByUser.mockResolvedValue([]);
   });
 
   describe('createReminder', () => {
     it('creates a reminder with correct parameters', async () => {
-      mockScheduler.listSchedules.mockResolvedValueOnce({ schedules: [], nextToken: undefined });
+      mockRepo.listByUser.mockResolvedValueOnce([]);
       mockScheduler.createSchedule.mockResolvedValueOnce(undefined);
 
       const result = await createReminder('user-123', 'user@example.com', {
@@ -42,8 +58,24 @@ describe('reminder.service', () => {
 
       expect(result.recipeId).toBe('recipe-456');
       expect(result.title).toBe('Bake bread');
+      expect(result.status).toBe('active');
       expect(result.id).toContain('reminder-user-123');
       expect(mockScheduler.createSchedule).toHaveBeenCalledTimes(1);
+      expect(mockRepo.createRecord).toHaveBeenCalledTimes(1);
+    });
+
+    it('rolls back DynamoDB record if EventBridge creation fails', async () => {
+      mockRepo.listByUser.mockResolvedValueOnce([]);
+      mockScheduler.createSchedule.mockRejectedValueOnce(new Error('EventBridge down'));
+
+      await expect(
+        createReminder('user-123', 'user@example.com', {
+          recipeId: 'recipe-456',
+          scheduledAt: '2027-01-01T10:00:00Z',
+        }),
+      ).rejects.toThrow('EventBridge down');
+
+      expect(mockRepo.deleteRecord).toHaveBeenCalledTimes(1);
     });
 
     it('rejects scheduledAt in the past', async () => {
@@ -64,11 +96,10 @@ describe('reminder.service', () => {
       ).rejects.toThrow('Invalid scheduledAt datetime');
     });
 
-    it('enforces per-user limit of 10', async () => {
-      mockScheduler.listSchedules.mockResolvedValueOnce({
-        schedules: Array(10).fill({ Name: 'schedule' }),
-        nextToken: undefined,
-      });
+    it('enforces per-user limit of 10 active reminders', async () => {
+      mockRepo.listByUser.mockResolvedValueOnce(
+        Array(10).fill({ ...activeReminder, status: 'active' as const }),
+      );
 
       await expect(
         createReminder('user-123', 'user@example.com', {
@@ -80,39 +111,32 @@ describe('reminder.service', () => {
   });
 
   describe('listReminders', () => {
-    it('returns mapped reminders', async () => {
-      mockScheduler.listSchedules.mockResolvedValueOnce({
-        schedules: [{ Name: 'local-reminder-user1-abc123' }],
-        nextToken: 'next',
-      });
+    it('returns reminders from repository', async () => {
+      mockRepo.listByUser.mockResolvedValueOnce([activeReminder]);
 
       const result = await listReminders('user1');
 
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].id).toBe('local-reminder-user1-abc123');
-      expect(result.nextToken).toBe('next');
+      expect(result.items[0].id).toBe('local-reminder-user-123-abc');
     });
   });
 
   describe('cancelReminder', () => {
-    it('deletes a reminder owned by the user', async () => {
+    it('deletes from EventBridge and DynamoDB', async () => {
       mockScheduler.deleteSchedule.mockResolvedValueOnce(undefined);
 
-      // Schedule name format: {env}-reminder-{userId}-{uuid}
       const scheduleName = 'local-reminder-user-123-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
       await cancelReminder('user-123', scheduleName);
 
-      expect(mockScheduler.deleteSchedule).toHaveBeenCalledWith(
-        scheduleName,
-        expect.any(String),
-      );
+      expect(mockScheduler.deleteSchedule).toHaveBeenCalledWith(scheduleName, expect.any(String));
+      expect(mockRepo.deleteRecord).toHaveBeenCalledWith('user-123', scheduleName);
     });
 
     it('rejects deletion by non-owner', async () => {
       const scheduleName = 'local-reminder-other-user-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
-      await expect(
-        cancelReminder('user-123', scheduleName),
-      ).rejects.toThrow('Not authorized to delete this reminder');
+      await expect(cancelReminder('user-123', scheduleName)).rejects.toThrow(
+        'Not authorized to delete this reminder',
+      );
     });
   });
 
@@ -130,10 +154,34 @@ describe('reminder.service', () => {
       expect(mockEmail.loadTemplate).toHaveBeenCalledWith('reminder');
       expect(mockEmail.sendEmail).toHaveBeenCalledTimes(1);
       expect(mockEmail.sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: 'user@example.com',
-        }),
+        expect.objectContaining({ to: 'user@example.com' }),
       );
+    });
+
+    it('updates DynamoDB shadow record to disabled before sending', async () => {
+      await sendReminderEmail({
+        recipientEmail: 'user@example.com',
+        recipeId: 'recipe-123',
+        recipeName: 'Bread',
+        userId: 'user-123',
+        scheduleId: 'schedule-abc',
+      });
+
+      expect(mockRepo.updateStatus).toHaveBeenCalledWith('user-123', 'schedule-abc', 'disabled');
+    });
+
+    it('still sends email even if DynamoDB update fails', async () => {
+      mockRepo.updateStatus.mockRejectedValueOnce(new Error('DynamoDB down'));
+
+      await sendReminderEmail({
+        recipientEmail: 'user@example.com',
+        recipeId: 'recipe-123',
+        recipeName: 'Bread',
+        userId: 'user-123',
+        scheduleId: 'schedule-abc',
+      });
+
+      expect(mockEmail.sendEmail).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -163,10 +211,7 @@ describe('reminder.service', () => {
     });
 
     it('falls back to type as template name and generic subject', async () => {
-      await processBatchReminders({
-        type: 'weekly-digest',
-        userIds: ['user1@example.com'],
-      });
+      await processBatchReminders({ type: 'weekly-digest', userIds: ['user1@example.com'] });
 
       expect(mockEmail.loadTemplate).toHaveBeenCalledWith('weekly-digest');
       expect(mockEmail.sendEmail).toHaveBeenCalledWith(

@@ -41,7 +41,11 @@
       "Bash(npm ci *)",
       "Bash(npm view *)",
       "WebFetch(domain:storybook.js.org)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({'dependencies': d.get\\('dependencies',{}\\), 'devDependencies': d.get\\('devDependencies',{}\\)}, indent=2\\)\\)\")",
+      "Bash(git stash *)",
+      "Bash(python3 *)",
+      "Bash(npx tsx *)"
     ]
   }
 }

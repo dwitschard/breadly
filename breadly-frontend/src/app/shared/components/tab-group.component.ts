@@ -32,7 +32,7 @@ export interface TabItem {
   `,
 })
 export class TabGroupComponent {
-  readonly tabs      = input.required<TabItem[]>();
+  readonly tabs = input.required<TabItem[]>();
   readonly activeTab = input.required<string>();
 
   readonly tabChange = output<string>();

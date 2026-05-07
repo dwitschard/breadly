@@ -18,7 +18,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
   `,
 })
 export class FilterTagComponent {
-  readonly active   = input<boolean>(false);
+  readonly active = input<boolean>(false);
   readonly disabled = input<boolean>(false);
 
   readonly toggled = output<boolean>();

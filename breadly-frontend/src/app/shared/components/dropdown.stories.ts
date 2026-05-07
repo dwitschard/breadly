@@ -29,22 +29,38 @@ const meta: Meta<DropdownComponent> = {
     value: {
       description: 'Currently selected option value. Pass null to show the placeholder.',
       control: { type: 'text' },
-      table: { type: { summary: 'string | null' }, defaultValue: { summary: 'null' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'string | null' },
+        defaultValue: { summary: 'null' },
+        category: 'Inputs',
+      },
     },
     placeholder: {
       description: 'Text shown when no option is selected.',
       control: { type: 'text' },
-      table: { type: { summary: 'string' }, defaultValue: { summary: "'Auswählen'" }, category: 'Inputs' },
+      table: {
+        type: { summary: 'string' },
+        defaultValue: { summary: "'Auswählen'" },
+        category: 'Inputs',
+      },
     },
     disabled: {
       description: 'Prevents the dropdown from opening.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     error: {
       description: 'Highlights the trigger border in red and shows the helperText.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     helperText: {
       description: 'Validation message shown below the trigger when error is true.',

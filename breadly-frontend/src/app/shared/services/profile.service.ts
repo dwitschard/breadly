@@ -1,9 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { ProfileService as ProfileApiService, Profile } from '../../generated/api';
+import { SettingsService } from './settings.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private readonly api = inject(ProfileApiService);
+  private readonly settingsService = inject(SettingsService);
 
   private readonly _profile = signal<Profile | null>(null);
   private readonly _loading = signal(false);
@@ -16,6 +18,7 @@ export class ProfileService {
     this.api.getProfile().subscribe({
       next: (profile) => {
         this._profile.set(profile);
+        this.settingsService.initialize(profile.settings);
         this._loading.set(false);
       },
       error: () => {

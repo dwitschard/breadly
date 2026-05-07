@@ -1,0 +1,29 @@
+{
+  "users": [
+    {
+      "email": "demo@breadly.app",
+      "reminders": [
+        {
+          "scheduleId": "seed-reminder-sourdough",
+          "recipeId": "seed-recipe-sourdough",
+          "scheduledAt": "2025-03-01T09:00:00.000Z",
+          "title": "Sauerteig backen",
+          "message": "Dein Sauerteig ist bereit zum Backen!",
+          "status": "disabled"
+        },
+        {
+          "scheduleId": "seed-reminder-banana-bread",
+          "recipeId": "seed-recipe-banana-bread",
+          "scheduledAt": "2025-02-15T14:00:00.000Z",
+          "title": "Bananenbrot backen",
+          "message": "Die Bananen sind reif – Zeit für Bananenbrot!",
+          "status": "disabled"
+        }
+      ]
+    },
+    {
+      "email": "admin@breadly.app",
+      "reminders": []
+    }
+  ]
+}

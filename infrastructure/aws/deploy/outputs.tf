@@ -90,3 +90,8 @@ output "storybook_url" {
   description = "Public HTTPS URL of the deployed Storybook site."
   value       = "https://${local.storybook_domain}"
 }
+
+output "dynamodb_table_name" {
+  description = "Name of the environment DynamoDB user data table."
+  value       = aws_dynamodb_table.user_data.name
+}

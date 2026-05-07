@@ -8,10 +8,15 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     <div class="flex flex-col gap-1.5" data-testid="slider">
       @if (label()) {
         <div class="flex items-center justify-between">
-          <label class="text-sm font-medium text-warm-900 dark:text-warm-50" data-testid="slider-label">
+          <label
+            class="text-sm font-medium text-warm-900 dark:text-warm-50"
+            data-testid="slider-label"
+          >
             {{ label() }}
           </label>
-          <span class="text-sm text-warm-600 dark:text-warm-300" data-testid="slider-value">{{ value() }}</span>
+          <span class="text-sm text-warm-600 dark:text-warm-300" data-testid="slider-value">{{
+            value()
+          }}</span>
         </div>
       }
 
@@ -28,19 +33,23 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       />
 
       <div class="flex justify-between">
-        <span class="text-xs text-warm-500 dark:text-warm-400" data-testid="slider-min">{{ min() }}</span>
-        <span class="text-xs text-warm-500 dark:text-warm-400" data-testid="slider-max">{{ max() }}</span>
+        <span class="text-xs text-warm-500 dark:text-warm-400" data-testid="slider-min">{{
+          min()
+        }}</span>
+        <span class="text-xs text-warm-500 dark:text-warm-400" data-testid="slider-max">{{
+          max()
+        }}</span>
       </div>
     </div>
   `,
 })
 export class SliderComponent {
-  readonly min      = input<number>(0);
-  readonly max      = input<number>(100);
-  readonly step     = input<number>(1);
-  readonly value    = input<number>(50);
+  readonly min = input<number>(0);
+  readonly max = input<number>(100);
+  readonly step = input<number>(1);
+  readonly value = input<number>(50);
   readonly disabled = input<boolean>(false);
-  readonly label    = input<string>('');
+  readonly label = input<string>('');
 
   readonly valueChange = output<number>();
 

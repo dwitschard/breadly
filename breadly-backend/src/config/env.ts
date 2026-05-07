@@ -28,4 +28,5 @@ export const env = {
     return env.ENV_NAME === 'production' ? 'Breadly' : 'Breadly Dev';
   },
   APP_URL: optional('APP_URL', 'http://localhost:4200'),
+  DYNAMODB_TABLE_NAME: optional('DYNAMODB_TABLE_NAME', 'breadly-local'),
 };

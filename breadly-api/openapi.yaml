@@ -186,7 +186,7 @@ paths:
     get:
       operationId: getProfile
       summary: Get the authenticated user's profile
-      description: Returns profile information derived from the authenticated user's JWT claims.
+      description: Returns profile information derived from the authenticated user's JWT claims, including stored settings.
       tags:
         - Profile
       responses:
@@ -203,23 +203,69 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /profile/settings:
+    get:
+      operationId: getUserSettings
+      summary: Get the authenticated user's settings
+      description: Returns the stored language and theme preference. Creates and persists defaults if no record exists.
+      tags:
+        - Profile
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettingsDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      operationId: updateUserSettings
+      summary: Update the authenticated user's settings
+      description: Partially updates language and/or theme preference. Invalid values are rejected with 400.
+      tags:
+        - Profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchUserSettingsDto'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettingsDto'
+        '400':
+          description: Invalid language or theme value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /reminders:
     get:
       operationId: getReminders
-      summary: List active reminders
-      description: Returns all active reminders for the authenticated user. Supports cursor-based pagination via nextToken.
+      summary: List reminders
+      description: Returns all reminders for the authenticated user, including fired reminders marked as disabled.
       tags:
         - Reminders
-      parameters:
-        - name: nextToken
-          in: query
-          required: false
-          description: Cursor token for pagination (from a previous response)
-          schema:
-            type: string
       responses:
         '200':
-          description: A paginated list of reminders
+          description: A list of reminders
           content:
             application/json:
               schema:
@@ -416,6 +462,7 @@ components:
         - emailVerified
         - name
         - roles
+        - settings
       properties:
         sub:
           type: string
@@ -443,6 +490,43 @@ components:
           items:
             type: string
           description: List of roles assigned to the user
+        settings:
+          $ref: '#/components/schemas/UserSettingsDto'
+
+    UserSettingsDto:
+      type: object
+      required:
+        - language
+        - theme
+      properties:
+        language:
+          type: string
+          enum:
+            - de
+            - en
+          description: Display language preference
+        theme:
+          type: string
+          enum:
+            - light
+            - dark
+          description: UI theme preference
+
+    PatchUserSettingsDto:
+      type: object
+      properties:
+        language:
+          type: string
+          enum:
+            - de
+            - en
+          description: Display language preference
+        theme:
+          type: string
+          enum:
+            - light
+            - dark
+          description: UI theme preference
 
     HealthResponse:
       type: object
@@ -460,11 +544,14 @@ components:
           type: object
           required:
             - api
-            - database
+            - mongodb
+            - dynamodb
           properties:
             api:
               $ref: '#/components/schemas/HealthCheck'
-            database:
+            mongodb:
+              $ref: '#/components/schemas/HealthCheck'
+            dynamodb:
               $ref: '#/components/schemas/HealthCheck'
 
     HealthCheck:
@@ -507,6 +594,7 @@ components:
         - id
         - recipeId
         - scheduledAt
+        - status
       properties:
         id:
           type: string
@@ -523,6 +611,12 @@ components:
         message:
           type: string
           description: Optional message for the reminder
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+          description: active = upcoming; disabled = already fired
 
     ReminderList:
       type: object
@@ -562,6 +656,12 @@ components:
         appUrl:
           type: string
           description: Base URL of the application for links in the email
+        userId:
+          type: string
+          description: Cognito sub of the reminder owner (used to update DynamoDB shadow record)
+        scheduleId:
+          type: string
+          description: EventBridge schedule name (used to update DynamoDB shadow record)
 
     BatchReminderPayload:
       type: object

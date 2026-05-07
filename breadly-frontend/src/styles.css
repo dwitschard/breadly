@@ -9,16 +9,16 @@
   --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   /* AppDock warm-neutral ramp — custom tokens not in Tailwind's default palette */
-  --color-warm-25:  #FDFCFA;
-  --color-warm-50:  #FAF8F5;
-  --color-warm-100: #F4F1EC;
-  --color-warm-200: #E9E4DC;
-  --color-warm-300: #D6CFC4;
-  --color-warm-400: #A8A096;
-  --color-warm-500: #78716C;
-  --color-warm-600: #57534E;
-  --color-warm-700: #3F3B36;
+  --color-warm-25: #fdfcfa;
+  --color-warm-50: #faf8f5;
+  --color-warm-100: #f4f1ec;
+  --color-warm-200: #e9e4dc;
+  --color-warm-300: #d6cfc4;
+  --color-warm-400: #a8a096;
+  --color-warm-500: #78716c;
+  --color-warm-600: #57534e;
+  --color-warm-700: #3f3b36;
   --color-warm-800: #292524;
-  --color-warm-900: #1C1917;
-  --color-warm-950: #0F0E0D;
+  --color-warm-900: #1c1917;
+  --color-warm-950: #0f0e0d;
 }

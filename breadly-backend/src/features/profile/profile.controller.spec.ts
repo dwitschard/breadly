@@ -1,6 +1,14 @@
 import supertest from 'supertest';
 import { app } from '../../app.js';
 
+jest.mock('../user-settings/user-settings.repository.js', () => ({
+  getSettings: jest.fn().mockResolvedValue({ language: 'de', theme: 'light' }),
+  upsertSettings: jest.fn().mockImplementation(
+    (_userId: unknown, patch: Record<string, string>) =>
+      Promise.resolve({ language: patch['language'] ?? 'de', theme: patch['theme'] ?? 'light' }),
+  ),
+}));
+
 const request = supertest(app);
 
 function makeToken(payload: Record<string, unknown>): string {
@@ -166,5 +174,62 @@ describe('GET /api/profile', () => {
     const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.roles).toEqual([]);
+  });
+
+  it('includes settings in profile response', async () => {
+    const token = makeToken(minimalClaims);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('settings');
+    expect(res.body.settings).toEqual({ language: 'de', theme: 'light' });
+  });
+});
+
+describe('GET /api/profile/settings', () => {
+  const token = makeToken({ sub: 'test-user', email: 'test@example.com', 'cognito:groups': [] });
+  const auth = { Authorization: `Bearer ${token}` };
+
+  it('returns settings for authenticated user', async () => {
+    const res = await request.get('/api/profile/settings').set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ language: 'de', theme: 'light' });
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request.get('/api/profile/settings');
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('PATCH /api/profile/settings', () => {
+  const token = makeToken({ sub: 'test-user', email: 'test@example.com', 'cognito:groups': [] });
+  const auth = { Authorization: `Bearer ${token}` };
+
+  it('updates theme and returns updated settings', async () => {
+    const res = await request.patch('/api/profile/settings').set(auth).send({ theme: 'dark' });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('theme', 'dark');
+    expect(res.body).toHaveProperty('language');
+  });
+
+  it('updates language only', async () => {
+    const res = await request.patch('/api/profile/settings').set(auth).send({ language: 'en' });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('language', 'en');
+  });
+
+  it('returns 400 for invalid theme', async () => {
+    const res = await request.patch('/api/profile/settings').set(auth).send({ theme: 'rainbow' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for invalid language', async () => {
+    const res = await request.patch('/api/profile/settings').set(auth).send({ language: 'fr' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request.patch('/api/profile/settings').send({ theme: 'dark' });
+    expect(res.status).toBe(401);
   });
 });

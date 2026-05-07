@@ -9,7 +9,7 @@ describe('SidebarComponent', () => {
     await renderWithProviders(SidebarComponent, {
       componentInputs: { title: 'Filter', open: true },
     });
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(screen.getByTestId('sidebar-title')).toHaveTextContent('Filter');
   });
 
@@ -30,7 +30,7 @@ describe('SidebarComponent', () => {
         componentProperties: { dismissed },
       },
     );
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     await user.click(screen.getByTestId('sidebar-close'));
     expect(dismissed).toHaveBeenCalledOnce();
   });
@@ -45,7 +45,7 @@ describe('SidebarComponent', () => {
         componentProperties: { dismissed },
       },
     );
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     await user.click(screen.getByTestId('sidebar-scrim'));
     expect(dismissed).toHaveBeenCalledOnce();
   });

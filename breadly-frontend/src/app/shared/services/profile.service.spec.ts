@@ -2,7 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
-import { Profile, provideApi } from '../../generated/api';
+import { SettingsService } from './settings.service';
+import { Profile, UserSettingsDto, provideApi } from '../../generated/api';
+
+const mockSettings: UserSettingsDto = {
+  language: UserSettingsDto.LanguageEnum.De,
+  theme: UserSettingsDto.ThemeEnum.Light,
+};
 
 const mockProfile: Profile = {
   sub: 'user-1',
@@ -10,6 +16,14 @@ const mockProfile: Profile = {
   emailVerified: true,
   name: 'Alice',
   roles: ['admin'],
+  settings: mockSettings,
+};
+
+const mockSettingsService = {
+  initialize: () => {},
+  updateSetting: () => {},
+  language: () => 'de',
+  theme: () => 'light',
 };
 
 describe('ProfileService (shared)', () => {
@@ -18,7 +32,12 @@ describe('ProfileService (shared)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideApi('api')],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideApi('api'),
+        { provide: SettingsService, useValue: mockSettingsService },
+      ],
     });
     service = TestBed.inject(ProfileService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -26,10 +45,6 @@ describe('ProfileService (shared)', () => {
 
   afterEach(() => {
     httpMock.verify();
-  });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
   });
 
   it('profile signal starts as null', () => {

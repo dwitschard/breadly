@@ -91,6 +91,62 @@ resource "aws_cognito_user_pool_client" "this" {
 # Per-branch private Lambda (authenticated routes)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# DynamoDB — per-branch user data table (settings, reminder shadow records)
+# ---------------------------------------------------------------------------
+
+resource "aws_dynamodb_table" "user_data" {
+  name         = "${local.name_prefix}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  tags = {
+    Component  = "preview"
+    BranchSlug = var.branch_slug
+  }
+}
+
+data "aws_iam_policy_document" "dynamodb" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:DescribeTable",
+    ]
+    resources = [aws_dynamodb_table.user_data.arn]
+  }
+}
+
+resource "aws_iam_policy" "dynamodb" {
+  name   = "${local.name_prefix}-dynamodb-policy"
+  policy = data.aws_iam_policy_document.dynamodb.json
+
+  tags = {
+    Component  = "preview"
+    BranchSlug = var.branch_slug
+  }
+}
+
 module "backend" {
   source = "../../modules/lambda_express"
 
@@ -102,6 +158,11 @@ module "backend" {
   extra_env_vars = {
     PREVIEW_PATH_PREFIX  = "/preview/${var.branch_slug}"
     COGNITO_USERINFO_URL = "${data.terraform_remote_state.gateway.outputs.cognito_hosted_ui_domain}/oauth2/userInfo"
+    DYNAMODB_TABLE_NAME  = aws_dynamodb_table.user_data.name
+  }
+
+  extra_policy_arns = {
+    dynamodb = aws_iam_policy.dynamodb.arn,
   }
 
   tags = {

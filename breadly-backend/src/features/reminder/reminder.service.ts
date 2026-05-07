@@ -1,9 +1,4 @@
 import { randomUUID } from 'crypto';
-import {
-  createSchedule,
-  deleteSchedule,
-  listSchedules,
-} from '../scheduler/scheduler.service.js';
 import { loadTemplate, interpolate, sendEmail } from './email.helper.js';
 import { env } from '../../config/env.js';
 import { ApplicationError } from '../../domain/error.types.js';
@@ -16,6 +11,8 @@ import {
   BatchReminderPayload,
 } from '../../app/generated/api/index.js';
 import { ActionAfterCompletion } from '@aws-sdk/client-scheduler';
+import * as reminderRepository from './reminder.repository.js';
+import * as schedulerService from '../scheduler/scheduler.service.js';
 
 const MAX_REMINDERS_PER_USER = 10;
 
@@ -28,11 +25,6 @@ const parseScheduleName = (name: string): { userId: string } | null => {
   const parts = name.split('-reminder-');
   if (parts.length < 2) return null;
   const rest = parts[1];
-  const lastDash = rest.lastIndexOf('-');
-  if (lastDash === -1) return null;
-  // userId is between "reminder-" and the last UUID segment
-  // Format: {env}-reminder-{userId}-{uuid}
-  // UUID has format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 chars)
   const uuidLength = 36;
   if (rest.length < uuidLength + 1) return null;
   const userId = rest.substring(0, rest.length - uuidLength - 1);
@@ -57,13 +49,9 @@ export const createReminder = async (
     throw new ApplicationError('scheduledAt must be in the future', 400);
   }
 
-  const namePrefix = `${env.ENV_NAME}-reminder-${userId}`;
-  const existing = await listSchedules({
-    namePrefix,
-    groupName: env.SCHEDULER_GROUP_NAME,
-  });
-
-  if (existing.schedules.length >= MAX_REMINDERS_PER_USER) {
+  const existing = await reminderRepository.listByUser(userId);
+  const activeCount = existing.filter((r) => r.status === 'active').length;
+  if (activeCount >= MAX_REMINDERS_PER_USER) {
     throw new ApplicationError(
       `Maximum of ${MAX_REMINDERS_PER_USER} active reminders per user reached`,
       409,
@@ -72,6 +60,8 @@ export const createReminder = async (
 
   const scheduleName = buildScheduleName(userId);
   const scheduleExpression = toUtcScheduleExpression(dto.scheduledAt);
+  const title = dto.title ?? 'tbd';
+  const message = dto.message ?? 'tbd';
 
   const payload: SendReminderPayload = {
     recipientEmail: userEmail,
@@ -80,19 +70,35 @@ export const createReminder = async (
     title: dto.title,
     message: dto.message,
     appUrl: env.APP_URL,
+    userId,
+    scheduleId: scheduleName,
   };
 
-  await createSchedule({
-    name: scheduleName,
-    scheduleExpression,
-    targetMethod: 'POST',
-    targetPath: `/api/internal/reminders/send`,
-    payload: payload as unknown as Record<string, unknown>,
-    groupName: env.SCHEDULER_GROUP_NAME,
-    roleArn: env.SCHEDULER_ROLE_ARN,
-    apiGatewayEndpoint: env.API_GATEWAY_ENDPOINT,
-    actionAfterCompletion: ActionAfterCompletion.DELETE,
+  await reminderRepository.createRecord({
+    userId,
+    scheduleId: scheduleName,
+    recipeId: dto.recipeId,
+    scheduledAt: scheduledAt.toISOString(),
+    title,
+    message,
   });
+
+  try {
+    await schedulerService.createSchedule({
+      name: scheduleName,
+      scheduleExpression,
+      targetMethod: 'POST',
+      targetPath: `/api/internal/reminders/send`,
+      payload: payload as unknown as Record<string, unknown>,
+      groupName: env.SCHEDULER_GROUP_NAME,
+      roleArn: env.SCHEDULER_ROLE_ARN,
+      apiGatewayEndpoint: env.API_GATEWAY_ENDPOINT,
+      actionAfterCompletion: ActionAfterCompletion.DELETE,
+    });
+  } catch (err) {
+    await reminderRepository.deleteRecord(userId, scheduleName);
+    throw err;
+  }
 
   return {
     id: scheduleName,
@@ -100,33 +106,13 @@ export const createReminder = async (
     scheduledAt: scheduledAt.toISOString(),
     title: dto.title,
     message: dto.message,
+    status: 'active',
   };
 };
 
-export const listReminders = async (
-  userId: string,
-  nextToken?: string,
-): Promise<ReminderList> => {
-  const namePrefix = `${env.ENV_NAME}-reminder-${userId}`;
-  const result = await listSchedules({
-    namePrefix,
-    groupName: env.SCHEDULER_GROUP_NAME,
-    nextToken,
-  });
-
-  const items: Reminder[] = result.schedules.map((schedule) => {
-    const name = schedule.Name ?? '';
-    return {
-      id: name,
-      recipeId: '',
-      scheduledAt: '',
-    };
-  });
-
-  return {
-    items,
-    nextToken: result.nextToken,
-  };
+export const listReminders = async (userId: string): Promise<ReminderList> => {
+  const items = await reminderRepository.listByUser(userId);
+  return { items };
 };
 
 export const cancelReminder = async (
@@ -138,10 +124,29 @@ export const cancelReminder = async (
     throw new ApplicationError('Not authorized to delete this reminder', 403);
   }
 
-  await deleteSchedule(reminderId, env.SCHEDULER_GROUP_NAME);
+  try {
+    await schedulerService.deleteSchedule(reminderId, env.SCHEDULER_GROUP_NAME);
+  } catch {
+    try {
+      await schedulerService.deleteSchedule(reminderId, env.SCHEDULER_GROUP_NAME);
+    } catch (retryErr) {
+      logger.error({ reminderId, error: retryErr }, 'EventBridge delete failed after retry');
+      throw new ApplicationError('Failed to cancel reminder', 500);
+    }
+  }
+
+  await reminderRepository.deleteRecord(userId, reminderId);
 };
 
 export const sendReminderEmail = async (payload: SendReminderPayload): Promise<void> => {
+  if (payload.userId && payload.scheduleId) {
+    try {
+      await reminderRepository.updateStatus(payload.userId, payload.scheduleId, 'disabled');
+    } catch (err) {
+      logger.error({ err, scheduleId: payload.scheduleId }, 'Failed to update reminder status in DynamoDB');
+    }
+  }
+
   const template = loadTemplate('reminder');
   const html = interpolate(template, {
     userName: 'Breadly User',
@@ -183,5 +188,37 @@ export const processBatchReminders = async (payload: BatchReminderPayload): Prom
     } catch (error) {
       logger.error({ userId, error }, 'Failed to send batch email');
     }
+  }
+};
+
+export const migrateExistingReminders = async (): Promise<void> => {
+  try {
+    const namePrefix = `${env.ENV_NAME}-reminder-`;
+    const result = await schedulerService.listSchedules({
+      namePrefix,
+      groupName: env.SCHEDULER_GROUP_NAME,
+    });
+
+    for (const schedule of result.schedules) {
+      const name = schedule.Name ?? '';
+      const parsed = parseScheduleName(name);
+      if (!parsed) continue;
+
+      const { userId } = parsed;
+      const existing = await reminderRepository.getRecord(userId, name);
+      if (existing) continue;
+
+      await reminderRepository.createRecord({
+        userId,
+        scheduleId: name,
+        recipeId: '',
+        scheduledAt: new Date().toISOString(),
+        title: 'tbd',
+        message: 'tbd',
+      });
+      logger.info({ scheduleName: name }, 'Migrated reminder shadow record');
+    }
+  } catch (err) {
+    logger.error({ err }, 'Reminder migration failed');
   }
 };

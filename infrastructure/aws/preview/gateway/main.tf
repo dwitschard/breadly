@@ -218,6 +218,38 @@ resource "aws_cognito_user_pool_client" "localhost" {
   logout_urls   = ["http://localhost:4200"]
 }
 
+# ---------------------------------------------------------------------------
+# Local development DynamoDB table — shared by all developers
+# Mirrors the localhost Cognito app client pattern above: one-time resource,
+# shared across all developer sessions on the same AWS account.
+# ---------------------------------------------------------------------------
+
+resource "aws_dynamodb_table" "local_dev" {
+  name         = "${var.project_name}-local"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  tags = {
+    Component = "local-dev"
+  }
+}
+
 # DNS A record for the shared preview Cognito custom domain
 resource "aws_route53_record" "cognito_a" {
   zone_id = data.aws_ssm_parameter.hosted_zone_id.value

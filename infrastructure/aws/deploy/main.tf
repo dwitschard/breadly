@@ -130,6 +130,60 @@ module "cognito" {
   }
 }
 
+# ---------------------------------------------------------------------------
+# DynamoDB — user data table (settings, reminder shadow records)
+# ---------------------------------------------------------------------------
+
+resource "aws_dynamodb_table" "user_data" {
+  name         = "${local.name_prefix}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  tags = {
+    Component = "backend"
+  }
+}
+
+data "aws_iam_policy_document" "dynamodb" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:DescribeTable",
+    ]
+    resources = [aws_dynamodb_table.user_data.arn]
+  }
+}
+
+resource "aws_iam_policy" "dynamodb" {
+  name   = "${local.name_prefix}-dynamodb-policy"
+  policy = data.aws_iam_policy_document.dynamodb.json
+
+  tags = {
+    Component = "backend"
+  }
+}
+
 module "backend" {
   source = "../modules/lambda_express"
 
@@ -147,11 +201,13 @@ module "backend" {
     APP_URL               = local.cloudfront_url
     ENV_NAME              = terraform.workspace
     COGNITO_USERINFO_URL  = "${module.cognito.hosted_ui_domain}/oauth2/userInfo"
+    DYNAMODB_TABLE_NAME   = aws_dynamodb_table.user_data.name
   }
 
   extra_policy_arns = {
     ses       = data.aws_ssm_parameter.ses_send_policy_arn.value,
     scheduler = module.scheduler.lambda_manage_schedules_policy_arn,
+    dynamodb  = aws_iam_policy.dynamodb.arn,
   }
 
   tags = {

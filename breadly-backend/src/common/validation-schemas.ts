@@ -26,9 +26,18 @@ export const SendReminderPayloadSchema = z.object({
   title: z.string().optional(),
   message: z.string().optional(),
   appUrl: z.string().optional(),
+  userId: z.string().optional(),
+  scheduleId: z.string().optional(),
+});
+
+export const PatchUserSettingsDtoSchema = z.object({
+  language: z.enum(['de', 'en']).optional(),
+  theme: z.enum(['light', 'dark']).optional(),
 });
 
 export const BatchReminderPayloadSchema = z.object({
   type: z.string().min(1, 'type is required'),
+  template: z.string().optional(),
+  subject: z.string().optional(),
   userIds: z.array(z.string()),
 });

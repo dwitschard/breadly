@@ -22,7 +22,8 @@ const meta: Meta<TabGroupComponent> = {
   },
   argTypes: {
     tabs: {
-      description: 'Array of tab definitions (required). Each tab needs an id, label, and optional disabled flag.',
+      description:
+        'Array of tab definitions (required). Each tab needs an id, label, and optional disabled flag.',
       control: { type: 'object' },
       table: { type: { summary: 'TabItem[]' }, category: 'Inputs' },
     },
