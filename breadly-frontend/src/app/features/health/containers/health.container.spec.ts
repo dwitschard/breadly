@@ -24,7 +24,7 @@ describe('HealthContainerComponent', () => {
     await setup({ health: mockHealth });
 
     expect(screen.getByTestId('health-check-api')).toBeInTheDocument();
-    expect(screen.getByTestId('health-check-db')).toBeInTheDocument();
+    expect(screen.getByTestId('health-check-mongodb')).toBeInTheDocument();
   });
 
   it('passes apiResponseTime from service to dashboard', async () => {
@@ -59,7 +59,8 @@ describe('HealthContainerComponent', () => {
     status: 'ok' as HealthResponse.StatusEnum,
     checks: {
       api: { status: 'ok' as any },
-      database: { status: 'ok' as any },
+      mongodb: { status: 'ok' as any },
+      dynamodb: { status: 'ok' as any },
     },
   };
 

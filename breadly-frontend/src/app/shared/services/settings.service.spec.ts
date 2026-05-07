@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -52,14 +52,14 @@ describe('SettingsService', () => {
       expect(service.theme()).toBe('dark');
     });
 
-    it('applies dark class to html element on dark theme', fakeAsync(() => {
+    it('applies dark class to html element on dark theme', () => {
       service.initialize({
         language: UserSettingsDto.LanguageEnum.De,
         theme: UserSettingsDto.ThemeEnum.Dark,
       });
-      tick();
+      TestBed.flushEffects();
       expect(document.documentElement.classList.contains('dark')).toBe(true);
-    }));
+    });
   });
 
   describe('updateSetting', () => {
@@ -77,7 +77,7 @@ describe('SettingsService', () => {
       httpMock.expectOne((req) => req.url.includes('/profile/settings') && req.method === 'PATCH');
     });
 
-    it('reverts theme signal on PATCH failure', fakeAsync(() => {
+    it('reverts theme signal on PATCH failure', () => {
       service.initialize({
         language: UserSettingsDto.LanguageEnum.De,
         theme: UserSettingsDto.ThemeEnum.Light,
@@ -88,12 +88,11 @@ describe('SettingsService', () => {
       httpMock
         .expectOne((req) => req.url.includes('/profile/settings') && req.method === 'PATCH')
         .error(new ErrorEvent('network error'));
-      tick();
 
       expect(service.theme()).toBe('light');
-    }));
+    });
 
-    it('reverts language signal on PATCH failure', fakeAsync(() => {
+    it('reverts language signal on PATCH failure', () => {
       service.initialize({
         language: UserSettingsDto.LanguageEnum.De,
         theme: UserSettingsDto.ThemeEnum.Light,
@@ -104,20 +103,18 @@ describe('SettingsService', () => {
       httpMock
         .expectOne((req) => req.url.includes('/profile/settings') && req.method === 'PATCH')
         .error(new ErrorEvent('network error'));
-      tick();
 
       expect(service.language()).toBe('de');
-    }));
+    });
 
-    it('retains updated value on PATCH success', fakeAsync(() => {
+    it('retains updated value on PATCH success', () => {
       service.updateSetting('theme', 'dark');
 
       httpMock
         .expectOne((req) => req.url.includes('/profile/settings') && req.method === 'PATCH')
         .flush({ language: 'de', theme: 'dark' });
-      tick();
 
       expect(service.theme()).toBe('dark');
-    }));
+    });
   });
 });

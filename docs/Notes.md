@@ -13,12 +13,12 @@
 
 ### Next
 
-- [ ] Dynamo Setup
-  - [ ] DynamoDB Table Design for User (Username, Last Login, Settings, )
-  - [ ] Terraform Setup 
-  - [ ] Implement DB Connection in Backend
-  - [ ] Add it to /health Endpoint
-  - [ ] Create Dummy Data for preview branches
+- [~] Dynamo Setup
+  - [~] DynamoDB Table Design for User (Username, Last Login, Settings, )
+  - [~] Terraform Setup 
+  - [~] Implement DB Connection in Backend
+  - [~] Add it to /health Endpoint
+  - [~] Create Dummy Data for preview branches
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)

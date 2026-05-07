@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ProfileContainerComponent } from './profile.container';
 import { ProfileService } from '../../shared/services/profile.service';
-import { Profile } from '../../generated/api';
+import { Profile, UserSettingsDto } from '../../generated/api';
 import { renderWithProviders, screen } from '../../../testing/render-with-providers';
 
 describe('ProfileContainerComponent', () => {
@@ -45,6 +45,7 @@ describe('ProfileContainerComponent', () => {
     emailVerified: true,
     name: 'Alice',
     roles: [],
+    settings: { language: UserSettingsDto.LanguageEnum.En, theme: UserSettingsDto.ThemeEnum.Light },
   };
 
   async function setup(options: { profile: Profile | null; loading?: boolean; load?: () => void }) {
