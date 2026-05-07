@@ -14,6 +14,7 @@ export class ProfileService {
   readonly loading = this._loading.asReadonly();
 
   load(): void {
+    if (this._loading() || this._profile() !== null) return;
     this._loading.set(true);
     this.api.getProfile().subscribe({
       next: (profile) => {

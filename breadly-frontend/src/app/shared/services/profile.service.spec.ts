@@ -80,6 +80,20 @@ describe('ProfileService (shared)', () => {
     expect(service.profile()).toBeNull();
   });
 
+  it('does not make a second request if already loading', () => {
+    service.load();
+    service.load();
+    httpMock.expectOne('api/profile').flush(mockProfile);
+  });
+
+  it('does not reload once profile is already loaded', () => {
+    service.load();
+    httpMock.expectOne('api/profile').flush(mockProfile);
+
+    service.load();
+    httpMock.expectNone('api/profile');
+  });
+
   it('clear() resets profile to null', () => {
     service.load();
     httpMock.expectOne('api/profile').flush(mockProfile);

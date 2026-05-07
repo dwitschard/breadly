@@ -13,13 +13,23 @@
 
 ### Next
 
-- [~] Dynamo Setup
+- [ ] Check why no Translations on Preview Branches
+- [ ] Give AI possibility to run e2e locally
+  - [ ] Should be a quality gate before finishing a UI Task
+
+- [ ] Implement Design according to ClaudeDesign
+  - [ ] Create a Favicon and add it to the Application
+
+
+- [ ] Dynamo Setup
   - [~] DynamoDB Table Design for User (Username, Last Login, Settings, )
   - [~] Terraform Setup 
   - [~] Implement DB Connection in Backend
   - [~] Add it to /health Endpoint
   - [~] Create Dummy Data for preview branches
-  - [ ] Switch to email as PK identifier for users instead of cognito-id (easier to troubleshoot issues)
+  - [~] Add E-Mail to to User Settings
+
+- [ ] Update UI to use new Design System Components
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
@@ -35,8 +45,10 @@
 - [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase
 
+
 - [ ] Importer of Recipes of public webpage
   - [ ] scheduled to get latest updates
+
 
 ## UI
 
