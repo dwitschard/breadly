@@ -25,11 +25,14 @@
   - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
   - [~] Add Dumb Components -> check Design System Starter for reference
   - [~] Create a Storybook for it
+  
+- [ ] DB Schema for Recipes
+  - [ ] Think about general structure
+  - [ ] Adjust Seeding
+  - [ ] Implement it in DynamoDB & update Backend / Frontend accordingly
 
 - [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase
-
-- [ ] Think about DB Schema for Recipes -> What should be stored and how 
 
 - [ ] Importer of Recipes of public webpage
   - [ ] scheduled to get latest updates
