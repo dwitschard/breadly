@@ -22,7 +22,8 @@ export class SettingsPage {
     const saved = this.page.waitForResponse(
       r => r.url().includes('/profile/settings') && r.request().method() === 'PATCH',
     );
-    await this.languageSelect.selectOption(value);
+    await this.languageSelect.getByTestId('dropdown-trigger').click();
+    await this.languageSelect.locator(`[data-value="${value}"]`).click();
     await saved;
   }
 
@@ -30,16 +31,17 @@ export class SettingsPage {
     const saved = this.page.waitForResponse(
       r => r.url().includes('/profile/settings') && r.request().method() === 'PATCH',
     );
-    await this.themeSelect.selectOption(value);
+    await this.themeSelect.getByTestId('dropdown-trigger').click();
+    await this.themeSelect.locator(`[data-value="${value}"]`).click();
     await saved;
   }
 
   async expectLanguage(value: 'de' | 'en'): Promise<void> {
-    await expect(this.languageSelect).toHaveValue(value);
+    await expect(this.languageSelect.getByTestId('dropdown-trigger')).toHaveAttribute('data-selected', value);
   }
 
   async expectTheme(value: 'light' | 'dark'): Promise<void> {
-    await expect(this.themeSelect).toHaveValue(value);
+    await expect(this.themeSelect.getByTestId('dropdown-trigger')).toHaveAttribute('data-selected', value);
   }
 
   async expectDarkModeActive(): Promise<void> {

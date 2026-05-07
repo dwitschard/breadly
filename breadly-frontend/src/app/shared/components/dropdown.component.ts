@@ -28,6 +28,7 @@ export interface DropdownOption {
         (click)="toggleOpen($event)"
         [attr.aria-haspopup]="'listbox'"
         [attr.aria-expanded]="open()"
+        [attr.data-selected]="value() ?? null"
       >
         <span class="flex-1 text-left truncate" [class.text-warm-400]="!selectedLabel()">
           {{ selectedLabel() || placeholder() }}
@@ -61,6 +62,7 @@ export interface DropdownOption {
               [attr.aria-selected]="value() === opt.value"
               [class]="optionClass(opt.value)"
               data-testid="dropdown-option"
+              [attr.data-value]="opt.value"
               (click)="select(opt.value)"
             >
               {{ opt.label }}

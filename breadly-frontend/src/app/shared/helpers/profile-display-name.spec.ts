@@ -14,7 +14,10 @@ describe('profileDisplayName', () => {
       name: 'Alice Smith',
       givenName: 'Alice',
       roles: [],
-      settings: { language: UserSettingsDto.LanguageEnum.En, theme: UserSettingsDto.ThemeEnum.Light },
+      settings: {
+        language: UserSettingsDto.LanguageEnum.En,
+        theme: UserSettingsDto.ThemeEnum.Light,
+      },
     };
     expect(profileDisplayName(profile)).toBe('Alice Smith');
   });
@@ -48,7 +51,10 @@ describe('profileDisplayName', () => {
       name: '',
       givenName: 'Alice',
       roles: [],
-      settings: { language: UserSettingsDto.LanguageEnum.En, theme: UserSettingsDto.ThemeEnum.Light },
+      settings: {
+        language: UserSettingsDto.LanguageEnum.En,
+        theme: UserSettingsDto.ThemeEnum.Light,
+      },
     };
     expect(profileDisplayName(profile)).toBe('');
   });
