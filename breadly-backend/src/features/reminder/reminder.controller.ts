@@ -6,6 +6,7 @@ import {
   sendReminderEmail,
   processBatchReminders,
 } from './reminder.service.js';
+import { fetchUserInfo } from '../profile/profile.service.js';
 import { CreateReminderDto, SendReminderPayload, BatchReminderPayload } from '../../app/generated/api/index.js';
 import { validate } from '../../common/validation.middleware.js';
 import { CreateReminderDtoSchema, SendReminderPayloadSchema, BatchReminderPayloadSchema } from '../../common/validation-schemas.js';
@@ -23,7 +24,8 @@ reminderController.post(
   validate(CreateReminderDtoSchema),
   async (req: Request<Record<string, never>, unknown, CreateReminderDto>, res: Response) => {
     const userId = req.user!.sub;
-    const userEmail = req.user!.email ?? '';
+    const userInfo = await fetchUserInfo(req.accessToken!);
+    const userEmail = userInfo?.email ?? '';
     const created = await createReminder(userId, userEmail, req.body);
     res.status(201).json(created);
   },

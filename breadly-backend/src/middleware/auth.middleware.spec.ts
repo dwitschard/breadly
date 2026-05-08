@@ -87,8 +87,7 @@ describe('requireAuth middleware', () => {
   it('decodes a valid JWT, attaches claims to req.user, and calls next()', () => {
     const claims: CognitoClaims = {
       sub: 'user-123',
-      email: 'alice@example.com',
-      email_verified: true,
+      name: 'Alice',
       'cognito:groups': ['ADMIN'],
     };
     const token = makeToken(claims);
@@ -99,8 +98,7 @@ describe('requireAuth middleware', () => {
     expect(next.called).toBe(true);
     expect((req as Request).user).toMatchObject({
       sub: 'user-123',
-      email: 'alice@example.com',
-      email_verified: true,
+      name: 'Alice',
       'cognito:groups': ['ADMIN'],
     });
   });

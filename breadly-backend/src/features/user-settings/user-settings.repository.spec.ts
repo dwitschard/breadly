@@ -23,6 +23,17 @@ describe('UserSettingsRepository', () => {
       expect(ddbMock.commandCalls(PutCommand)).toHaveLength(1);
     });
 
+    it('stores email on first login when no record exists', async () => {
+      ddbMock.on(GetCommand).resolves({ Item: undefined });
+      ddbMock.on(PutCommand).resolves({});
+
+      await getSettings('user-new', 'first@example.com');
+
+      const putCalls = ddbMock.commandCalls(PutCommand);
+      expect(putCalls).toHaveLength(1);
+      expect(putCalls[0].args[0].input.Item).toMatchObject({ email: 'first@example.com' });
+    });
+
     it('returns stored settings when record exists', async () => {
       ddbMock.on(GetCommand).resolves({
         Item: { PK: 'USER#user-123', SK: 'SETTINGS', language: 'en', theme: 'dark' },

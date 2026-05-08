@@ -51,10 +51,10 @@ export const toProfile = (
   userInfo?: UserInfoResponse | null,
   settings?: UserSettingsDto,
 ): Profile => {
-  const email = userInfo?.email ?? claims.email ?? '';
+  const email = userInfo?.email ?? '';
   const emailVerified = userInfo?.email_verified !== undefined
     ? String(userInfo.email_verified) === 'true'
-    : (claims.email_verified ?? false);
+    : false;
 
   const name = userInfo?.name ?? claims.name;
   const givenName = userInfo?.given_name ?? claims.given_name;

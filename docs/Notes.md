@@ -14,16 +14,12 @@
 ### Next
 
 - [ ] Dynamo Setup
-  - [~] DynamoDB Table Design for User (Username, Last Login, Settings, )
-  - [~] Create Dummy Data for preview branches
-  - [~] Add E-Mail to User Settings
+  - [~] Add E-Mail and Last-Login to User Settings
 
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
   - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
-  - [~] Add Dumb Components -> check Design System Starter for reference
-  - [~] Create a Storybook for it
 
 
 - [ ] Give AI possibility to run e2e locally

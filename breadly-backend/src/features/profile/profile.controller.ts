@@ -8,17 +8,15 @@ const profileController = Router();
 
 profileController.get('/', async (req: Request, res: Response) => {
   const userId = req.user!.sub;
-  const email = req.user!.email;
-  const [userInfo, settings] = await Promise.all([
-    fetchUserInfo(req.accessToken!),
-    getUserSettings(userId, email),
-  ]);
+  const userInfo = await fetchUserInfo(req.accessToken!);
+  const settings = await getUserSettings(userId, userInfo?.email);
   res.json(toProfile(req.user!, userInfo, settings));
 });
 
 profileController.get('/settings', async (req: Request, res: Response) => {
   const userId = req.user!.sub;
-  const settings = await getUserSettings(userId, req.user!.email);
+  const userInfo = await fetchUserInfo(req.accessToken!);
+  const settings = await getUserSettings(userId, userInfo?.email);
   res.json(settings);
 });
 
