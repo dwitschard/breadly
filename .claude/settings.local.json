@@ -47,7 +47,16 @@
       "Bash(python3 *)",
       "Bash(npx tsx *)",
       "Bash(xargs -I{} basename {})",
-      "Bash(npx ng *)"
+      "Bash(npx ng *)",
+      "Bash(npm start *)",
+      "Bash(echo \"Dev server starting, PID: $!\")",
+      "WebFetch(domain:localhost)",
+      "Bash(node_modules/.bin/vitest)",
+      "Bash(grep -oP '.{0,20}fallbackLang.{0,80}')",
+      "Bash(grep -oP '.{0,50}\\(fallbackLang|lang:\\).{0,100}')",
+      "Bash(npm rebuild *)",
+      "Bash(find *)",
+      "Bash(grep -oP '.{0,20}inject.*Injector.{0,50}')"
     ]
   }
 }

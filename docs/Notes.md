@@ -13,13 +13,7 @@
 
 ### Next
 
-- [ ] Check why no Translations on Preview Branches
-- [ ] Give AI possibility to run e2e locally
-  - [ ] Should be a quality gate before finishing a UI Task
-
-- [ ] Implement Design according to ClaudeDesign
-  - [ ] Create a Favicon and add it to the Application
-
+- [ ] Fix `de` language in frontend
 
 - [ ] Dynamo Setup
   - [~] DynamoDB Table Design for User (Username, Last Login, Settings, )
@@ -27,20 +21,32 @@
   - [~] Implement DB Connection in Backend
   - [~] Add it to /health Endpoint
   - [~] Create Dummy Data for preview branches
-  - [~] Add E-Mail to to User Settings
+  - [~] Add E-Mail to User Settings
 
-- [ ] Update UI to use new Design System Components
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
   - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
   - [~] Add Dumb Components -> check Design System Starter for reference
   - [~] Create a Storybook for it
-  
+
+
+- [ ] Give AI possibility to run e2e locally
+  - [ ] Should be a quality gate before finishing a UI Task
+
+
+- [ ] Implement Design according to ClaudeDesign using the Design System Components
+  - [ ] Create a Favicon and add it to the Application
+
+
 - [ ] DB Schema for Recipes
-  - [ ] Think about general structure
-  - [ ] Adjust Seeding
+  - [x] Think about general structure
+    - [ ] Are all SKs and GSIs updated automatically? Any LSIs used that I need to manage?
+  - [ ] Create a document describing all UIs / User Journeys needed to allow database interaction with the new schema
+    - [ ] Used for Claude Design afterwards
+  - [ ] Create Seeding Mechanism and dummy data
   - [ ] Implement it in DynamoDB & update Backend / Frontend accordingly
+
 
 - [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase
@@ -62,11 +68,15 @@
 ## Ideas
 - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
   - [ ] if not possible -> Template Visible in Local Dev Mode?
+
 - [ ] Create Architecture Document with Mermaid Diagrams and update it after every feature change
   - [ ] Infrastructure
   - [ ] Software Architecture
+
 - [ ] Implement a custom ui for login / registration
+
 - [ ] Decide on UI Library / Elements
+
 - [ ] Think about how to split different applications (or later potentially even domains) into different Lambda's
   - [ ] Impact on Terraform probably quite large, gain?
 
