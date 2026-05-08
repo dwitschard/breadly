@@ -75,7 +75,8 @@
     "LANGUAGE_EN": "English",
     "THEME": "Theme",
     "THEME_LIGHT": "Light",
-    "THEME_DARK": "Dark"
+    "THEME_DARK": "Dark",
+    "LAST_LOGIN": "Last login"
   },
   "AUTH": {
     "LOGIN_TITLE": "Sign in",

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { UserSettingsDto } from '../../generated/api';
 import { DropdownComponent, DropdownOption } from '../../shared/components/dropdown.component';
@@ -6,7 +7,7 @@ import { DropdownComponent, DropdownOption } from '../../shared/components/dropd
 @Component({
   selector: 'profile-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslateModule, DropdownComponent],
+  imports: [TranslateModule, DropdownComponent, DatePipe],
   template: `
     <div data-testid="profile-settings" class="flex flex-col gap-4">
       <h2 class="text-lg font-semibold">{{ 'PROFILE.SETTINGS_TITLE' | translate }}</h2>
@@ -15,6 +16,13 @@ import { DropdownComponent, DropdownOption } from '../../shared/components/dropd
         <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.EMAIL' | translate }}</span>
         <span data-testid="settings-email" class="text-sm">{{ email() }}</span>
       </div>
+
+      @if (lastLogin()) {
+        <div class="flex justify-between items-center">
+          <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.LAST_LOGIN' | translate }}</span>
+          <span data-testid="settings-last-login" class="text-sm">{{ lastLogin() | date:'medium' }}</span>
+        </div>
+      }
 
       <div class="flex justify-between items-center">
         <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.LANGUAGE' | translate }}</span>
@@ -44,6 +52,7 @@ import { DropdownComponent, DropdownOption } from '../../shared/components/dropd
 })
 export class SettingsComponent {
   readonly email = input.required<string>();
+  readonly lastLogin = input<string | undefined>();
   readonly language = input.required<UserSettingsDto.LanguageEnum>();
   readonly theme = input.required<UserSettingsDto.ThemeEnum>();
   readonly languageOptions = input.required<DropdownOption[]>();

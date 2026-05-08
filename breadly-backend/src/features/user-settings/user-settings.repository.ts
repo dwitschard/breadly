@@ -16,14 +16,30 @@ export const getSettings = async (userId: string, email?: string): Promise<UserS
     }),
   );
 
+  const lastLogin = new Date().toISOString();
+
   if (!result.Item) {
-    await upsertSettings(userId, DEFAULT_SETTINGS, email);
-    return { ...DEFAULT_SETTINGS };
+    await upsertSettings(userId, DEFAULT_SETTINGS, email, lastLogin);
+    return { ...DEFAULT_SETTINGS, lastLogin };
   }
+
+  const storedEmail = result.Item['email'] as string | undefined;
+  const effectiveEmail = email ?? storedEmail;
+
+  const updatedItem: Record<string, unknown> = { ...result.Item, lastLogin };
+  if (effectiveEmail !== undefined) updatedItem['email'] = effectiveEmail;
+
+  await client.send(
+    new PutCommand({
+      TableName: tableName(),
+      Item: updatedItem,
+    }),
+  );
 
   return {
     language: result.Item['language'] as UserSettingsDto['language'],
     theme: result.Item['theme'] as UserSettingsDto['theme'],
+    lastLogin,
   };
 };
 
@@ -31,6 +47,7 @@ export const upsertSettings = async (
   userId: string,
   patch: Partial<UserSettingsDto>,
   email?: string,
+  lastLogin?: string,
 ): Promise<UserSettingsDto> => {
   const client = getDynamoClient();
 
@@ -54,8 +71,11 @@ export const upsertSettings = async (
   };
 
   const effectiveEmail = email ?? (existing.Item?.['email'] as string | undefined);
+  const effectiveLastLogin = lastLogin ?? (existing.Item?.['lastLogin'] as string | undefined);
+
   const item: Record<string, unknown> = { PK: pk(userId), SK: SETTINGS_SK, ...updated };
   if (effectiveEmail) item['email'] = effectiveEmail;
+  if (effectiveLastLogin) item['lastLogin'] = effectiveLastLogin;
 
   await client.send(
     new PutCommand({
@@ -64,5 +84,6 @@ export const upsertSettings = async (
     }),
   );
 
+  if (effectiveLastLogin) updated.lastLogin = effectiveLastLogin;
   return updated;
 };

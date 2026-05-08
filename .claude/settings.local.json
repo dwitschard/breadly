@@ -56,7 +56,9 @@
       "Bash(grep -oP '.{0,50}\\(fallbackLang|lang:\\).{0,100}')",
       "Bash(npm rebuild *)",
       "Bash(find *)",
-      "Bash(grep -oP '.{0,20}inject.*Injector.{0,50}')"
+      "Bash(grep -oP '.{0,20}inject.*Injector.{0,50}')",
+      "Bash(grep -E \"\\\\.\\(ts|js|tsx|jsx|py\\)$\")",
+      "Bash(npx jest *)"
     ]
   }
 }

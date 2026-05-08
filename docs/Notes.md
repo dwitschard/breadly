@@ -13,13 +13,8 @@
 
 ### Next
 
-- [ ] Fix `de` language in frontend
-
 - [ ] Dynamo Setup
   - [~] DynamoDB Table Design for User (Username, Last Login, Settings, )
-  - [~] Terraform Setup 
-  - [~] Implement DB Connection in Backend
-  - [~] Add it to /health Endpoint
   - [~] Create Dummy Data for preview branches
   - [~] Add E-Mail to User Settings
 
@@ -59,6 +54,8 @@
 ## UI
 
 ## Bugs
+- [ ] When the user does not select the default language or theme on reload it will flicker (ligth/dark mode) and show the default language for a short time (english) before switching to the selected one.
+  - [ ] Potential Fix: Store the selected theme and language in local storage and load it on app start before rendering anything
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
 - [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)

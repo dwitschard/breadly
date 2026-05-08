@@ -511,6 +511,10 @@ components:
             - light
             - dark
           description: UI theme preference
+        lastLogin:
+          type: string
+          format: date-time
+          description: Timestamp of the user's last login
 
     PatchUserSettingsDto:
       type: object
