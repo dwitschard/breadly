@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  effect,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
@@ -34,7 +27,9 @@ import { TranslateModule } from '@ngx-translate/core';
         data-testid="sidebar"
       >
         <!-- Header -->
-        <div class="flex shrink-0 items-center justify-between border-b border-warm-200 px-6 py-4 dark:border-warm-700">
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-warm-200 px-6 py-4 dark:border-warm-700"
+        >
           <h2
             class="text-lg font-medium text-warm-900 dark:text-warm-50"
             data-testid="sidebar-title"
@@ -68,7 +63,10 @@ import { TranslateModule } from '@ngx-translate/core';
         </div>
 
         <!-- Footer -->
-        <div class="shrink-0 border-t border-warm-200 p-4 dark:border-warm-700" data-testid="sidebar-footer">
+        <div
+          class="shrink-0 border-t border-warm-200 p-4 dark:border-warm-700"
+          data-testid="sidebar-footer"
+        >
           <ng-content select="[slot=footer]" />
         </div>
       </aside>
@@ -77,7 +75,7 @@ import { TranslateModule } from '@ngx-translate/core';
 })
 export class SidebarComponent {
   readonly title = input.required<string>();
-  readonly open  = input<boolean>(false);
+  readonly open = input<boolean>(false);
 
   readonly dismissed = output<void>();
 

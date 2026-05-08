@@ -38,7 +38,11 @@ const meta: Meta<SliderComponent> = {
     disabled: {
       description: 'Prevents interaction and dims the track.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     label: {
       description: 'Label shown above the track alongside the current value.',

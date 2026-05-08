@@ -30,11 +30,11 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
   `,
 })
 export class ButtonComponent {
-  readonly variant  = input<ButtonVariant>('primary');
+  readonly variant = input<ButtonVariant>('primary');
   readonly disabled = input<boolean>(false);
-  readonly loading  = input<boolean>(false);
-  readonly type     = input<'button' | 'submit' | 'reset'>('button');
-  readonly icon     = input<Type<unknown> | null>(null);
+  readonly loading = input<boolean>(false);
+  readonly type = input<'button' | 'submit' | 'reset'>('button');
+  readonly icon = input<Type<unknown> | null>(null);
 
   readonly clicked = output<void>();
 

@@ -20,28 +20,48 @@ const meta: Meta<ButtonComponent> = {
       description: 'Visual style of the button.',
       control: { type: 'select' },
       options: ['primary', 'secondary', 'ghost'],
-      table: { type: { summary: "'primary' | 'secondary' | 'ghost'" }, defaultValue: { summary: "'primary'" }, category: 'Inputs' },
+      table: {
+        type: { summary: "'primary' | 'secondary' | 'ghost'" },
+        defaultValue: { summary: "'primary'" },
+        category: 'Inputs',
+      },
     },
     disabled: {
       description: 'Prevents interaction and dims the button.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     loading: {
       description: 'Replaces content with a spinner and disables the button.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     type: {
       description: 'HTML button type attribute.',
       control: { type: 'select' },
       options: ['button', 'submit', 'reset'],
-      table: { type: { summary: "'button' | 'submit' | 'reset'" }, defaultValue: { summary: "'button'" }, category: 'Inputs' },
+      table: {
+        type: { summary: "'button' | 'submit' | 'reset'" },
+        defaultValue: { summary: "'button'" },
+        category: 'Inputs',
+      },
     },
     icon: {
       description: 'Lucide icon component to render before the label.',
       control: false,
-      table: { type: { summary: 'Type<unknown> | null' }, defaultValue: { summary: 'null' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'Type<unknown> | null' },
+        defaultValue: { summary: 'null' },
+        category: 'Inputs',
+      },
     },
     clicked: {
       description: 'Emitted on button click (when not disabled or loading).',
@@ -56,7 +76,10 @@ export const Primary: Story = {
   render: () => ({ template: `<app-button variant="primary">Rezept erstellen</app-button>` }),
 };
 export const PrimaryWithIcon: Story = {
-  render: () => ({ template: `<app-button variant="primary" [icon]="LucidePlus">Rezept erstellen</app-button>`, props: { LucidePlus } }),
+  render: () => ({
+    template: `<app-button variant="primary" [icon]="LucidePlus">Rezept erstellen</app-button>`,
+    props: { LucidePlus },
+  }),
 };
 export const Secondary: Story = {
   render: () => ({ template: `<app-button variant="secondary">Abbrechen</app-button>` }),

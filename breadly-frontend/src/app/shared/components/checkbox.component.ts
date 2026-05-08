@@ -21,17 +21,22 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
             data-testid="checkbox-input"
             (change)="onToggle()"
           />
-          <div
-            [class]="boxClass()"
-            aria-hidden="true"
-          >
+          <div [class]="boxClass()" aria-hidden="true">
             @if (checked() && !indeterminate()) {
-              <svg viewBox="0 0 10 8" fill="none" class="h-2.5 w-2.5 text-white stroke-current stroke-2">
+              <svg
+                viewBox="0 0 10 8"
+                fill="none"
+                class="h-2.5 w-2.5 text-white stroke-current stroke-2"
+              >
                 <path d="M1 4l3 3 5-6" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             }
             @if (indeterminate()) {
-              <svg viewBox="0 0 10 2" fill="none" class="h-0.5 w-2.5 text-white stroke-current stroke-2">
+              <svg
+                viewBox="0 0 10 2"
+                fill="none"
+                class="h-0.5 w-2.5 text-white stroke-current stroke-2"
+              >
                 <path d="M1 1h8" stroke-linecap="round" />
               </svg>
             }
@@ -50,12 +55,12 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
   `,
 })
 export class CheckboxComponent {
-  readonly checked       = input<boolean>(false);
+  readonly checked = input<boolean>(false);
   readonly indeterminate = input<boolean>(false);
-  readonly disabled      = input<boolean>(false);
-  readonly error         = input<boolean>(false);
-  readonly label         = input<string>('');
-  readonly helperText    = input<string>('');
+  readonly disabled = input<boolean>(false);
+  readonly error = input<boolean>(false);
+  readonly label = input<string>('');
+  readonly helperText = input<string>('');
 
   readonly checkedChange = output<boolean>();
 
@@ -66,7 +71,8 @@ export class CheckboxComponent {
       'flex h-4 w-4 items-center justify-center rounded border transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2';
     const checked = this.checked() || this.indeterminate();
     const hasError = this.error() && this._touched();
-    if (checked) return `${base} bg-amber-600 border-amber-600 dark:bg-amber-500 dark:border-amber-500`;
+    if (checked)
+      return `${base} bg-amber-600 border-amber-600 dark:bg-amber-500 dark:border-amber-500`;
     if (hasError) return `${base} border-red-500 bg-white dark:bg-warm-900`;
     return `${base} border-warm-300 bg-white hover:border-amber-400 dark:border-warm-600 dark:bg-warm-900`;
   });

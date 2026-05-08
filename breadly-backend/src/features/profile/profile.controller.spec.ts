@@ -1,5 +1,14 @@
 import supertest from 'supertest';
 import { app } from '../../app.js';
+import { getSettings } from '../user-settings/user-settings.repository.js';
+
+jest.mock('../user-settings/user-settings.repository.js', () => ({
+  getSettings: jest.fn().mockResolvedValue({ language: 'de', theme: 'light' }),
+  upsertSettings: jest.fn().mockImplementation(
+    (_userId: unknown, patch: Record<string, string>) =>
+      Promise.resolve({ language: patch['language'] ?? 'de', theme: patch['theme'] ?? 'light' }),
+  ),
+}));
 
 const request = supertest(app);
 
@@ -15,8 +24,6 @@ function makeToken(payload: Record<string, unknown>): string {
 
 const minimalClaims = {
   sub: 'user-abc',
-  email: 'bob@example.com',
-  email_verified: true,
   'cognito:groups': [],
 };
 
@@ -76,7 +83,7 @@ describe('GET /api/profile', () => {
     expect(res.body.name).toBe('Bob Builder');
   });
 
-  it('falls back to JWT claims when UserInfo fails', async () => {
+  it('returns empty email when UserInfo fails', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
       status: 401,
@@ -85,8 +92,8 @@ describe('GET /api/profile', () => {
     const token = makeToken(minimalClaims);
     const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
-    expect(res.body.email).toBe('bob@example.com');
-    expect(res.body.emailVerified).toBe(true);
+    expect(res.body.email).toBe('');
+    expect(res.body.emailVerified).toBe(false);
   });
 
   it('calls Cognito UserInfo with the access token', async () => {
@@ -143,16 +150,13 @@ describe('GET /api/profile', () => {
     expect(res.body).not.toHaveProperty('picture');
   });
 
-  it('defaults emailVerified to false when absent from both', async () => {
+  it('defaults emailVerified to false when absent from UserInfo', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({ sub: 'user-abc' }),
     } as Response);
 
-    const withoutVerified = Object.fromEntries(
-      Object.entries(minimalClaims).filter(([k]) => k !== 'email_verified'),
-    );
-    const token = makeToken(withoutVerified);
+    const token = makeToken(minimalClaims);
     const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.emailVerified).toBe(false);
@@ -166,5 +170,86 @@ describe('GET /api/profile', () => {
     const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.roles).toEqual([]);
+  });
+
+  it('includes settings in profile response', async () => {
+    const token = makeToken(minimalClaims);
+    const res = await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('settings');
+    expect(res.body.settings).toEqual({ language: 'de', theme: 'light' });
+  });
+
+  it('syncs UserInfo email to DynamoDB on every profile load', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ sub: 'user-abc', email: 'synced@example.com', name: 'Bob' }),
+    } as Response);
+
+    const token = makeToken(minimalClaims);
+    await request.get('/api/profile').set('Authorization', `Bearer ${token}`);
+
+    expect(jest.mocked(getSettings)).toHaveBeenCalledWith('user-abc', 'synced@example.com');
+  });
+});
+
+describe('GET /api/profile/settings', () => {
+  const token = makeToken({ sub: 'test-user', 'cognito:groups': [] });
+  const auth = { Authorization: `Bearer ${token}` };
+
+  beforeEach(() => {
+    process.env['COGNITO_USERINFO_URL'] = 'https://auth.example.com/oauth2/userInfo';
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ sub: 'test-user', email: 'test@example.com' }),
+    } as Response);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('returns settings for authenticated user', async () => {
+    const res = await request.get('/api/profile/settings').set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ language: 'de', theme: 'light' });
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request.get('/api/profile/settings');
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('PATCH /api/profile/settings', () => {
+  const token = makeToken({ sub: 'test-user', 'cognito:groups': [] });
+  const auth = { Authorization: `Bearer ${token}` };
+
+  it('updates theme and returns updated settings', async () => {
+    const res = await request.patch('/api/profile/settings').set(auth).send({ theme: 'dark' });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('theme', 'dark');
+    expect(res.body).toHaveProperty('language');
+  });
+
+  it('updates language only', async () => {
+    const res = await request.patch('/api/profile/settings').send({ language: 'en' }).set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('language', 'en');
+  });
+
+  it('returns 400 for invalid theme', async () => {
+    const res = await request.patch('/api/profile/settings').set(auth).send({ theme: 'rainbow' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for invalid language', async () => {
+    const res = await request.patch('/api/profile/settings').set(auth).send({ language: 'fr' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request.patch('/api/profile/settings').send({ theme: 'dark' });
+    expect(res.status).toBe(401);
   });
 });

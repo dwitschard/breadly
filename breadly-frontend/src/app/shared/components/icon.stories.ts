@@ -37,13 +37,22 @@ export default meta;
 type Story = StoryObj<IconComponent>;
 
 export const Bell16: Story = {
-  render: () => ({ template: `<app-icon [icon]="LucideBell" [size]="16" [strokeWidth]="1.5" />`, props: { LucideBell } }),
+  render: () => ({
+    template: `<app-icon [icon]="LucideBell" [size]="16" [strokeWidth]="1.5" />`,
+    props: { LucideBell },
+  }),
 };
 export const Plus24: Story = {
-  render: () => ({ template: `<app-icon [icon]="LucidePlus" [size]="24" [strokeWidth]="1.5" />`, props: { LucidePlus } }),
+  render: () => ({
+    template: `<app-icon [icon]="LucidePlus" [size]="24" [strokeWidth]="1.5" />`,
+    props: { LucidePlus },
+  }),
 };
 export const Trash36: Story = {
-  render: () => ({ template: `<app-icon [icon]="LucideTrash2" [size]="36" [strokeWidth]="1.5" />`, props: { LucideTrash2 } }),
+  render: () => ({
+    template: `<app-icon [icon]="LucideTrash2" [size]="36" [strokeWidth]="1.5" />`,
+    props: { LucideTrash2 },
+  }),
 };
 
 export const AllIcons: Story = {

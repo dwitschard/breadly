@@ -2,7 +2,8 @@ import express, { Router } from 'express';
 import { ApplicationError } from '../../domain/error.types.js';
 import { ApplicationDatabase } from '../../database/application-database.js';
 import { getVersionInfo } from './version.reader.js';
-import {HealthResponse} from "../../app/generated/api/index.js";
+import { HealthResponse } from '../../app/generated/api/index.js';
+import { pingDynamoDB } from '../../database/dynamodb.client.js';
 
 const operationController = Router();
 
@@ -19,21 +20,19 @@ operationController.get('/generic-error', () => {
 });
 
 operationController.get('/health', async (_req: express.Request, res: express.Response) => {
-  const dbOk = await ApplicationDatabase.ping();
+  const [mongoOk, dynamoOk] = await Promise.all([
+    ApplicationDatabase.ping(),
+    pingDynamoDB(),
+  ]);
 
-  const status = dbOk ? 'ok' : 'degraded';
+  const status = mongoOk && dynamoOk ? 'ok' : 'degraded';
 
   const response: HealthResponse = {
     status,
     checks: {
-      api: {
-        status: 'ok',
-        responseTime: undefined,
-      },
-      database: {
-        status: dbOk ? 'ok' : 'degraded',
-        responseTime: undefined,
-      },
+      api: { status: 'ok', responseTime: undefined },
+      mongodb: { status: mongoOk ? 'ok' : 'degraded', responseTime: undefined },
+      dynamodb: { status: dynamoOk ? 'ok' : 'degraded', responseTime: undefined },
     },
   };
 

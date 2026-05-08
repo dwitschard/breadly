@@ -23,17 +23,29 @@ const meta: Meta<DialogComponent> = {
     open: {
       description: 'Whether the native <dialog> is shown as a modal.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     loading: {
       description: 'Replaces the body slot with a centred spinner and disables the footer actions.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     destructive: {
       description: 'Shows a warning icon in the header and renders the confirm button in red.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     confirm: {
       description: 'Emitted when the user clicks the confirm button.',

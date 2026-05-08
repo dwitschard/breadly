@@ -3,11 +3,12 @@ import { HealthResponse } from '../../../generated/api';
 import { renderWithProviders, screen } from '../../../../testing/render-with-providers';
 
 describe('HealthDashboardComponent', () => {
-  it('renders API and Database check items', async () => {
+  it('renders API, MongoDB, and DynamoDB check items', async () => {
     await setup({ health: mockHealth, apiResponseTime: '142ms' });
 
     expect(screen.getByText('HEALTH.API')).toBeInTheDocument();
-    expect(screen.getByText('HEALTH.DATABASE')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH.MONGODB')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH.DYNAMODB')).toBeInTheDocument();
   });
 
   it('displays apiResponseTime in the API check row when provided', async () => {
@@ -22,12 +23,6 @@ describe('HealthDashboardComponent', () => {
     expect(screen.getByTestId('health-check-api-time')).toHaveTextContent('');
   });
 
-  it('does not render a DB time span', async () => {
-    await setup({ health: mockHealth });
-
-    expect(screen.queryByTestId('health-check-db-time')).not.toBeInTheDocument();
-  });
-
   it('shows all operational message when status is ok', async () => {
     await setup({ health: mockHealth });
 
@@ -40,11 +35,26 @@ describe('HealthDashboardComponent', () => {
     expect(screen.getByText('HEALTH.DEGRADED')).toBeInTheDocument();
   });
 
+  it('shows mongodb status indicator', async () => {
+    await setup({ health: mockHealth });
+
+    const indicator = screen.getByTestId('health-check-mongodb-status');
+    expect(indicator.getAttribute('data-status')).toBe('ok');
+  });
+
+  it('shows dynamodb degraded status', async () => {
+    await setup({ health: dynamodbDegradedHealth });
+
+    const indicator = screen.getByTestId('health-check-dynamodb-status');
+    expect(indicator.getAttribute('data-status')).toBe('degraded');
+  });
+
   const mockHealth: HealthResponse = {
     status: 'ok' as HealthResponse.StatusEnum,
     checks: {
       api: { status: 'ok' as any },
-      database: { status: 'ok' as any },
+      mongodb: { status: 'ok' as any },
+      dynamodb: { status: 'ok' as any },
     },
   };
 
@@ -52,7 +62,17 @@ describe('HealthDashboardComponent', () => {
     status: 'degraded' as HealthResponse.StatusEnum,
     checks: {
       api: { status: 'ok' as any },
-      database: { status: 'degraded' as any },
+      mongodb: { status: 'degraded' as any },
+      dynamodb: { status: 'degraded' as any },
+    },
+  };
+
+  const dynamodbDegradedHealth: HealthResponse = {
+    status: 'degraded' as HealthResponse.StatusEnum,
+    checks: {
+      api: { status: 'ok' as any },
+      mongodb: { status: 'ok' as any },
+      dynamodb: { status: 'degraded' as any },
     },
   };
 

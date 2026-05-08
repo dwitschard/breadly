@@ -33,11 +33,11 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
   `,
 })
 export class RadioComponent {
-  readonly value    = input.required<string>();
-  readonly checked  = input<boolean>(false);
+  readonly value = input.required<string>();
+  readonly checked = input<boolean>(false);
   readonly disabled = input<boolean>(false);
-  readonly error    = input<boolean>(false);
-  readonly label    = input<string>('');
+  readonly error = input<boolean>(false);
+  readonly label = input<string>('');
 
   readonly selected = output<string>();
 
@@ -46,8 +46,7 @@ export class RadioComponent {
       'flex h-4 w-4 items-center justify-center rounded-full border transition-colors duration-150';
     if (this.checked())
       return `${base} border-amber-600 bg-white dark:border-amber-500 dark:bg-warm-900`;
-    if (this.error())
-      return `${base} border-red-500 bg-white dark:bg-warm-900`;
+    if (this.error()) return `${base} border-red-500 bg-white dark:bg-warm-900`;
     return `${base} border-warm-300 bg-white hover:border-amber-400 dark:border-warm-600 dark:bg-warm-900`;
   });
 

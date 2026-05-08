@@ -43,7 +43,8 @@
     "RELOADING": "Laden...",
     "CHECKS_LABEL": "Systemstatus-Prüfungen",
     "API": "API",
-    "DATABASE": "Datenbank",
+    "MONGODB": "MongoDB",
+    "DYNAMODB": "DynamoDB",
     "OPERATIONAL": "Betriebsbereit",
     "ERROR": "Fehler",
     "OVERALL_STATUS": "Gesamtstatus:",
@@ -67,7 +68,15 @@
     "USER_ID": "Benutzer-ID",
     "ROLES": "Rollen",
     "UNAVAILABLE": "Profilinformationen sind nicht verfügbar.",
-    "LOADING": "Profil wird geladen..."
+    "LOADING": "Profil wird geladen...",
+    "SETTINGS_TITLE": "Einstellungen",
+    "LANGUAGE": "Sprache",
+    "LANGUAGE_DE": "Deutsch",
+    "LANGUAGE_EN": "Englisch",
+    "THEME": "Design",
+    "THEME_LIGHT": "Hell",
+    "THEME_DARK": "Dunkel",
+    "LAST_LOGIN": "Letzte Anmeldung"
   },
   "AUTH": {
     "LOGIN_TITLE": "Anmeldung",

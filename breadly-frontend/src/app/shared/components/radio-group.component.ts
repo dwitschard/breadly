@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { RadioComponent } from './radio.component';
 
 export interface RadioOption {
-  value:     string;
-  label:     string;
+  value: string;
+  label: string;
   disabled?: boolean;
 }
 
@@ -43,12 +43,12 @@ export interface RadioOption {
   `,
 })
 export class RadioGroupComponent {
-  readonly options     = input.required<RadioOption[]>();
-  readonly value       = input<string>('');
-  readonly label       = input<string>('');
-  readonly error       = input<boolean>(false);
-  readonly helperText  = input<string>('');
-  readonly groupId     = input<string>('radio-group');
+  readonly options = input.required<RadioOption[]>();
+  readonly value = input<string>('');
+  readonly label = input<string>('');
+  readonly error = input<boolean>(false);
+  readonly helperText = input<string>('');
+  readonly groupId = input<string>('radio-group');
 
   readonly valueChange = output<string>();
 }

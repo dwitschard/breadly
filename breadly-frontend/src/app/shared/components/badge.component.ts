@@ -24,7 +24,7 @@ import { ChangeDetectionStrategy, Component, computed, input, Type } from '@angu
   `,
 })
 export class BadgeComponent {
-  readonly icon  = input.required<Type<unknown>>();
+  readonly icon = input.required<Type<unknown>>();
   readonly count = input<number | null>(null);
 
   protected readonly displayCount = computed(() => {

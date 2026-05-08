@@ -1,10 +1,8 @@
-import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { Role } from '../auth/roles.config.js';
+import {NextFunction, Request, RequestHandler, Response} from 'express';
+import {Role} from '../auth/roles.config.js';
 
 export interface CognitoClaims {
   sub: string;
-  email?: string;
-  email_verified?: boolean;
   name: string;
   given_name?: string;
   family_name?: string;
@@ -43,8 +41,7 @@ export function requireAuth(roles?: Role[]): RequestHandler {
         payload.length + ((4 - (payload.length % 4)) % 4),
         '=',
       );
-      const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf8')) as CognitoClaims;
-      req.user = decoded;
+      req.user = JSON.parse(Buffer.from(padded, 'base64').toString('utf8')) as CognitoClaims;
       req.accessToken = token;
     } catch {
       res.status(401).json({ message: 'Failed to decode JWT payload', statusCode: 401 });

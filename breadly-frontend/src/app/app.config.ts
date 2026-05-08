@@ -1,13 +1,16 @@
 import {
   ApplicationConfig,
   importProvidersFrom,
+  inject,
   provideBrowserGlobalErrorListeners,
+  provideAppInitializer,
 } from '@angular/core';
 import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
 import { provideOAuthClient } from 'angular-oauth2-oidc';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
 import { provideApi } from './generated/api';
@@ -31,5 +34,6 @@ export const appConfig: ApplicationConfig = {
       }),
     ),
     provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
+    provideAppInitializer(() => firstValueFrom(inject(TranslateService).use('de'))),
   ],
 };

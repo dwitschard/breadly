@@ -67,3 +67,8 @@ output "cognito_localhost_userinfo_url" {
   value       = "${module.cognito.hosted_ui_domain}/oauth2/userInfo"
   sensitive   = true
 }
+
+output "dynamodb_local_table_name" {
+  description = "DynamoDB table name for local development (shared by all developers)."
+  value       = aws_dynamodb_table.local_dev.name
+}

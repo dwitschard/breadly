@@ -22,10 +22,13 @@ describe('FilterTagComponent', () => {
   it('emits toggled with new state on click', async () => {
     const user = userEvent.setup();
     const toggled = vi.fn();
-    await render('<app-filter-tag [active]="false" (toggled)="toggled($event)">Alle</app-filter-tag>', {
-      imports: [FilterTagComponent, TranslateModule.forRoot()],
-      componentProperties: { toggled },
-    });
+    await render(
+      '<app-filter-tag [active]="false" (toggled)="toggled($event)">Alle</app-filter-tag>',
+      {
+        imports: [FilterTagComponent, TranslateModule.forRoot()],
+        componentProperties: { toggled },
+      },
+    );
     await user.click(screen.getByRole('button'));
     expect(toggled).toHaveBeenCalledWith(true);
   });
@@ -33,10 +36,13 @@ describe('FilterTagComponent', () => {
   it('does not emit when disabled', async () => {
     const user = userEvent.setup();
     const toggled = vi.fn();
-    await render('<app-filter-tag [disabled]="true" (toggled)="toggled($event)">Alle</app-filter-tag>', {
-      imports: [FilterTagComponent, TranslateModule.forRoot()],
-      componentProperties: { toggled },
-    });
+    await render(
+      '<app-filter-tag [disabled]="true" (toggled)="toggled($event)">Alle</app-filter-tag>',
+      {
+        imports: [FilterTagComponent, TranslateModule.forRoot()],
+        componentProperties: { toggled },
+      },
+    );
     await user.click(screen.getByRole('button'));
     expect(toggled).not.toHaveBeenCalled();
   });

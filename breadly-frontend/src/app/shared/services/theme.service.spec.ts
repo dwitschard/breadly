@@ -1,52 +1,46 @@
 import { TestBed } from '@angular/core/testing';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeService } from './theme.service';
+import { SettingsService } from './settings.service';
+import { signal } from '@angular/core';
 
 describe('ThemeService', () => {
   let service: ThemeService;
+  let updateSettingSpy: ReturnType<typeof vi.fn>;
+  const themeSignal = signal<'light' | 'dark'>('light');
 
   beforeEach(() => {
-    localStorage.clear();
+    updateSettingSpy = vi.fn();
     document.documentElement.classList.remove('dark');
-    TestBed.configureTestingModule({});
+
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: SettingsService,
+          useValue: {
+            theme: themeSignal.asReadonly(),
+            language: signal('de').asReadonly(),
+            updateSetting: updateSettingSpy,
+            initialize: () => {},
+          },
+        },
+      ],
+    });
     service = TestBed.inject(ThemeService);
   });
 
   afterEach(() => {
-    localStorage.clear();
     document.documentElement.classList.remove('dark');
+    themeSignal.set('light');
   });
 
-  it('defaults to light theme when localStorage is empty', () => {
-    expect(service.theme()).toBe('light');
-  });
-
-  it('reads saved dark theme from localStorage', () => {
-    localStorage.setItem('breadly-theme', 'dark');
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({});
-    const svc = TestBed.inject(ThemeService);
-    expect(svc.theme()).toBe('dark');
-  });
-
-  it('setTheme updates the signal', () => {
-    service.setTheme('dark');
+  it('theme() reflects the settings service signal', () => {
+    themeSignal.set('dark');
     expect(service.theme()).toBe('dark');
   });
 
-  it('setTheme persists to localStorage', () => {
+  it('setTheme delegates to settingsService.updateSetting', () => {
     service.setTheme('dark');
-    expect(localStorage.getItem('breadly-theme')).toBe('dark');
-  });
-
-  it('setTheme adds dark class to documentElement', () => {
-    service.setTheme('dark');
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
-  });
-
-  it('setTheme removes dark class when switching to light', () => {
-    service.setTheme('dark');
-    service.setTheme('light');
-    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(updateSettingSpy).toHaveBeenCalledWith('theme', 'dark');
   });
 });

@@ -24,7 +24,11 @@ const meta: Meta<SidebarComponent> = {
     open: {
       description: 'Controls whether the panel is visible. Triggers the slide-in animation.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     dismissed: {
       description: 'Emitted when the user clicks the scrim or the × button.',

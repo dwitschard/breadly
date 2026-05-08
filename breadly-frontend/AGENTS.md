@@ -1183,6 +1183,8 @@ All shared components use the `app-` prefix: `<app-button>`, `<app-dialog>`, `<a
 - **No CSS files** — no per-component `.scss` / `.css` files. All styling is Tailwind utility classes in the template.
 - **Dark mode** — every component exposes correct `dark:` variants. Verify both themes in Storybook before merging.
 - **Form controls** — `Checkbox`, `Radio`, `RadioGroup`, `Toggle`, `Slider`, `Dropdown` do not implement `ControlValueAccessor`. Parent containers manage form state via signals and listen to typed output events.
+- **No native form controls** — never use `<select>`, `<input type="checkbox">`, `<input type="radio">`, or `<input type="range">` directly in feature or shared components. Use the equivalent shared component: `<app-dropdown>`, `<app-checkbox>`, `<app-radio>`/`<app-radio-group>`, or `<app-slider>`. Native `<button>` is likewise replaced by `<app-button>` (exception: buttons inside shared components themselves).
+- **Translated dropdown options** — when a dropdown's option labels must be translated, compute the `DropdownOption[]` array in the parent smart component (container/page) using `TranslateService.instant()` inside a `computed()` that depends on a `toSignal(translate.onLangChange.pipe(startWith(null)))` signal so the labels stay in sync with language changes.
 
 ---
 

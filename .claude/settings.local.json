@@ -41,7 +41,24 @@
       "Bash(npm ci *)",
       "Bash(npm view *)",
       "WebFetch(domain:storybook.js.org)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({'dependencies': d.get\\('dependencies',{}\\), 'devDependencies': d.get\\('devDependencies',{}\\)}, indent=2\\)\\)\")",
+      "Bash(git stash *)",
+      "Bash(python3 *)",
+      "Bash(npx tsx *)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(npx ng *)",
+      "Bash(npm start *)",
+      "Bash(echo \"Dev server starting, PID: $!\")",
+      "WebFetch(domain:localhost)",
+      "Bash(node_modules/.bin/vitest)",
+      "Bash(grep -oP '.{0,20}fallbackLang.{0,80}')",
+      "Bash(grep -oP '.{0,50}\\(fallbackLang|lang:\\).{0,100}')",
+      "Bash(npm rebuild *)",
+      "Bash(find *)",
+      "Bash(grep -oP '.{0,20}inject.*Injector.{0,50}')",
+      "Bash(grep -E \"\\\\.\\(ts|js|tsx|jsx|py\\)$\")",
+      "Bash(npx jest *)"
     ]
   }
 }

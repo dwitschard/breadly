@@ -8,33 +8,50 @@
 ## Next Tasks
 
 ## To Verify
-- [~] Destroy and Re-Deploy complete Environment (f.e `dev` or `prod`)
-  - [ ] Verify Teardown works properly now
-
 - [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
-
-- [~] How to make sure E-Mail will not be in Spam-Folder (Template Adjustments?)
+- [ ] Check new E-Mail Address will not receive emails in SPAM Folder
 
 ### Next
 
 - [ ] Dynamo Setup
-  - [ ] DynamoDB Table Design for User (Username, Last Login, Settings, )
-  - [ ] Terraform Setup 
-  - [ ] Implement DB Connection in Backend
-  - [ ] Add it to /health Endpoint
-  - [ ] Create Dummy Data for preview branches
+  - [~] Add E-Mail and Last-Login to User Settings
+
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
-  - [ ] Add Dumb Components -> check Design System Starter for reference
-  - [ ] Create a Storybook for it
+  - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
+
+
+- [ ] Give AI possibility to run e2e locally
+  - [ ] Should be a quality gate before finishing a UI Task
+
+
+- [ ] Implement Design according to ClaudeDesign using the Design System Components
+  - [ ] Create a Favicon and add it to the Application
+
+
+- [ ] DB Schema for Recipes
+  - [x] Think about general structure
+    - [ ] Are all SKs and GSIs updated automatically? Any LSIs used that I need to manage?
+  - [ ] Create a document describing all UIs / User Journeys needed to allow database interaction with the new schema
+    - [ ] Used for Claude Design afterwards
+  - [ ] Create Seeding Mechanism and dummy data
+  - [ ] Implement it in DynamoDB & update Backend / Frontend accordingly
+
 
 - [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase
 
+
+- [ ] Importer of Recipes of public webpage
+  - [ ] scheduled to get latest updates
+
+
 ## UI
 
 ## Bugs
+- [ ] When the user does not select the default language or theme on reload it will flicker (ligth/dark mode) and show the default language for a short time (english) before switching to the selected one.
+  - [ ] Potential Fix: Store the selected theme and language in local storage and load it on app start before rendering anything
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
 - [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
@@ -44,11 +61,15 @@
 ## Ideas
 - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
   - [ ] if not possible -> Template Visible in Local Dev Mode?
+
 - [ ] Create Architecture Document with Mermaid Diagrams and update it after every feature change
   - [ ] Infrastructure
   - [ ] Software Architecture
+
 - [ ] Implement a custom ui for login / registration
+
 - [ ] Decide on UI Library / Elements
+
 - [ ] Think about how to split different applications (or later potentially even domains) into different Lambda's
   - [ ] Impact on Terraform probably quite large, gain?
 

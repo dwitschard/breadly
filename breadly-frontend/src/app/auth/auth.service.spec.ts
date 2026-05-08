@@ -3,9 +3,11 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { OAuthService, provideOAuthClient } from 'angular-oauth2-oidc';
+import { TranslateService } from '@ngx-translate/core';
 import { AuthService } from './auth.service';
 import { ConfigService } from '../config/config.service';
 import { ProfileService } from '../shared/services/profile.service';
+import { provideApi } from '../generated/api';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -19,6 +21,8 @@ describe('AuthService', () => {
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
         provideOAuthClient(),
+        provideApi('api'),
+        { provide: TranslateService, useValue: { use: () => ({ subscribe: () => {} }) } },
       ],
     });
 

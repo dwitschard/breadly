@@ -1,5 +1,5 @@
 import { ProfileMenuComponent } from './profile-menu.component';
-import { Profile } from '../../../generated/api';
+import { Profile, UserSettingsDto } from '../../../generated/api';
 import { renderWithProviders, screen, userEvent } from '../../../../testing/render-with-providers';
 
 describe('ProfileMenuComponent', () => {
@@ -121,6 +121,7 @@ describe('ProfileMenuComponent', () => {
     emailVerified: true,
     name: 'Alice',
     roles: [],
+    settings: { language: UserSettingsDto.LanguageEnum.En, theme: UserSettingsDto.ThemeEnum.Light },
   };
 
   async function setup(options: {

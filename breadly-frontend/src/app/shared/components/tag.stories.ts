@@ -28,7 +28,11 @@ const meta: Meta<TagComponent> = {
     dot: {
       description: 'Renders a small coloured dot before the label text.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
   },
 };

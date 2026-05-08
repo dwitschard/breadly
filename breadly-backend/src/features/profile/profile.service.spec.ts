@@ -5,55 +5,45 @@ describe('profile.service', () => {
   describe('toProfile', () => {
     const minimalClaims: CognitoClaims = {
       sub: 'user-abc',
-      email: 'bob@example.com',
-      email_verified: true,
       name: 'Bob',
       'cognito:groups': ['admin'],
     };
 
-    it('maps required fields from Cognito claims when no userInfo provided', () => {
-      const profile = toProfile(minimalClaims);
+    it('maps required fields from claims and userInfo', () => {
+      const userInfo = { sub: 'user-abc', email: 'bob@example.com', email_verified: 'true', name: 'Bob' };
+      const profile = toProfile(minimalClaims, userInfo);
       expect(profile.sub).toBe('user-abc');
       expect(profile.email).toBe('bob@example.com');
       expect(profile.emailVerified).toBe(true);
       expect(profile.roles).toEqual(['admin']);
     });
 
-    it('prefers userInfo email over claims email', () => {
-      const userInfo = { sub: 'user-abc', email: 'real@example.com', email_verified: true, name: 'Bob' };
-      const claims: CognitoClaims = { sub: 'user-abc', email: 'stale@example.com', name: 'Bob' };
-      const profile = toProfile(claims, userInfo);
+    it('uses email from userInfo endpoint', () => {
+      const userInfo = { sub: 'user-abc', email: 'real@example.com', email_verified: 'true', name: 'Bob' };
+      const profile = toProfile(minimalClaims, userInfo);
       expect(profile.email).toBe('real@example.com');
-    });
-
-    it('prefers userInfo emailVerified over claims', () => {
-      const userInfo = { sub: 'user-abc', email_verified: 'true', name: 'Bob' };
-      const claims: CognitoClaims = { sub: 'user-abc', email_verified: false, name: 'Bob' };
-      const profile = toProfile(claims, userInfo);
-      expect(profile.emailVerified).toBe(true);
     });
 
     it('handles userInfo email_verified as string "false"', () => {
       const userInfo = { sub: 'user-abc', email_verified: 'false', name: 'Bob' };
-      const claims: CognitoClaims = { sub: 'user-abc', email_verified: true, name: 'Bob' };
-      const profile = toProfile(claims, userInfo);
+      const profile = toProfile(minimalClaims, userInfo);
       expect(profile.emailVerified).toBe(false);
     });
 
-    it('falls back to claims when userInfo is null', () => {
+    it('returns empty email when userInfo is null', () => {
       const profile = toProfile(minimalClaims, null);
-      expect(profile.email).toBe('bob@example.com');
-      expect(profile.emailVerified).toBe(true);
+      expect(profile.email).toBe('');
+      expect(profile.emailVerified).toBe(false);
     });
 
-    it('defaults emailVerified to false when absent from both', () => {
-      const claims: CognitoClaims = { sub: 'u1', name: 'U1' };
-      const profile = toProfile(claims);
+    it('defaults emailVerified to false when absent from userInfo', () => {
+      const userInfo = { sub: 'user-abc', email: 'bob@example.com', name: 'Bob' };
+      const profile = toProfile(minimalClaims, userInfo);
       expect(profile.emailVerified).toBe(false);
     });
 
     it('defaults roles to empty array when cognito:groups is absent', () => {
-      const claims: CognitoClaims = { sub: 'u1', email: 'a@b.com', email_verified: true, name: 'U1' };
+      const claims: CognitoClaims = { sub: 'u1', name: 'U1' };
       const profile = toProfile(claims);
       expect(profile.roles).toEqual([]);
     });
@@ -90,7 +80,7 @@ describe('profile.service', () => {
       expect(profile.picture).toBeUndefined();
     });
 
-    it('defaults email to empty string when absent from both', () => {
+    it('defaults email to empty string when userInfo is absent', () => {
       const claims: CognitoClaims = { sub: 'u1', name: 'U1' };
       const profile = toProfile(claims, null);
       expect(profile.email).toBe('');

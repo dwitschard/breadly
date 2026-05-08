@@ -1,4 +1,4 @@
-import { Profile } from '../../generated/api';
+import { Profile, UserSettingsDto } from '../../generated/api';
 import { profileDisplayName } from './profile-display-name';
 
 describe('profileDisplayName', () => {
@@ -14,6 +14,10 @@ describe('profileDisplayName', () => {
       name: 'Alice Smith',
       givenName: 'Alice',
       roles: [],
+      settings: {
+        language: UserSettingsDto.LanguageEnum.En,
+        theme: UserSettingsDto.ThemeEnum.Light,
+      },
     };
     expect(profileDisplayName(profile)).toBe('Alice Smith');
   });
@@ -47,6 +51,10 @@ describe('profileDisplayName', () => {
       name: '',
       givenName: 'Alice',
       roles: [],
+      settings: {
+        language: UserSettingsDto.LanguageEnum.En,
+        theme: UserSettingsDto.ThemeEnum.Light,
+      },
     };
     expect(profileDisplayName(profile)).toBe('');
   });

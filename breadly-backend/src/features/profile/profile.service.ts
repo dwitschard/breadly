@@ -1,7 +1,8 @@
 import { CognitoClaims } from '../../middleware/auth.middleware.js';
-import { Profile } from '../../app/generated/api/index.js';
+import { Profile, UserSettingsDto } from '../../app/generated/api/index.js';
 import { logger } from '../../common/logger.js';
 import { env } from '../../config/env.js';
+import { getSettings, upsertSettings } from '../user-settings/user-settings.repository.js';
 
 interface UserInfoResponse {
   sub: string;
@@ -12,6 +13,14 @@ interface UserInfoResponse {
   family_name?: string;
   picture?: string;
 }
+
+export const getUserSettings = (userId: string, email?: string): Promise<UserSettingsDto> =>
+  getSettings(userId, email);
+
+export const updateUserSettings = (
+  userId: string,
+  patch: Partial<UserSettingsDto>,
+): Promise<UserSettingsDto> => upsertSettings(userId, patch);
 
 export const fetchUserInfo = async (accessToken: string): Promise<UserInfoResponse | null> => {
   const userInfoUrl = env.COGNITO_USERINFO_URL;
@@ -37,11 +46,15 @@ export const fetchUserInfo = async (accessToken: string): Promise<UserInfoRespon
   }
 };
 
-export const toProfile = (claims: CognitoClaims, userInfo?: UserInfoResponse | null): Profile => {
-  const email = userInfo?.email ?? claims.email ?? '';
+export const toProfile = (
+  claims: CognitoClaims,
+  userInfo?: UserInfoResponse | null,
+  settings?: UserSettingsDto,
+): Profile => {
+  const email = userInfo?.email ?? '';
   const emailVerified = userInfo?.email_verified !== undefined
     ? String(userInfo.email_verified) === 'true'
-    : (claims.email_verified ?? false);
+    : false;
 
   const name = userInfo?.name ?? claims.name;
   const givenName = userInfo?.given_name ?? claims.given_name;
@@ -54,6 +67,7 @@ export const toProfile = (claims: CognitoClaims, userInfo?: UserInfoResponse | n
     emailVerified,
     name,
     roles: claims['cognito:groups'] ?? [],
+    settings: settings ?? { language: 'de', theme: 'light' },
   };
 
   if (givenName !== undefined) profile.givenName = givenName;

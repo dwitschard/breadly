@@ -29,10 +29,13 @@ describe('CheckboxComponent', () => {
   it('emits checkedChange on toggle', async () => {
     const user = userEvent.setup();
     const checkedChange = vi.fn();
-    await render('<app-checkbox label="Test" [checked]="false" (checkedChange)="checkedChange($event)" />', {
-      imports: [CheckboxComponent, TranslateModule.forRoot()],
-      componentProperties: { checkedChange },
-    });
+    await render(
+      '<app-checkbox label="Test" [checked]="false" (checkedChange)="checkedChange($event)" />',
+      {
+        imports: [CheckboxComponent, TranslateModule.forRoot()],
+        componentProperties: { checkedChange },
+      },
+    );
     await user.click(screen.getByTestId('checkbox-label'));
     expect(checkedChange).toHaveBeenCalledWith(true);
   });

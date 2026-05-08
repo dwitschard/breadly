@@ -18,12 +18,20 @@ const meta: Meta<FilterTagComponent> = {
     active: {
       description: 'Whether the filter is currently applied (highlighted amber style).',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     disabled: {
       description: 'Prevents toggling and dims the pill.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     toggled: {
       description: 'Emitted with the new active value when the user clicks the tag.',

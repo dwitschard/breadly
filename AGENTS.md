@@ -141,7 +141,8 @@ E2E tests (`npm test` in `e2e/`) run against deployed preview environments in CI
 ### Phase 5: Code Review
 
 13. After all verification passes, invoke the `code-reviewer` sub-agent via the Task tool to review all changes made in phases 1-4. Pass it a description of what was changed and which files were affected.
-14. If the code-reviewer applied fixes, re-run Phase 3 verification (lint, build, test) on the affected projects to ensure the fixes did not introduce regressions.
+14. **Before the code-reviewer marks its review complete**, it must run `npm test` in every affected project and `npm test` in `e2e/` (if Phase 4 was not skipped), and confirm all tests pass. If tests fail, it must fix them and re-run before finishing.
+15. If the code-reviewer applied fixes, re-run Phase 3 verification (lint, build, test) on the affected projects to ensure the fixes did not introduce regressions.
 
 ### Smart Skipping Rules
 
@@ -157,3 +158,5 @@ E2E tests (`npm test` in `e2e/`) run against deployed preview environments in CI
 ## Code Review
 
 All substantial code changes are reviewed by the `code-reviewer` sub-agent after implementation and verification. The code-reviewer enforces the conventions defined in each project's `AGENTS.md` and focuses on readability, maintainability, component slicing, and testability.
+
+**The code-reviewer must always run `npm test` in every affected project as the final step of its review and must not finish until all tests pass.** For changes that include E2E coverage (Phase 4 was not skipped), it must also run `npm test` in `e2e/`. This catches type drift in test fixtures and broken user journeys before the changes reach CI.

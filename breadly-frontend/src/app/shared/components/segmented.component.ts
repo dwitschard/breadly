@@ -32,14 +32,15 @@ export interface SegmentedOption {
   `,
 })
 export class SegmentedComponent {
-  readonly options  = input.required<SegmentedOption[]>();
-  readonly value    = input.required<string>();
+  readonly options = input.required<SegmentedOption[]>();
+  readonly value = input.required<string>();
   readonly disabled = input<boolean>(false);
 
   readonly valueChange = output<string>();
 
   protected segmentClass(optValue: string, index: number, last: boolean): string {
-    const base = 'px-4 h-9 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400';
+    const base =
+      'px-4 h-9 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400';
     const border = index === 0 ? '' : 'border-l border-warm-300 dark:border-warm-600';
     const selected = this.value() === optValue;
     const stateClass = selected

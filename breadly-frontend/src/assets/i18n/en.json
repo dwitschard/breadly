@@ -1,0 +1,99 @@
+{
+  "COMMON": {
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "DELETE": "Delete",
+    "LOADING": "Loading...",
+    "ERROR": "An error occurred",
+    "ADD": "Add",
+    "RELOAD": "Reload"
+  },
+  "NAV": {
+    "RECIPES": "Recipes",
+    "HEALTH": "System Status",
+    "PROFILE": "View Profile",
+    "LOGIN": "Sign in",
+    "LOGOUT": "Sign out",
+    "ACCOUNT_MENU": "Account menu for {{name}}",
+    "ACCOUNT_OPTIONS": "Account options",
+    "HOME": "breadly Home",
+    "MAIN_NAV": "Main navigation"
+  },
+  "HOME": {
+    "TITLE": "Welcome to Breadly",
+    "SUBTITLE": "Your recipe management. Sign in to manage recipes and check the system status.",
+    "LOGIN_BUTTON": "Sign in now"
+  },
+  "RECIPES": {
+    "TITLE": "Recipes",
+    "ADD_TITLE": "Add recipe",
+    "NAME_PLACEHOLDER": "Recipe name",
+    "NAME_LABEL": "Recipe name",
+    "ALL_TITLE": "All recipes",
+    "EMPTY": "No recipes yet. Create a new one above.",
+    "DELETE_LABEL": "Delete recipe: {{name}}",
+    "LOAD_ERROR": "Could not load recipes.",
+    "CREATE_ERROR": "Could not create recipe.",
+    "DELETE_ERROR": "Could not delete recipe.",
+    "LIST_LABEL": "Recipe list"
+  },
+  "HEALTH": {
+    "TITLE": "System Status",
+    "RELOAD": "Reload",
+    "RELOADING": "Loading...",
+    "CHECKS_LABEL": "System status checks",
+    "API": "API",
+    "MONGODB": "MongoDB",
+    "DYNAMODB": "DynamoDB",
+    "OPERATIONAL": "Operational",
+    "ERROR": "Error",
+    "OVERALL_STATUS": "Overall status:",
+    "ALL_OPERATIONAL": "All systems operational",
+    "DEGRADED": "Degraded",
+    "LOAD_ERROR": "Could not load system status.",
+    "VERSIONS": "Versions",
+    "VERSIONS_LABEL": "Versions",
+    "FRONTEND": "Frontend",
+    "BACKEND": "Backend"
+  },
+  "PROFILE": {
+    "TITLE": "Profile",
+    "FIRST_NAME": "First name",
+    "LAST_NAME": "Last name",
+    "EMAIL": "Email",
+    "VERIFIED": "Verified",
+    "UNVERIFIED": "Not verified",
+    "EMAIL_VERIFIED": "Email verified",
+    "EMAIL_NOT_VERIFIED": "Email not verified",
+    "USER_ID": "User ID",
+    "ROLES": "Roles",
+    "UNAVAILABLE": "Profile information is not available.",
+    "LOADING": "Loading profile...",
+    "SETTINGS_TITLE": "Settings",
+    "LANGUAGE": "Language",
+    "LANGUAGE_DE": "German",
+    "LANGUAGE_EN": "English",
+    "THEME": "Theme",
+    "THEME_LIGHT": "Light",
+    "THEME_DARK": "Dark",
+    "LAST_LOGIN": "Last login"
+  },
+  "AUTH": {
+    "LOGIN_TITLE": "Sign in",
+    "LOGOUT_TITLE": "Sign out",
+    "LOGOUT_MESSAGE": "Your session has ended. Use the navigation to sign in again."
+  },
+  "COMPONENTS": {
+    "CHECKBOX_REQUIRED": "Required",
+    "RADIO_REQUIRED": "Required",
+    "DROPDOWN_PLACEHOLDER": "Select",
+    "DROPDOWN_REQUIRED": "Please select",
+    "DIALOG_CLOSE": "Close",
+    "SIDEBAR_CLOSE": "Close",
+    "BADGE_COUNT": "{{count}} notifications"
+  },
+  "CONFIG": {
+    "ERROR_TITLE": "Configuration error",
+    "ERROR_MESSAGE": "The application configuration could not be loaded. Please try again later."
+  }
+}

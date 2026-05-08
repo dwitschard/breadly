@@ -32,19 +32,39 @@ import { HealthResponse } from '../../../generated/api';
         </span>
       </li>
       <li
-        data-testid="health-check-db"
+        data-testid="health-check-mongodb"
         class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
       >
-        <span class="font-medium">{{ 'HEALTH.DATABASE' | translate }}</span>
+        <span class="font-medium">{{ 'HEALTH.MONGODB' | translate }}</span>
         <span class="flex items-center gap-2">
           <span
-            data-testid="health-check-db-status"
-            [attr.data-status]="health().checks.database.status"
+            data-testid="health-check-mongodb-status"
+            [attr.data-status]="health().checks.mongodb.status"
             class="inline-block h-2.5 w-2.5 rounded-full"
-            [class.bg-green-500]="health().checks.database.status === 'ok'"
-            [class.bg-red-500]="health().checks.database.status !== 'ok'"
+            [class.bg-green-500]="health().checks.mongodb.status === 'ok'"
+            [class.bg-red-500]="health().checks.mongodb.status !== 'ok'"
             [attr.aria-label]="
-              health().checks.database.status === 'ok'
+              health().checks.mongodb.status === 'ok'
+                ? ('HEALTH.OPERATIONAL' | translate)
+                : ('HEALTH.ERROR' | translate)
+            "
+          ></span>
+        </span>
+      </li>
+      <li
+        data-testid="health-check-dynamodb"
+        class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+      >
+        <span class="font-medium">{{ 'HEALTH.DYNAMODB' | translate }}</span>
+        <span class="flex items-center gap-2">
+          <span
+            data-testid="health-check-dynamodb-status"
+            [attr.data-status]="health().checks.dynamodb.status"
+            class="inline-block h-2.5 w-2.5 rounded-full"
+            [class.bg-green-500]="health().checks.dynamodb.status === 'ok'"
+            [class.bg-red-500]="health().checks.dynamodb.status !== 'ok'"
+            [attr.aria-label]="
+              health().checks.dynamodb.status === 'ok'
                 ? ('HEALTH.OPERATIONAL' | translate)
                 : ('HEALTH.ERROR' | translate)
             "

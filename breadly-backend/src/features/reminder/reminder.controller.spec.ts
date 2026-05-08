@@ -1,6 +1,10 @@
 import supertest from 'supertest';
 import { app } from '../../app.js';
 
+jest.mock('../profile/profile.service.js', () => ({
+  fetchUserInfo: jest.fn().mockResolvedValue({ email: 'test@example.com' }),
+}));
+
 jest.mock('./reminder.service.js', () => ({
   createReminder: jest.fn().mockResolvedValue({
     id: 'local-reminder-test-user-abc123',
@@ -32,7 +36,6 @@ describe('Reminder Controller', () => {
 
   const token = makeToken({
     sub: 'test-user',
-    email: 'test@example.com',
     'cognito:groups': [],
   });
 

@@ -28,7 +28,11 @@ const meta: Meta<SegmentedComponent> = {
     disabled: {
       description: 'Prevents all interaction and dims the control.',
       control: { type: 'boolean' },
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' }, category: 'Inputs' },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+        category: 'Inputs',
+      },
     },
     valueChange: {
       description: 'Emitted with the newly selected value when the user clicks a segment.',
@@ -41,7 +45,10 @@ type Story = StoryObj<SegmentedComponent>;
 
 export const TwoSegments: Story = {
   args: {
-    options: [{ value: 'aktiv', label: 'Aktiv' }, { value: 'warten', label: 'Warten' }],
+    options: [
+      { value: 'aktiv', label: 'Aktiv' },
+      { value: 'warten', label: 'Warten' },
+    ],
     value: 'aktiv',
   },
 };
@@ -57,7 +64,10 @@ export const ThreeSegments: Story = {
 };
 export const Disabled: Story = {
   args: {
-    options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }],
+    options: [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' },
+    ],
     value: 'a',
     disabled: true,
   },
