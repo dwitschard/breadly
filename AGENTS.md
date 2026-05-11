@@ -32,12 +32,24 @@ These documents are the authoritative source for coding conventions within each 
 
 ## Verification Commands
 
-| Project | Lint | Build | Test | Generate API |
-|---------|------|-------|------|--------------|
+| Project | Lint | Build | Test (one-shot) | Generate API |
+|---------|------|-------|-----------------|--------------|
 | `breadly-api/` | `npm run lint` | — | — | — |
-| `breadly-frontend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
+| `breadly-frontend/` | `npm run lint` | `npm run build` | `npm run test:ci` | `npm run generate-api` |
 | `breadly-backend/` | `npm run lint` | `npm run build` | `npm test` | `npm run generate-api` |
 | `e2e/` | — | — | `npm test` (Playwright) | — |
+
+> **Note:** `npm test` in `breadly-frontend/` starts a watch-mode server. Always use `npm run test:ci` for one-shot runs in scripts and automation.
+
+## Mandatory Test Rule
+
+**After every code change — no exceptions — run tests in all affected projects before marking the task done.** This applies to all change types: features, bug fixes, refactors, design-token updates, dependency bumps, and test-only edits.
+
+- Any change to `breadly-frontend/` → run `npm run test:ci` in `breadly-frontend/`
+- Any change to `breadly-backend/` → run `npm test` in `breadly-backend/`
+- Both must be green (zero failures) before the work is considered complete
+
+If tests break after a change, fix them immediately — do not commit or hand off until all tests pass.
 
 ## Development Pipeline
 

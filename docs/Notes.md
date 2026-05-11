@@ -11,8 +11,7 @@
 - [ ] Check new E-Mail Address will not receive emails in SPAM Folder
 
 ### Next
-- [ ] Create Design System Components
-  - [ ] Everything configurable via Config (JSON or similar)
+- [~] Create Design System Components
   - [~] Make sure all variables are exposed and usable for other components too (similar to our Setup)
 
 
