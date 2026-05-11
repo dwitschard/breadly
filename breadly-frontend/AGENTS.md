@@ -470,30 +470,16 @@ export class RecipeFeatureService {
 
 ## 10. Styling
 
-### Tailwind CSS v4 + SCSS
+### Tailwind CSS v4
 
-The project uses Tailwind CSS v4 with PostCSS and SCSS (Dart Sass). No other CSS framework or component library is used.
-
-### Global styles file structure
-
-```
-src/
-  styles.scss          ← entry point — all CSS output lives here
-  styles/
-    _tokens.scss       ← SCSS-only partial: $light / $dark maps + color-vars mixin
-```
-
-- `_tokens.scss` is a **SCSS-only partial** (no CSS output). It defines the `$light` and `$dark` color maps and the `color-vars` mixin that iterates them. Adding or changing a color token requires only one line in the appropriate map.
-- `styles.scss` owns all CSS output in the correct order: `@import 'tailwindcss'`, `@custom-variant`, `@theme`, `.dark`, `body`.
-- Google Fonts are loaded via `<link>` in `index.html`, not via CSS `@import` (better performance; avoids render-blocking CSS and `@use` ordering constraints).
+The project uses Tailwind CSS v4 with PostCSS. No other CSS framework or component library is used.
 
 ### Rules
 
-- **Tailwind utilities only** — no component-scoped `.scss` / `.css` files
+- **Tailwind utilities only** — no custom CSS files per component
 - **Extract repeated patterns** with `@apply` when a utility combination is used 3+ times across the codebase
 - **No arbitrary values** — use Tailwind's design tokens exclusively (e.g., `p-4` not `p-[13px]`)
 - **Tailwind animations and transitions** — use Tailwind's `transition-*`, `duration-*`, `animate-*` utilities. Do not use `@angular/animations`
-- **SCSS comments** — use `//` for all documentation inside `.scss` files. `/* */` comments are emitted into CSS output; `//` comments are stripped. Never put `/* */` comment blocks inside `@theme` or `.dark`.
 
 ### Design tokens — mandatory use
 
@@ -575,8 +561,8 @@ toggleTheme() {
 
 When a visual requirement cannot be expressed with an existing token:
 
-1. **Color token** — add the key-value pair to `$light` in `src/styles/_tokens.scss`. If it needs a dark-mode value, add the override to `$dark` in the same file. The `color-vars` mixin in `styles.scss` will emit the CSS custom property automatically.
-2. **Non-color token** (shadow, radius, duration, size, easing) — add `--token-name: value;` directly to the `@theme` block in `src/styles.scss` with a `//` comment. If it needs a dark override, add it to the `.dark {}` block.
+1. Add the token to the `@theme` block in `src/styles.css` with a comment explaining its purpose.
+2. Add the corresponding dark-mode override to the `.dark {}` block if it needs to flip.
 3. Use the new token everywhere — never use the raw value directly in a component.
 4. Do not duplicate a token that already exists under a different name. Check the catalogue above first.
 

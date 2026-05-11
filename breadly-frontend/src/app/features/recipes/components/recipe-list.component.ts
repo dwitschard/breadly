@@ -2,12 +2,11 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { TranslateModule } from '@ngx-translate/core';
 import { LucideTrash2 } from '@lucide/angular';
 import { Recipe } from '../../../generated/api';
-import { ButtonComponent } from '../../../shared/components/button.component';
 
 @Component({
   selector: 'recipe-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslateModule, ButtonComponent],
+  imports: [LucideTrash2, TranslateModule],
   template: `
     @if (recipes().length === 0) {
       <p data-testid="recipe-empty-message" class="text-content-subtle">
@@ -21,13 +20,15 @@ import { ButtonComponent } from '../../../shared/components/button.component';
             class="flex items-center justify-between border border-border rounded px-4 py-3"
           >
             <span>{{ recipe.name }}</span>
-            <app-button
-              variant="ghost"
-              [icon]="LucideTrash2"
+            <button
+              type="button"
               [attr.data-testid]="'recipe-delete-btn-' + recipe._id"
-              [ariaLabel]="'RECIPES.DELETE_LABEL' | translate: { name: recipe.name }"
-              (clicked)="deleteRecipe.emit(recipe)"
-            />
+              (click)="deleteRecipe.emit(recipe)"
+              class="text-danger hover:text-danger-hover cursor-pointer"
+              [attr.aria-label]="'RECIPES.DELETE_LABEL' | translate: { name: recipe.name }"
+            >
+              <svg lucideTrash2 [size]="16" aria-hidden="true" />
+            </button>
           </li>
         }
       </ul>
@@ -35,7 +36,6 @@ import { ButtonComponent } from '../../../shared/components/button.component';
   `,
 })
 export class RecipeListComponent {
-  protected readonly LucideTrash2 = LucideTrash2;
   readonly recipes = input.required<Recipe[]>();
   readonly deleteRecipe = output<Recipe>();
 }

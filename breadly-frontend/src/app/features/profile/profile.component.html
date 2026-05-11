@@ -1,7 +1,7 @@
 <main class="max-w-xl mx-auto p-6">
-  <app-headline level="h2" data-testid="profile-title" class="mb-6">
+  <h1 data-testid="profile-title" class="text-2xl font-bold mb-6">
     {{ 'PROFILE.TITLE' | translate }}
-  </app-headline>
+  </h1>
 
   @if (loading()) {
     <p aria-live="polite">{{ 'PROFILE.LOADING' | translate }}</p>
@@ -54,17 +54,17 @@
           <dd class="text-sm text-content flex items-center gap-2">
             {{ profile()!.email }}
             @if (profile()!.emailVerified) {
-              <app-tag
-                variant="success"
+              <span
                 data-testid="profile-email-verified"
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700"
                 [attr.aria-label]="'PROFILE.EMAIL_VERIFIED' | translate"
-                >{{ 'PROFILE.VERIFIED' | translate }}</app-tag
+                >{{ 'PROFILE.VERIFIED' | translate }}</span
               >
             } @else {
-              <app-tag
-                variant="info"
+              <span
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700"
                 [attr.aria-label]="'PROFILE.EMAIL_NOT_VERIFIED' | translate"
-                >{{ 'PROFILE.UNVERIFIED' | translate }}</app-tag
+                >{{ 'PROFILE.UNVERIFIED' | translate }}</span
               >
             }
           </dd>
@@ -84,9 +84,12 @@
             </dt>
             <dd class="flex flex-wrap gap-1 justify-end">
               @for (role of profile()!.roles; track role) {
-                <app-tag variant="neutral" data-testid="profile-role">
+                <span
+                  data-testid="profile-role"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-brand-muted text-brand"
+                >
                   {{ role }}
-                </app-tag>
+                </span>
               }
             </dd>
           </div>

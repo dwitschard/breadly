@@ -8,16 +8,12 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
   selector: 'app-button',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [SpinnerComponent, NgComponentOutlet],
-  host: {
-    '[class.self-stretch]': 'stretch()',
-  },
   template: `
     <button
       [type]="type()"
       [disabled]="disabled() || loading()"
       [class]="computedClass()"
       data-testid="button"
-      [attr.aria-label]="ariaLabel()"
       [attr.aria-busy]="loading() ? 'true' : null"
       (click)="clicked.emit()"
     >
@@ -39,14 +35,12 @@ export class ButtonComponent {
   readonly loading = input<boolean>(false);
   readonly type = input<'button' | 'submit' | 'reset'>('button');
   readonly icon = input<Type<unknown> | null>(null);
-  readonly ariaLabel = input<string | null>(null);
-  readonly stretch = input<boolean>(false);
 
   readonly clicked = output<void>();
 
   protected readonly computedClass = computed(() => {
-    const heightClasses = this.stretch() ? 'h-full py-1.5' : 'h-control';
-    const base = `inline-flex items-center justify-center gap-2 ${heightClasses} min-w-touch px-4 text-sm font-medium leading-none rounded-control border cursor-pointer select-none whitespace-nowrap transition-all duration-fast ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed`;
+    const base =
+      'inline-flex items-center justify-center gap-2 h-control min-w-touch px-4 text-sm font-medium leading-none rounded-control border cursor-pointer select-none whitespace-nowrap transition-all duration-fast ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants: Record<ButtonVariant, string> = {
       primary: 'bg-brand text-brand-on border-transparent hover:bg-brand-hover',

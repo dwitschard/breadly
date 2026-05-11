@@ -6,8 +6,6 @@ import { HealthDashboardComponent } from '../components/health-dashboard.compone
 import { VersionInfoComponent } from '../components/version-info.component';
 import { SpinnerComponent } from '../../../shared/components/spinner.component';
 import { ErrorBannerComponent } from '../../../shared/components/error-banner.component';
-import { ButtonComponent } from '../../../shared/components/button.component';
-import { HeadlineComponent } from '../../../shared/components/headline.component';
 import { VersionInfo } from '../../../generated/api';
 
 const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
@@ -20,24 +18,26 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
     VersionInfoComponent,
     SpinnerComponent,
     ErrorBannerComponent,
-    ButtonComponent,
-    HeadlineComponent,
+    LucideRefreshCw,
     TranslateModule,
   ],
   template: `
     <main class="p-6">
       <div class="flex items-center justify-between mb-6">
-        <app-headline level="h2" data-testid="health-title">
+        <h1 data-testid="health-title" class="text-2xl font-bold">
           {{ 'HEALTH.TITLE' | translate }}
-        </app-headline>
-        <app-button
+        </h1>
+        <button
           data-testid="health-reload-btn"
-          [icon]="LucideRefreshCw"
-          [stretch]="true"
+          type="button"
+          (click)="healthService.reload()"
           [disabled]="healthService.healthResource.isLoading()"
-          [ariaLabel]="'COMMON.RELOAD' | translate"
-          (clicked)="healthService.reload()"
-        />
+          [attr.aria-label]="'COMMON.RELOAD' | translate"
+          class="p-2 text-white bg-brand rounded-control hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-focus"
+          [attr.aria-busy]="healthService.healthResource.isLoading()"
+        >
+          <svg lucideRefreshCw [size]="18" aria-hidden="true" />
+        </button>
       </div>
 
       @if (healthService.healthResource.isLoading()) {
@@ -61,7 +61,6 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
   `,
 })
 export class HealthContainerComponent {
-  protected readonly LucideRefreshCw = LucideRefreshCw;
   protected readonly healthService = inject(HealthFeatureService);
   protected readonly health = computed(() => this.healthService.healthResource.value());
   protected readonly frontendVersion = computed(

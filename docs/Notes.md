@@ -8,21 +8,16 @@
 ## Next Tasks
 
 ## To Verify
-- [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
 - [ ] Check new E-Mail Address will not receive emails in SPAM Folder
 
 ### Next
-
-- [ ] Dynamo Setup
-  - [~] Add E-Mail and Last-Login to User Settings
-
 - [ ] Fix Styling of Authentication
   - [ ] Adjust `settings.json` to match design system
   - [ ] Reuse of Design Tokens `_tokens.scss` (other branch) possible?
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
-  - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
+  - [~] Make sure all variables are exposed and usable for other components too (similar to our Setup)
 
 
 - [ ] Give AI possibility to run e2e locally
@@ -35,9 +30,11 @@
 
 - [ ] DB Schema for Recipes
   - [x] Think about general structure
-    - [ ] Are all SKs and GSIs updated automatically? Any LSIs used that I need to manage?
+    - [ ] Are all SKs and GSIs updated automatically? 
+    - [ ] Any LSIs used that I need to manage?
   - [ ] Create a document describing all UIs / User Journeys needed to allow database interaction with the new schema
     - [ ] Used for Claude Design afterwards
+    - [ ] Used to create E2E Tests
   - [ ] Create Seeding Mechanism and dummy data
   - [ ] Implement it in DynamoDB & update Backend / Frontend accordingly
 
@@ -100,6 +97,7 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
+- [x] Dynamo DB Setup
 - [x] Minor Bugs (Reload Issue, Playwright Setup locally, )
 - [x] Integrate Email Sending Capability for Application (AWS SES)
 - [x] Integrate Scheduling Capability for Application (AWS EventBridge)
