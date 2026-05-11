@@ -5,6 +5,22 @@ const rawBaseURL = process.env['E2E_BASE_URL'] ?? 'http://localhost:4200';
 const baseURL = rawBaseURL.endsWith('/') ? rawBaseURL : `${rawBaseURL}/`;
 
 export default defineConfig({
+  webServer: [
+    {
+      command: 'npm --prefix ../breadly-backend run dev',
+      url: 'http://localhost:3000/api/health',
+      timeout: 120_000,
+      reuseExistingServer: !process.env['CI'],
+      stdout: 'pipe',
+    },
+    {
+      command: 'npm --prefix ../breadly-frontend run serve',
+      url: 'http://localhost:4200',
+      timeout: 120_000,
+      reuseExistingServer: !process.env['CI'],
+      stdout: 'pipe',
+    },
+  ],
   testDir: './tests',
   fullyParallel: false,
   workers: 1,

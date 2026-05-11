@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "npm run generate-api && ng serve",
+    "serve": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",

@@ -16,7 +16,10 @@
 
 
 - [ ] Give AI possibility to run e2e locally
+  - [ ] Add IAM-User with Inline Policy for local development to access DynamoDB (local)
+    - [ ] Document in a Readme when setting up project again -> probably not easily doable with Terraform
   - [ ] Should be a quality gate before finishing a UI Task
+  - [ ] Extracting Verifications (lint, test, e2e) into Agent instead of Agents.md?
 
 
 - [ ] Implement Design according to ClaudeDesign using the Design System Components
