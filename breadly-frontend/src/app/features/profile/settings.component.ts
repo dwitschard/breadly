@@ -13,19 +13,27 @@ import { DropdownComponent, DropdownOption } from '../../shared/components/dropd
       <h2 class="text-lg font-semibold">{{ 'PROFILE.SETTINGS_TITLE' | translate }}</h2>
 
       <div class="flex justify-between items-center">
-        <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.EMAIL' | translate }}</span>
+        <span class="text-sm font-medium text-content-subtle">{{
+          'PROFILE.EMAIL' | translate
+        }}</span>
         <span data-testid="settings-email" class="text-sm">{{ email() }}</span>
       </div>
 
       @if (lastLogin()) {
         <div class="flex justify-between items-center">
-          <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.LAST_LOGIN' | translate }}</span>
-          <span data-testid="settings-last-login" class="text-sm">{{ lastLogin() | date:'medium' }}</span>
+          <span class="text-sm font-medium text-content-subtle">{{
+            'PROFILE.LAST_LOGIN' | translate
+          }}</span>
+          <span data-testid="settings-last-login" class="text-sm">{{
+            lastLogin() | date: 'medium'
+          }}</span>
         </div>
       }
 
       <div class="flex justify-between items-center">
-        <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.LANGUAGE' | translate }}</span>
+        <span class="text-sm font-medium text-content-subtle">{{
+          'PROFILE.LANGUAGE' | translate
+        }}</span>
         <div class="w-40">
           <app-dropdown
             data-testid="settings-language-select"
@@ -37,7 +45,9 @@ import { DropdownComponent, DropdownOption } from '../../shared/components/dropd
       </div>
 
       <div class="flex justify-between items-center">
-        <span class="text-sm font-medium text-gray-500">{{ 'PROFILE.THEME' | translate }}</span>
+        <span class="text-sm font-medium text-content-subtle">{{
+          'PROFILE.THEME' | translate
+        }}</span>
         <div class="w-40">
           <app-dropdown
             data-testid="settings-theme-select"

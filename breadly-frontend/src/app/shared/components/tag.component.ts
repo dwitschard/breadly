@@ -22,10 +22,10 @@ export class TagComponent {
     const base = 'inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium';
     const variants: Record<TagVariant, string> = {
       success: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400',
-      danger: 'bg-red-100   text-red-700   dark:bg-red-950   dark:text-red-400',
-      neutral: 'bg-warm-100  text-warm-600  dark:bg-warm-800  dark:text-warm-300',
+      danger: 'bg-danger-bg-strong text-danger-text',
+      neutral: 'bg-surface-raised text-content-muted',
       info: 'bg-blue-100  text-blue-700  dark:bg-blue-950  dark:text-blue-400',
-      disabled: 'bg-warm-100  text-warm-400  dark:bg-warm-800  dark:text-warm-600',
+      disabled: 'bg-surface-raised text-content-subtle',
     };
     return `${base} ${variants[this.variant()]}`;
   });
@@ -34,10 +34,10 @@ export class TagComponent {
     const base = 'size-1 rounded-full shrink-0';
     const dots: Record<TagVariant, string> = {
       success: 'bg-green-500',
-      danger: 'bg-red-500',
-      neutral: 'bg-warm-400',
+      danger: 'bg-danger',
+      neutral: 'bg-border-strong',
       info: 'bg-blue-500',
-      disabled: 'bg-warm-300',
+      disabled: 'bg-border',
     };
     return `${base} ${dots[this.variant()]}`;
   });

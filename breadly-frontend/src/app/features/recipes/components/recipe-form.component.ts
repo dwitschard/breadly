@@ -19,7 +19,7 @@ import { CreateRecipeDto } from '../../../generated/api';
         name="name"
         [placeholder]="'RECIPES.NAME_PLACEHOLDER' | translate"
         required
-        class="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="flex-1 border border-border rounded px-3 py-2 bg-surface-card text-content focus:outline-none focus:ring-2 focus:ring-brand-focus"
         [attr.aria-invalid]="name().length === 0 && submitted() ? 'true' : null"
       />
       <button
@@ -27,7 +27,7 @@ import { CreateRecipeDto } from '../../../generated/api';
         data-testid="recipe-add-btn"
         [disabled]="name().length === 0"
         [attr.aria-label]="'COMMON.ADD' | translate"
-        class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        class="bg-brand text-white p-2 rounded-control hover:bg-brand-hover cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg lucidePlus [size]="18" aria-hidden="true" />
       </button>

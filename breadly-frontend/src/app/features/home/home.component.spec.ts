@@ -6,7 +6,8 @@ import { HomeComponent } from './home.component';
 const DE_TRANSLATIONS = {
   HOME: {
     TITLE: 'Willkommen bei Breadly',
-    SUBTITLE: 'Deine Rezeptverwaltung. Melde dich an, um Rezepte zu verwalten und den Systemstatus zu prüfen.',
+    SUBTITLE:
+      'Deine Rezeptverwaltung. Melde dich an, um Rezepte zu verwalten und den Systemstatus zu prüfen.',
     LOGIN_BUTTON: 'Jetzt anmelden',
   },
 };

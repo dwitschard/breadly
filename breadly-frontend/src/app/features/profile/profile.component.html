@@ -12,42 +12,46 @@
           <img
             [src]="profile()!.picture"
             [alt]="displayName()"
-            class="w-16 h-16 rounded-full object-cover border border-gray-200"
+            class="w-16 h-16 rounded-full object-cover border border-border"
           />
         } @else {
           <svg
             lucideCircleUser
             [size]="64"
             aria-hidden="true"
-            class="text-gray-400 rounded-full bg-gray-200"
+            class="text-content-subtle rounded-full bg-surface-raised"
           />
         }
         <div>
-          <p data-testid="profile-display-name" class="text-lg font-semibold text-gray-900">
+          <p data-testid="profile-display-name" class="text-lg font-semibold text-content">
             {{ displayName() }}
           </p>
-          <p data-testid="profile-email" class="text-sm text-gray-500">{{ profile()!.email }}</p>
+          <p data-testid="profile-email" class="text-sm text-content-subtle">
+            {{ profile()!.email }}
+          </p>
         </div>
       </div>
 
-      <dl class="divide-y divide-gray-100 rounded-lg border border-gray-200">
+      <dl class="divide-y divide-border-subtle rounded-lg border border-border">
         @if (profile()!.givenName) {
           <div class="px-4 py-3 flex justify-between">
-            <dt class="text-sm font-medium text-gray-500">
+            <dt class="text-sm font-medium text-content-subtle">
               {{ 'PROFILE.FIRST_NAME' | translate }}
             </dt>
-            <dd class="text-sm text-gray-900">{{ profile()!.givenName }}</dd>
+            <dd class="text-sm text-content">{{ profile()!.givenName }}</dd>
           </div>
         }
         @if (profile()!.familyName) {
           <div class="px-4 py-3 flex justify-between">
-            <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.LAST_NAME' | translate }}</dt>
-            <dd class="text-sm text-gray-900">{{ profile()!.familyName }}</dd>
+            <dt class="text-sm font-medium text-content-subtle">
+              {{ 'PROFILE.LAST_NAME' | translate }}
+            </dt>
+            <dd class="text-sm text-content">{{ profile()!.familyName }}</dd>
           </div>
         }
         <div class="px-4 py-3 flex justify-between">
-          <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.EMAIL' | translate }}</dt>
-          <dd class="text-sm text-gray-900 flex items-center gap-2">
+          <dt class="text-sm font-medium text-content-subtle">{{ 'PROFILE.EMAIL' | translate }}</dt>
+          <dd class="text-sm text-content flex items-center gap-2">
             {{ profile()!.email }}
             @if (profile()!.emailVerified) {
               <span
@@ -66,19 +70,23 @@
           </dd>
         </div>
         <div class="px-4 py-3 flex justify-between">
-          <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.USER_ID' | translate }}</dt>
-          <dd data-testid="profile-user-id" class="text-sm text-gray-500 font-mono break-all">
+          <dt class="text-sm font-medium text-content-subtle">
+            {{ 'PROFILE.USER_ID' | translate }}
+          </dt>
+          <dd data-testid="profile-user-id" class="text-sm text-content-subtle font-mono break-all">
             {{ profile()!.sub }}
           </dd>
         </div>
         @if (profile()!.roles.length > 0) {
           <div class="px-4 py-3 flex justify-between items-start">
-            <dt class="text-sm font-medium text-gray-500">{{ 'PROFILE.ROLES' | translate }}</dt>
+            <dt class="text-sm font-medium text-content-subtle">
+              {{ 'PROFILE.ROLES' | translate }}
+            </dt>
             <dd class="flex flex-wrap gap-1 justify-end">
               @for (role of profile()!.roles; track role) {
                 <span
                   data-testid="profile-role"
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-brand-muted text-brand"
                 >
                   {{ role }}
                 </span>
@@ -89,6 +97,6 @@
       </dl>
     </div>
   } @else {
-    <p class="text-gray-500">{{ 'PROFILE.UNAVAILABLE' | translate }}</p>
+    <p class="text-content-subtle">{{ 'PROFILE.UNAVAILABLE' | translate }}</p>
   }
 </main>

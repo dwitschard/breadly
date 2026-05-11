@@ -26,16 +26,16 @@ import { SpinnerComponent } from './spinner.component';
   template: `
     <dialog
       #dialogRef
-      class="w-full max-w-[448px] rounded-2xl bg-white p-0 shadow-xl dark:bg-warm-900 m-auto"
+      class="w-full max-w-md rounded-2xl bg-surface-card p-0 shadow-xl m-auto"
       data-testid="dialog"
       (click)="onDialogClick($event)"
       (cancel)="onNativeCancel($event)"
     >
       <!-- Header -->
-      <div class="flex items-center gap-3 border-b border-warm-200 px-6 py-4 dark:border-warm-700">
+      <div class="flex items-center gap-3 border-b border-border-subtle px-6 py-4">
         @if (destructive()) {
           <svg
-            class="h-5 w-5 shrink-0 text-amber-500"
+            class="h-5 w-5 shrink-0 text-brand"
             viewBox="0 0 20 20"
             fill="currentColor"
             aria-hidden="true"
@@ -47,15 +47,12 @@ import { SpinnerComponent } from './spinner.component';
             />
           </svg>
         }
-        <h2
-          class="flex-1 text-lg font-medium text-warm-900 dark:text-warm-50"
-          data-testid="dialog-title"
-        >
+        <h2 class="flex-1 text-lg font-medium text-content" data-testid="dialog-title">
           {{ title() }}
         </h2>
         <button
           type="button"
-          class="flex h-8 w-8 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:hover:bg-warm-800 dark:hover:text-warm-50"
+          class="flex h-8 w-8 items-center justify-center rounded-lg text-content-subtle transition-colors hover:bg-surface-raised hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus"
           data-testid="dialog-close"
           [attr.aria-label]="'COMMON.CANCEL' | translate"
           (click)="cancel.emit()"
@@ -75,7 +72,7 @@ import { SpinnerComponent } from './spinner.component';
       </div>
 
       <!-- Body -->
-      <div class="p-6 text-sm text-warm-600 dark:text-warm-300" data-testid="dialog-body">
+      <div class="p-6 text-sm text-content-muted" data-testid="dialog-body">
         @if (loading()) {
           <div class="flex justify-center py-4">
             <app-spinner size="md" />
@@ -86,7 +83,7 @@ import { SpinnerComponent } from './spinner.component';
       </div>
 
       <!-- Footer -->
-      <div class="flex justify-end gap-3 border-t border-warm-200 px-6 py-4 dark:border-warm-700">
+      <div class="flex justify-end gap-3 border-t border-border-subtle px-6 py-4">
         <app-button
           variant="ghost"
           [disabled]="loading()"
@@ -121,10 +118,10 @@ export class DialogComponent {
 
   protected readonly confirmClass = computed(() => {
     const base =
-      'inline-flex h-[38px] items-center justify-center rounded-[10px] px-4 text-sm font-medium transition-all duration-[120ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
+      'inline-flex h-control items-center justify-center rounded-control px-4 text-sm font-medium transition-all duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
     return this.destructive()
-      ? `${base} bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-400`
-      : `${base} bg-amber-600 text-amber-950 hover:bg-amber-700 focus-visible:ring-amber-400 dark:bg-amber-500 dark:text-amber-950 dark:hover:bg-amber-400`;
+      ? `${base} bg-danger text-white hover:bg-danger-hover focus-visible:ring-danger-focus`
+      : `${base} bg-brand text-brand-on hover:bg-brand-hover focus-visible:ring-brand-focus`;
   });
 
   private readonly dialogRef = viewChild.required<ElementRef<HTMLDialogElement>>('dialogRef');

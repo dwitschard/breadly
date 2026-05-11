@@ -19,14 +19,14 @@ export class HeadlineComponent {
 
   protected readonly computedClass = computed(() => {
     const classes: Record<HeadlineLevel, string> = {
-      display: 'text-5xl font-medium leading-tight tracking-tight text-warm-900 dark:text-warm-50',
-      h1: 'text-4xl font-medium leading-tight tracking-tight text-warm-900 dark:text-warm-50',
-      h2: 'text-2xl font-medium leading-tight tracking-tight text-warm-900 dark:text-warm-50',
-      h3: 'text-xl  font-medium leading-snug  text-warm-900 dark:text-warm-50',
-      h4: 'text-lg  font-medium leading-snug  text-warm-900 dark:text-warm-50',
-      body: 'text-base text-warm-900 dark:text-warm-50',
-      muted: 'text-base text-warm-600 dark:text-warm-300',
-      caption: 'text-xs  text-warm-500 dark:text-warm-400',
+      display: 'text-5xl font-medium leading-tight tracking-tight text-content',
+      h1: 'text-4xl font-medium leading-tight tracking-tight text-content',
+      h2: 'text-2xl font-medium leading-tight tracking-tight text-content',
+      h3: 'text-xl  font-medium leading-snug  text-content',
+      h4: 'text-lg  font-medium leading-snug  text-content',
+      body: 'text-base text-content',
+      muted: 'text-base text-content-muted',
+      caption: 'text-xs  text-content-subtle',
     };
     return classes[this.level()];
   });

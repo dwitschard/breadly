@@ -40,15 +40,14 @@ export class ButtonComponent {
 
   protected readonly computedClass = computed(() => {
     const base =
-      'inline-flex items-center justify-center gap-2 h-[38px] min-w-[44px] px-4 text-sm font-medium leading-none rounded-[10px] border cursor-pointer select-none whitespace-nowrap transition-all duration-[120ms] ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
+      'inline-flex items-center justify-center gap-2 h-control min-w-touch px-4 text-sm font-medium leading-none rounded-control border cursor-pointer select-none whitespace-nowrap transition-all duration-fast ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants: Record<ButtonVariant, string> = {
-      primary:
-        'bg-amber-600 text-amber-950 border-transparent hover:bg-amber-700 dark:bg-amber-500 dark:text-amber-950 dark:hover:bg-amber-400',
+      primary: 'bg-brand text-brand-on border-transparent hover:bg-brand-hover',
       secondary:
-        'bg-transparent text-amber-600 border-amber-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-700 dark:text-amber-400 dark:border-amber-400 dark:hover:bg-warm-800',
+        'bg-transparent text-brand border-brand hover:bg-brand-muted hover:text-brand-hover hover:border-brand-hover',
       ghost:
-        'bg-transparent text-warm-600 border-transparent hover:bg-warm-100 hover:text-warm-900 dark:text-warm-400 dark:hover:bg-warm-800 dark:hover:text-warm-50',
+        'bg-transparent text-content-muted border-transparent hover:bg-surface-raised hover:text-content',
     };
 
     return `${base} ${variants[this.variant()]}`;

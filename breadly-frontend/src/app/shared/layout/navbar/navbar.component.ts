@@ -10,13 +10,15 @@ import { ProfileMenuComponent } from './profile-menu.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, RouterLinkActive, ProfileMenuComponent, TranslateModule],
   template: `
-    <header class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-warm-50 dark:bg-warm-900 dark:border-warm-700">
+    <header
+      class="flex items-center justify-between px-6 py-3 border-b border-border-subtle bg-surface-card"
+    >
       <div class="flex items-center gap-4">
         <div class="flex flex-col items-start">
           <a
             routerLink="/"
             data-testid="nav-home-link"
-            class="text-lg font-bold leading-tight text-gray-900 hover:text-blue-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded dark:text-warm-50 dark:hover:text-amber-400"
+            class="text-lg font-bold leading-tight text-content hover:text-brand cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-focus rounded"
             [attr.aria-label]="'NAV.HOME' | translate"
           >
             breadly
@@ -35,9 +37,9 @@ import { ProfileMenuComponent } from './profile-menu.component';
                 <a
                   [routerLink]="link.path"
                   [attr.data-testid]="'nav-' + link.path.replace('/', '') + '-link'"
-                  routerLinkActive="bg-gray-100 text-gray-900 dark:bg-warm-800 dark:text-warm-50"
+                  routerLinkActive="bg-surface-raised text-content"
                   [routerLinkActiveOptions]="{ exact: false }"
-                  class="px-3 py-2 rounded text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-warm-400 dark:hover:bg-warm-800 dark:hover:text-warm-50"
+                  class="px-3 py-2 rounded text-sm font-medium text-content-muted hover:bg-surface-raised hover:text-content cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-focus"
                 >
                   {{ link.labelKey | translate }}
                 </a>

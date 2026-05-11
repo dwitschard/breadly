@@ -13,7 +13,7 @@ import { ChangeDetectionStrategy, Component, computed, input, Type } from '@angu
       />
       @if (displayCount() !== null) {
         <span
-          class="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white"
+          class="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium leading-none text-white"
           aria-label="count"
           data-testid="badge-count"
         >

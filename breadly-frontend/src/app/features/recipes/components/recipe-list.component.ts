@@ -9,7 +9,7 @@ import { Recipe } from '../../../generated/api';
   imports: [LucideTrash2, TranslateModule],
   template: `
     @if (recipes().length === 0) {
-      <p data-testid="recipe-empty-message" class="text-gray-500">
+      <p data-testid="recipe-empty-message" class="text-content-subtle">
         {{ 'RECIPES.EMPTY' | translate }}
       </p>
     } @else {
@@ -17,14 +17,14 @@ import { Recipe } from '../../../generated/api';
         @for (recipe of recipes(); track recipe._id) {
           <li
             data-testid="recipe-list-item"
-            class="flex items-center justify-between border border-gray-200 rounded px-4 py-3"
+            class="flex items-center justify-between border border-border rounded px-4 py-3"
           >
             <span>{{ recipe.name }}</span>
             <button
               type="button"
               [attr.data-testid]="'recipe-delete-btn-' + recipe._id"
               (click)="deleteRecipe.emit(recipe)"
-              class="text-red-600 hover:text-red-800 cursor-pointer"
+              class="text-danger hover:text-danger-hover cursor-pointer"
               [attr.aria-label]="'RECIPES.DELETE_LABEL' | translate: { name: recipe.name }"
             >
               <svg lucideTrash2 [size]="16" aria-hidden="true" />

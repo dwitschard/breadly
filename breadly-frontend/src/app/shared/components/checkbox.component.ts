@@ -43,11 +43,11 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
           </div>
         </div>
         @if (label()) {
-          <span class="text-sm text-warm-900 dark:text-warm-50 select-none">{{ label() }}</span>
+          <span class="text-sm text-content select-none">{{ label() }}</span>
         }
       </label>
       @if (error() && _touched() && helperText()) {
-        <p class="text-xs text-red-600 dark:text-red-400 ml-6" data-testid="checkbox-helper">
+        <p class="text-xs text-danger-text ml-6" data-testid="checkbox-helper">
           {{ helperText() }}
         </p>
       }
@@ -68,13 +68,12 @@ export class CheckboxComponent {
 
   protected readonly boxClass = computed(() => {
     const base =
-      'flex h-4 w-4 items-center justify-center rounded border transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2';
+      'flex h-4 w-4 items-center justify-center rounded border transition-colors duration-base focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
     const checked = this.checked() || this.indeterminate();
     const hasError = this.error() && this._touched();
-    if (checked)
-      return `${base} bg-amber-600 border-amber-600 dark:bg-amber-500 dark:border-amber-500`;
-    if (hasError) return `${base} border-red-500 bg-white dark:bg-warm-900`;
-    return `${base} border-warm-300 bg-white hover:border-amber-400 dark:border-warm-600 dark:bg-warm-900`;
+    if (checked) return `${base} bg-brand border-brand`;
+    if (hasError) return `${base} border-danger bg-surface-card`;
+    return `${base} border-border bg-surface-card hover:border-brand-focus`;
   });
 
   protected onToggle(): void {

@@ -16,7 +16,7 @@ export interface RadioOption {
       @if (label()) {
         <p
           [id]="groupId() + '-label'"
-          class="mb-2 text-sm font-medium text-warm-900 dark:text-warm-50"
+          class="mb-2 text-sm font-medium text-content"
           data-testid="radio-group-label"
         >
           {{ label() }}
@@ -35,7 +35,7 @@ export interface RadioOption {
         }
       </div>
       @if (error() && helperText()) {
-        <p class="mt-1 text-xs text-red-600 dark:text-red-400" data-testid="radio-group-helper">
+        <p class="mt-1 text-xs text-danger-text" data-testid="radio-group-helper">
           {{ helperText() }}
         </p>
       }

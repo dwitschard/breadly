@@ -33,7 +33,7 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
           (click)="healthService.reload()"
           [disabled]="healthService.healthResource.isLoading()"
           [attr.aria-label]="'COMMON.RELOAD' | translate"
-          class="p-2 text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="p-2 text-white bg-brand rounded-control hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-focus"
           [attr.aria-busy]="healthService.healthResource.isLoading()"
         >
           <svg lucideRefreshCw [size]="18" aria-hidden="true" />

@@ -15,10 +15,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
       (click)="toggle()"
     >
       @if (label() && labelPosition() === 'left') {
-        <span
-          class="text-sm text-warm-900 dark:text-warm-50 select-none"
-          data-testid="toggle-label"
-        >
+        <span class="text-sm text-content select-none" data-testid="toggle-label">
           {{ label() }}
         </span>
       }
@@ -28,10 +25,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
       </div>
 
       @if (label() && labelPosition() === 'right') {
-        <span
-          class="text-sm text-warm-900 dark:text-warm-50 select-none"
-          data-testid="toggle-label"
-        >
+        <span class="text-sm text-content select-none" data-testid="toggle-label">
           {{ label() }}
         </span>
       }
@@ -48,12 +42,12 @@ export class ToggleComponent {
 
   protected readonly containerClass = computed(
     () =>
-      `inline-flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 ${this.disabled() ? 'opacity-50 cursor-not-allowed' : ''}`,
+      `inline-flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2 ${this.disabled() ? 'opacity-50 cursor-not-allowed' : ''}`,
   );
 
   protected readonly trackClass = computed(
     () =>
-      `relative h-5 w-9 rounded-full transition-colors duration-200 ${this.on() ? 'bg-amber-600 dark:bg-amber-500' : 'bg-warm-300 dark:bg-warm-600'}`,
+      `relative h-5 w-9 rounded-full transition-colors duration-base ${this.on() ? 'bg-brand' : 'bg-border'}`,
   );
 
   protected readonly thumbClass = computed(
