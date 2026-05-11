@@ -175,6 +175,8 @@ module "cognito" {
   frontend_urls              = local.preview_url
   custom_domain              = local.preview_auth_domain
   certificate_arn            = data.aws_ssm_parameter.certificate_arn.value
+  ui_settings                = file("${path.module}/../../../../breadly-idp-ui/settings.json")
+  ui_logo_png                = fileexists("${path.module}/../../../../breadly-idp-ui/logo.png") ? filebase64("${path.module}/../../../../breadly-idp-ui/logo.png") : ""
 
   tags = {
     Component = "preview-cognito"

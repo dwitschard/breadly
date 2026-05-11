@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "colorScheme": "LIGHT",
+  "components": {
+    "pageBackground": {
+      "backgroundColor": {
+        "light": "f9fafbff"
+      }
+    },
+    "formSection": {
+      "backgroundColor": {
+        "light": "ffffffff"
+      },
+      "borderColor": {
+        "light": "e5e7ebff"
+      },
+      "borderRadius": 8
+    },
+    "typography": {
+      "body": {
+        "color": {
+          "light": "374151ff"
+        }
+      },
+      "heading": {
+        "color": {
+          "light": "111827ff"
+        }
+      }
+    },
+    "input": {
+      "borderColor": {
+        "light": "d1d5dbff"
+      },
+      "focusBorderColor": {
+        "light": "2563ebff"
+      },
+      "borderRadius": 6
+    },
+    "primaryButton": {
+      "backgroundColor": {
+        "light": "2563ebff"
+      },
+      "hoverBackgroundColor": {
+        "light": "1d4ed8ff"
+      },
+      "activeBackgroundColor": {
+        "light": "1d4ed8ff"
+      },
+      "borderRadius": 6
+    },
+    "anchor": {
+      "color": {
+        "light": "2563ebff"
+      },
+      "hoverColor": {
+        "light": "1d4ed8ff"
+      }
+    },
+    "alertError": {
+      "backgroundColor": {
+        "light": "fef2f2ff"
+      },
+      "borderColor": {
+        "light": "fca5a5ff"
+      },
+      "iconColor": {
+        "light": "b91c1cff"
+      }
+    }
+  }
+}

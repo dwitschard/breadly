@@ -12,7 +12,8 @@ locals {
 }
 
 resource "aws_cognito_user_pool" "this" {
-  name = var.name
+  name            = var.name
+  user_pool_tier  = "ESSENTIALS"
 
   # Cognito requires all domains to be deleted before the pool can be removed.
   # Terraform sometimes destroys the pool before the domain resources finish
@@ -115,14 +116,35 @@ resource "aws_cognito_user_pool_client" "this" {
 resource "aws_cognito_user_pool_domain" "this" {
   count = var.custom_domain != "" ? 0 : 1
 
-  domain       = var.name
-  user_pool_id = aws_cognito_user_pool.this.id
+  domain                = var.name
+  user_pool_id          = aws_cognito_user_pool.this.id
+  managed_login_version = 2
 }
 
 resource "aws_cognito_user_pool_domain" "custom" {
   count = var.custom_domain != "" ? 1 : 0
 
-  domain          = var.custom_domain
-  certificate_arn = var.certificate_arn
-  user_pool_id    = aws_cognito_user_pool.this.id
+  domain                = var.custom_domain
+  certificate_arn       = var.certificate_arn
+  user_pool_id          = aws_cognito_user_pool.this.id
+  managed_login_version = 2
+}
+
+resource "aws_cognito_managed_login_branding" "this" {
+  count = var.ui_settings != "" ? 1 : 0
+
+  user_pool_id                = aws_cognito_user_pool.this.id
+  client_id                   = aws_cognito_user_pool_client.this.id
+  use_cognito_provided_values = false
+  settings                    = var.ui_settings
+
+  dynamic "assets" {
+    for_each = var.ui_logo_png != "" ? [1] : []
+    content {
+      category   = "PAGE_HEADER_LOGO"
+      color_mode = "LIGHT"
+      extension  = "PNG"
+      bytes      = var.ui_logo_png
+    }
+  }
 }

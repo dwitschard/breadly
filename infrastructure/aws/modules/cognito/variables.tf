@@ -33,3 +33,15 @@ variable "certificate_arn" {
   type        = string
   default     = ""
 }
+
+variable "ui_settings" {
+  description = "Cognito Managed Login branding settings JSON string. When non-empty, creates the branding resource."
+  type        = string
+  default     = ""
+}
+
+variable "ui_logo_png" {
+  description = "Base64-encoded PNG logo for the Managed Login page header. When non-empty, attaches as a PAGE_HEADER_LOGO asset."
+  type        = string
+  default     = ""
+}

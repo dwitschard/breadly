@@ -124,6 +124,8 @@ module "cognito" {
   frontend_urls   = local.frontend_urls
   custom_domain   = local.cognito_custom_domain
   certificate_arn = local.cognito_certificate_arn
+  ui_settings     = file("${path.module}/../../../breadly-idp-ui/settings.json")
+  ui_logo_png     = fileexists("${path.module}/../../../breadly-idp-ui/logo.png") ? filebase64("${path.module}/../../../breadly-idp-ui/logo.png") : ""
 
   tags = {
     Component = "backend"
