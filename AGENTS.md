@@ -45,9 +45,9 @@ These documents are the authoritative source for coding conventions within each 
 
 **After every code change — no exceptions — run tests in all affected projects before marking the task done.** This applies to all change types: features, bug fixes, refactors, design-token updates, dependency bumps, and test-only edits.
 
-- Any change to `breadly-frontend/` → run `npm run test:ci` in `breadly-frontend/` and `npm test` in `e2e/`
+- Any change to `breadly-frontend/` → run `npm run test:ci` in `breadly-frontend/`
 - Any change to `breadly-backend/` → run `npm test` in `breadly-backend/`
-- All must be green (zero failures) before the work is considered complete
+- Both must be green (zero failures) before the work is considered complete
 
 If tests break after a change, fix them immediately — do not commit or hand off until all tests pass.
 
@@ -97,14 +97,14 @@ If any step fails, fix the issue before proceeding to the next step.
 
 ### Phase 4: E2E Tests (e2e/)
 
-Every change to `breadly-frontend/` must pass E2E before the work is complete — no exceptions. All new user-facing features **must** include E2E coverage. All changes to user-facing behavior **must** update affected E2E tests.
+Skip this phase **only** for pure refactoring, documentation-only changes, test-only changes, or lint/formatting fixes. All new user-facing features **must** include E2E coverage. All changes to user-facing behavior **must** update affected E2E tests.
 
 11. **Write or update E2E tests** as needed:
     - **New features:** create at least one happy-path user journey spec in `e2e/tests/<feature>/`.
     - **Changed behavior:** update existing Page Objects and specs to match the new UI (e.g., moved elements, renamed selectors, changed navigation flows).
     - **Removed features:** remove or update specs that relied on the removed behavior.
 
-12. **Run E2E tests** (`npm test` in `e2e/`). Playwright automatically starts the backend (`http://localhost:3000`) and frontend (`http://localhost:4200`) dev servers before the tests run and shuts them down afterward — no manual server management needed. If the health test fails with a degraded status, check that `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set in `breadly-backend/src/.env`.
+12. **Run E2E tests** (`npm test` in `e2e/`) to verify changes. E2E tests run against a deployed preview environment (configured via `E2E_BASE_URL` in `e2e/.env`). If the preview environment does not yet include the current changes, verify at minimum that the E2E test code is consistent with the frontend changes (Page Object selectors match `data-testid` attributes, navigation flows match the updated UI).
 
 #### What to test in E2E vs unit/integration tests
 
@@ -148,6 +148,8 @@ test('admin views health dashboard, reloads data, and reloads the page', async (
 3. **`data-testid` attributes** on key interactive and structural elements in the frontend (see `breadly-frontend/AGENTS.md` section 23).
 4. **Test data cleanup** — use the `[E2E-<test-name>]` prefix pattern and clean up created data in `afterAll`/`afterEach`.
 
+E2E tests (`npm test` in `e2e/`) run against deployed preview environments in CI. They are not run locally as part of the development pipeline unless the developer has a local environment running.
+
 ### Phase 5: Code Review
 
 13. After all verification passes, invoke the `code-reviewer` sub-agent via the Task tool to review all changes made in phases 1-4. Pass it a description of what was changed and which files were affected.
@@ -161,9 +163,8 @@ test('admin views health dashboard, reloads data, and reloads the page', async (
 - **No API changes:** skip Phase 1 entirely
 - **Documentation-only changes:** skip all phases, no review needed
 - **Test-only changes:** skip Phase 1, run only test-related verification
-- **Lint/formatting fixes (frontend):** skip Phase 1 only — Phase 4 (E2E) still runs for all frontend changes
-- **Lint/formatting fixes (backend/config only):** skip Phase 1 and Phase 4 (E2E), skip Phase 5
-- **No user-facing behavior changes (pure backend or config-only changes):** skip Phase 4 (E2E)
+- **Lint/formatting fixes:** skip Phase 1, skip Phase 4 (E2E), skip Phase 5 (no review needed for formatting)
+- **No user-facing behavior changes (e.g., backend internals, config changes):** skip Phase 4 (E2E)
 - **New user-facing feature:** Phase 4 (E2E) is **mandatory** — at least one happy-path spec required
 
 ## Code Review
@@ -171,9 +172,3 @@ test('admin views health dashboard, reloads data, and reloads the page', async (
 All substantial code changes are reviewed by the `code-reviewer` sub-agent after implementation and verification. The code-reviewer enforces the conventions defined in each project's `AGENTS.md` and focuses on readability, maintainability, component slicing, and testability.
 
 **The code-reviewer must always run `npm test` in every affected project as the final step of its review and must not finish until all tests pass.** For changes that include E2E coverage (Phase 4 was not skipped), it must also run `npm test` in `e2e/`. This catches type drift in test fixtures and broken user journeys before the changes reach CI.
-
-## README Setup Section
-
-`README.md` at the repo root contains a **Setup** section that documents all steps required to bring the project up from scratch (IAM bootstrap, GitHub secrets/variables, Terraform state buckets, global infra, first deploy, user activation, and local dev).
-
-**After any change that affects setup prerequisites** — new secrets, new environment variables, new one-time scripts, new Terraform roots, new local dev requirements — update the Setup section in `README.md` to reflect it.

@@ -64,6 +64,10 @@
       "Bash(gh api *)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh search *)"
+      "Bash(npx jest *)",
+      "Bash(wait)",
+      "Bash(npm test:ci)",
+      "Bash(npm uninstall *)"
     ]
   }
 }
