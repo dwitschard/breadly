@@ -20,7 +20,7 @@
 
 
 - [ ] Implement Design according to ClaudeDesign using the Design System Components
-  - [ ] Create a Favicon and add it to the Application
+  - [~] Create a Favicon and add it to the Application
 
 
 - [ ] DB Schema for Recipes
