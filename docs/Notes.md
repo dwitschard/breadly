@@ -13,6 +13,7 @@
 ### Next
 - [~] Create Design System Components
   - [~] Make sure all variables are exposed and usable for other components too (similar to our Setup)
+  - [ ] Tailwind Presets should be configurable and manageable in repository for later adjustments
 
 - [ ] Fix Styling of Authentication
 
