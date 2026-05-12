@@ -61,7 +61,10 @@
       "Bash(npx jest *)",
       "Bash(wait)",
       "Bash(npm test:ci)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(git -C /Users/V009403/source-vontobel/private/breadly log --all --oneline --grep=\"design-tokens\\\\|tailwind\\\\|token\" -i)",
+      "Bash(git -C /Users/V009403/source-vontobel/private/breadly show eeee7b5:breadly-frontend/src/styles.scss)",
+      "Bash(git log *)"
     ]
   }
 }
