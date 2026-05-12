@@ -60,7 +60,10 @@
       "Bash(grep -E \"\\\\.\\(ts|js|tsx|jsx|py\\)$\")",
       "Bash(npx jest *)",
       "Bash(grep -E \"\\\\.\\(scss|css\\)$\")",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(gh api *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh search *)"
     ]
   }
 }
