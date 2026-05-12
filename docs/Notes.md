@@ -18,7 +18,7 @@
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
   - [~] Make sure all variables are exposed and usable for other components too (similar to our Setup)
-  - [ ] Tailwind Presets should be configurable and manageable in repository for later adjustments
+  - [~] Tailwind Presets should be configurable and manageable in repository for later adjustments
 
 - [ ] Fix Styling of Authentication
 
@@ -39,7 +39,7 @@
     - [ ] Are all SKs and GSIs updated automatically? 
     - [ ] Any LSIs used that I need to manage?
   - [ ] Create a document describing all UIs / User Journeys needed to allow database interaction with the new schema
-    - [ ] Used for Claude Design afterwards
+    - [ ] Used for Claude Design afterward
     - [ ] Used to create E2E Tests
   - [ ] Create Seeding Mechanism and dummy data
   - [ ] Implement it in DynamoDB & update Backend / Frontend accordingly
