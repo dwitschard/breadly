@@ -126,6 +126,7 @@ module "cognito" {
   certificate_arn = local.cognito_certificate_arn
   ui_settings     = file("${path.module}/../../../breadly-idp-ui/settings.json")
   ui_logo_png     = fileexists("${path.module}/../../../breadly-idp-ui/logo.png") ? filebase64("${path.module}/../../../breadly-idp-ui/logo.png") : ""
+  ui_background_svg = fileexists("${path.module}/../../../breadly-idp-ui/background.svg") ? filebase64("${path.module}/../../../breadly-idp-ui/background.svg") : ""
 
   tags = {
     Component = "backend"

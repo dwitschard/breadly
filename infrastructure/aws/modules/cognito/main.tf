@@ -146,4 +146,14 @@ resource "aws_cognito_managed_login_branding" "this" {
       bytes      = var.ui_logo_png
     }
   }
+
+  dynamic "asset" {
+    for_each = var.ui_background_svg != "" ? [1] : []
+    content {
+      category   = "PAGE_BACKGROUND"
+      color_mode = "LIGHT"
+      extension  = "SVG"
+      bytes      = var.ui_background_svg
+    }
+  }
 }

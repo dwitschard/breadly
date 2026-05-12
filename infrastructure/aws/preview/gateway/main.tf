@@ -177,6 +177,7 @@ module "cognito" {
   certificate_arn            = data.aws_ssm_parameter.certificate_arn.value
   ui_settings                = file("${path.module}/../../../../breadly-idp-ui/settings.json")
   ui_logo_png                = fileexists("${path.module}/../../../../breadly-idp-ui/logo.png") ? filebase64("${path.module}/../../../../breadly-idp-ui/logo.png") : ""
+  ui_background_svg          = fileexists("${path.module}/../../../../breadly-idp-ui/background.svg") ? filebase64("${path.module}/../../../../breadly-idp-ui/background.svg") : ""
 
   tags = {
     Component = "preview-cognito"

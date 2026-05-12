@@ -45,3 +45,9 @@ variable "ui_logo_png" {
   type        = string
   default     = ""
 }
+
+variable "ui_background_svg" {
+  description = "Base64-encoded SVG background image for the Managed Login page. When non-empty, attaches as a PAGE_BACKGROUND asset."
+  type        = string
+  default     = ""
+}
