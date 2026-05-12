@@ -87,6 +87,32 @@ resource "aws_cognito_user_pool_client" "this" {
   logout_urls   = [local.frontend_url]
 }
 
+resource "aws_cognito_managed_login_branding" "this" {
+  user_pool_id = data.terraform_remote_state.gateway.outputs.cognito_user_pool_id
+  client_id    = aws_cognito_user_pool_client.this.id
+  settings     = file("${path.module}/../../../../breadly-idp-ui/settings.json")
+
+  dynamic "asset" {
+    for_each = fileexists("${path.module}/../../../../breadly-idp-ui/logo.png") ? [1] : []
+    content {
+      category   = "PAGE_HEADER_LOGO"
+      color_mode = "LIGHT"
+      extension  = "PNG"
+      bytes      = filebase64("${path.module}/../../../../breadly-idp-ui/logo.png")
+    }
+  }
+
+  dynamic "asset" {
+    for_each = fileexists("${path.module}/../../../../breadly-idp-ui/background.svg") ? [1] : []
+    content {
+      category   = "PAGE_BACKGROUND"
+      color_mode = "LIGHT"
+      extension  = "SVG"
+      bytes      = filebase64("${path.module}/../../../../breadly-idp-ui/background.svg")
+    }
+  }
+}
+
 # ---------------------------------------------------------------------------
 # Per-branch private Lambda (authenticated routes)
 # ---------------------------------------------------------------------------
