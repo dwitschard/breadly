@@ -138,7 +138,7 @@ resource "aws_cognito_managed_login_branding" "this" {
   use_cognito_provided_values = false
   settings                    = var.ui_settings
 
-  dynamic "assets" {
+  dynamic "asset" {
     for_each = var.ui_logo_png != "" ? [1] : []
     content {
       category   = "PAGE_HEADER_LOGO"
