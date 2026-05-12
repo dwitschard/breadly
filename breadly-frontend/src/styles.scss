@@ -7,35 +7,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
+// All theme variables (Tailwind defaults + project custom) live in _theme.scss.
+// @import is used (not @use) because @use does not inject CSS output.
 
-@theme {
-  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
-
-  // Color tokens — generated from $light map in _tokens.scss
-  @include t.color-vars(t.$light);
-
-  // Shadows
-  --shadow-subtle: 0px 1px 6px -1px rgba(55, 58, 54, 0.1);
-  --shadow-elevated: 0px 2px 22px -4px rgba(55, 58, 54, 0.16);
-
-  // Border radius
-  --radius-control: 0.625rem; // 10px — buttons, inputs, form controls
-  --radius-card: 1rem; // 16px — cards, panels
-  --radius-tag: 62.5rem; // pill — filter tags, chips
-
-  // Transition durations
-  --duration-fast: 120ms; // micro-interactions: button press, toggle
-  --duration-base: 200ms; // color/opacity fades: hover, track fill
-  --duration-slide: 220ms; // panel / sidebar entrance
-
-  // Easing
-  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
-
-  // Component sizes
-  --size-control: 2.375rem; // 38px — standard interactive control height
-  --size-touch: 2.75rem; // 44px — minimum touch target (WCAG)
-  --size-sidebar: 22.5rem; // 360px — side panel width
-}
+@import 'styles/theme';
 
 // ── Dark-mode overrides ───────────────────────────────────────────────────────
 // CSS custom properties in .dark override @theme values for all descendants.
