@@ -133,10 +133,9 @@ resource "aws_cognito_user_pool_domain" "custom" {
 resource "aws_cognito_managed_login_branding" "this" {
   count = var.ui_settings != "" ? 1 : 0
 
-  user_pool_id                = aws_cognito_user_pool.this.id
-  client_id                   = aws_cognito_user_pool_client.this.id
-  use_cognito_provided_values = false
-  settings                    = var.ui_settings
+  user_pool_id = aws_cognito_user_pool.this.id
+  client_id    = aws_cognito_user_pool_client.this.id
+  settings     = var.ui_settings
 
   dynamic "asset" {
     for_each = var.ui_logo_png != "" ? [1] : []
