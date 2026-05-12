@@ -33,6 +33,7 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
         <app-button
           data-testid="health-reload-btn"
           [icon]="LucideRefreshCw"
+          [stretch]="true"
           [disabled]="healthService.healthResource.isLoading()"
           [ariaLabel]="'COMMON.RELOAD' | translate"
           (clicked)="healthService.reload()"

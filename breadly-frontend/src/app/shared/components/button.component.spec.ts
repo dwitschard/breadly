@@ -50,4 +50,14 @@ describe('ButtonComponent', () => {
     });
     expect(screen.getByTestId('button').className).toContain('bg-brand');
   });
+
+  it('applies h-full and py-1.5 instead of h-control when stretch is true', async () => {
+    await renderWithProviders(ButtonComponent, {
+      componentInputs: { stretch: true },
+    });
+    const btn = screen.getByTestId('button');
+    expect(btn.className).toContain('h-full');
+    expect(btn.className).toContain('py-1.5');
+    expect(btn.className).not.toContain('h-control');
+  });
 });

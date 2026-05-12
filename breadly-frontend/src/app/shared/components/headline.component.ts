@@ -10,7 +10,6 @@ export type HeadlineLevel = 'display' | 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'mu
     '[class]': 'computedClass()',
     '[attr.role]': 'ariaRole()',
     '[attr.aria-level]': 'ariaLevel()',
-    '[attr.data-testid]': '"headline"',
     style: 'display: block',
   },
 })

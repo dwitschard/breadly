@@ -27,6 +27,7 @@ import { ButtonComponent } from '../../../shared/components/button.component';
         type="submit"
         data-testid="recipe-add-btn"
         [icon]="LucidePlus"
+        [stretch]="true"
         [disabled]="name().length === 0"
         [ariaLabel]="'COMMON.ADD' | translate"
       />
