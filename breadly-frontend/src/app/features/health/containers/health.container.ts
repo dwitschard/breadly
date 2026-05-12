@@ -6,6 +6,8 @@ import { HealthDashboardComponent } from '../components/health-dashboard.compone
 import { VersionInfoComponent } from '../components/version-info.component';
 import { SpinnerComponent } from '../../../shared/components/spinner.component';
 import { ErrorBannerComponent } from '../../../shared/components/error-banner.component';
+import { ButtonComponent } from '../../../shared/components/button.component';
+import { HeadlineComponent } from '../../../shared/components/headline.component';
 import { VersionInfo } from '../../../generated/api';
 
 const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
@@ -18,26 +20,23 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
     VersionInfoComponent,
     SpinnerComponent,
     ErrorBannerComponent,
-    LucideRefreshCw,
+    ButtonComponent,
+    HeadlineComponent,
     TranslateModule,
   ],
   template: `
     <main class="p-6">
       <div class="flex items-center justify-between mb-6">
-        <h1 data-testid="health-title" class="text-2xl font-bold">
+        <app-headline level="h2" data-testid="health-title">
           {{ 'HEALTH.TITLE' | translate }}
-        </h1>
-        <button
+        </app-headline>
+        <app-button
           data-testid="health-reload-btn"
-          type="button"
-          (click)="healthService.reload()"
+          [icon]="LucideRefreshCw"
           [disabled]="healthService.healthResource.isLoading()"
-          [attr.aria-label]="'COMMON.RELOAD' | translate"
-          class="p-2 text-white bg-brand rounded-control hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-focus"
-          [attr.aria-busy]="healthService.healthResource.isLoading()"
-        >
-          <svg lucideRefreshCw [size]="18" aria-hidden="true" />
-        </button>
+          [ariaLabel]="'COMMON.RELOAD' | translate"
+          (clicked)="healthService.reload()"
+        />
       </div>
 
       @if (healthService.healthResource.isLoading()) {
@@ -61,6 +60,7 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
   `,
 })
 export class HealthContainerComponent {
+  protected readonly LucideRefreshCw = LucideRefreshCw;
   protected readonly healthService = inject(HealthFeatureService);
   protected readonly health = computed(() => this.healthService.healthResource.value());
   protected readonly frontendVersion = computed(

@@ -27,7 +27,7 @@ describe('RecipeListComponent', () => {
     const deleteRecipe = vi.fn();
     await setup(mockRecipes, { deleteRecipe });
 
-    await user.click(screen.getByTestId('recipe-delete-btn-1'));
+    await user.click(within(screen.getByTestId('recipe-delete-btn-1')).getByRole('button'));
 
     expect(deleteRecipe).toHaveBeenCalledTimes(1);
     expect(deleteRecipe).toHaveBeenCalledWith(mockRecipes[0]);

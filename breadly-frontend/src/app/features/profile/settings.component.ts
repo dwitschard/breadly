@@ -3,14 +3,15 @@ import { DatePipe } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { UserSettingsDto } from '../../generated/api';
 import { DropdownComponent, DropdownOption } from '../../shared/components/dropdown.component';
+import { HeadlineComponent } from '../../shared/components/headline.component';
 
 @Component({
   selector: 'profile-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslateModule, DropdownComponent, DatePipe],
+  imports: [TranslateModule, DropdownComponent, DatePipe, HeadlineComponent],
   template: `
     <div data-testid="profile-settings" class="flex flex-col gap-4">
-      <h2 class="text-lg font-semibold">{{ 'PROFILE.SETTINGS_TITLE' | translate }}</h2>
+      <app-headline level="h4">{{ 'PROFILE.SETTINGS_TITLE' | translate }}</app-headline>
 
       <div class="flex justify-between items-center">
         <span class="text-sm font-medium text-content-subtle">{{

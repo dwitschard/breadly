@@ -31,8 +31,8 @@ describe('HomeComponent – i18n', () => {
   it('renders the German title, not the raw key', async () => {
     await renderHome();
 
-    expect(screen.getByTestId('home-title')).toHaveTextContent('Willkommen bei Breadly');
-    expect(screen.getByTestId('home-title')).not.toHaveTextContent('HOME.TITLE');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Willkommen bei Breadly');
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent('HOME.TITLE');
   });
 
   it('renders the German subtitle, not the raw key', async () => {

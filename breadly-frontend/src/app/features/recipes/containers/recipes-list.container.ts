@@ -5,6 +5,7 @@ import { RecipeListComponent } from '../components/recipe-list.component';
 import { RecipeFormComponent } from '../components/recipe-form.component';
 import { SpinnerComponent } from '../../../shared/components/spinner.component';
 import { ErrorBannerComponent } from '../../../shared/components/error-banner.component';
+import { HeadlineComponent } from '../../../shared/components/headline.component';
 import { CreateRecipeDto, Recipe } from '../../../generated/api';
 
 @Component({
@@ -15,16 +16,17 @@ import { CreateRecipeDto, Recipe } from '../../../generated/api';
     RecipeFormComponent,
     SpinnerComponent,
     ErrorBannerComponent,
+    HeadlineComponent,
     TranslateModule,
   ],
   template: `
     <main class="p-6">
-      <h1 data-testid="recipes-title" class="text-2xl font-bold mb-6">
+      <app-headline level="h2" data-testid="recipes-title" class="mb-6">
         {{ 'RECIPES.TITLE' | translate }}
-      </h1>
+      </app-headline>
 
       <section [attr.aria-label]="'RECIPES.ADD_TITLE' | translate" class="mb-8">
-        <h2 class="text-lg font-semibold mb-3">{{ 'RECIPES.ADD_TITLE' | translate }}</h2>
+        <app-headline level="h4" class="mb-3">{{ 'RECIPES.ADD_TITLE' | translate }}</app-headline>
         <recipe-form (submitRecipe)="onCreate($event)" />
         @if (mutationError()) {
           <div class="mt-2">
@@ -34,7 +36,7 @@ import { CreateRecipeDto, Recipe } from '../../../generated/api';
       </section>
 
       <section [attr.aria-label]="'RECIPES.LIST_LABEL' | translate">
-        <h2 class="text-lg font-semibold mb-3">{{ 'RECIPES.ALL_TITLE' | translate }}</h2>
+        <app-headline level="h4" class="mb-3">{{ 'RECIPES.ALL_TITLE' | translate }}</app-headline>
         @if (recipeService.recipesResource.isLoading()) {
           <app-spinner />
         } @else if (recipeService.recipesResource.error()) {

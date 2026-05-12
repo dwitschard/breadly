@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { VersionInfo } from '../../../generated/api';
+import { HeadlineComponent } from '../../../shared/components/headline.component';
 
 @Component({
   selector: 'health-version-info',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslateModule],
+  imports: [TranslateModule, HeadlineComponent],
   template: `
-    <h2 class="mb-3 text-lg font-semibold">{{ 'HEALTH.VERSIONS' | translate }}</h2>
+    <app-headline level="h4" class="mb-3">{{ 'HEALTH.VERSIONS' | translate }}</app-headline>
     <ul class="space-y-3" [attr.aria-label]="'HEALTH.VERSIONS_LABEL' | translate">
       <li
         data-testid="health-version-frontend"
