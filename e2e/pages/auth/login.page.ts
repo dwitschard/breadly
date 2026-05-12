@@ -19,9 +19,9 @@ export class LoginPage {
     username: string,
     password: string,
   ): Promise<void> {
-    const usernameInput = this.page.locator('input[id="signInFormUsername"]:visible');
-    const passwordInput = this.page.locator('input[id="signInFormPassword"]:visible');
-    const submitButton = this.page.locator('input[type="submit"][name="signInSubmitButton"]:visible');
+    const usernameInput = this.page.locator('input[name="username"]:visible');
+    const passwordInput = this.page.locator('input[name="password"]:visible');
+    const submitButton = this.page.locator('input[type="submit"]:visible');
 
     await usernameInput.waitFor({ state: 'visible', timeout: 15_000 });
     await usernameInput.fill(username);
