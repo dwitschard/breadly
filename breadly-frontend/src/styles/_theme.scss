@@ -1,4 +1,6 @@
-@use 'tokens' as t;
+// Tailwind reference: https://tailwindcss.com/docs/theme#default-theme-variable-reference
+
+@use 'tokens' as design-tokens;
 
 @theme {
 
@@ -88,5 +90,5 @@
 
   // ── Colors ────────────────────────────────────────────────────────────────
   // Semantic light-mode tokens; dark overrides live in .dark {} in styles.scss
-  @include t.color-vars(t.$light);
+  @include design-tokens.color-vars(design-tokens.$light);
 }

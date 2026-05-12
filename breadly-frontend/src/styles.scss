@@ -1,6 +1,6 @@
 // @use must precede all CSS output. _tokens.scss is SCSS-only (no CSS output),
 // so the import order of the CSS rules below is preserved exactly as written.
-@use 'styles/tokens' as t;
+@use 'styles/tokens' as design-tokens;
 
 @import 'tailwindcss';
 
@@ -18,7 +18,7 @@
 // prefix needed on components using only semantic tokens.
 
 .dark {
-  @include t.color-vars(t.$dark);
+  @include design-tokens.color-vars(design-tokens.$dark);
 }
 
 // ── Base ──────────────────────────────────────────────────────────────────────
