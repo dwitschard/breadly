@@ -63,7 +63,9 @@
       "Bash(npx vitest *)",
       "Bash(gh api *)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(gh search *)"
+      "Bash(gh search *)",
+      "Bash(git -C /Users/V009403/source-vontobel/private/breadly log --oneline -50)",
+      "Bash(git *)"
     ]
   }
 }
