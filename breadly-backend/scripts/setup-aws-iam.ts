@@ -63,10 +63,11 @@ const IAM_CONFIG: IamConfig = {
   ],
   roles: [
     {
-      name: 'Github-Deployer_test',
+      name: 'Github-Deployer',
       policyName: 'Github_Deployer_Policy',
       policyFile: 'github-deployer-policy.json',
       trustFile: 'github-deployer-trust.json',
+      updatePolicyOnly: true,
     },
   ],
 };
@@ -86,6 +87,7 @@ interface IamRoleDefinition {
   policyName: string;
   policyFile: string;
   trustFile: string;
+  updatePolicyOnly?: boolean;
 }
 
 interface IamConfig {
@@ -192,6 +194,22 @@ async function ensureIAMRole(
   }
 }
 
+async function updateRolePolicyIfExists(
+  client: IAMClient,
+  roleName: string,
+  policyName: string,
+  policyDocument: string,
+): Promise<void> {
+  try {
+    await client.send(new GetRoleCommand({ RoleName: roleName }));
+  } catch (err: unknown) {
+    if (!isNoSuchEntity(err)) throw err;
+    console.log('  Role does not exist — skipped.');
+    return;
+  }
+  await putRoleInlinePolicy(client, roleName, policyName, policyDocument);
+}
+
 async function putRoleInlinePolicy(
   client: IAMClient,
   roleName: string,
@@ -233,8 +251,12 @@ async function main(): Promise<void> {
   console.log('\n== IAM Roles ==');
   for (const role of IAM_CONFIG.roles) {
     console.log(`\n--- Role: ${role.name} ---`);
-    await ensureIAMRole(client, role.name, loadPolicy(role.trustFile));
-    await putRoleInlinePolicy(client, role.name, role.policyName, loadPolicy(role.policyFile));
+    if (role.updatePolicyOnly) {
+      await updateRolePolicyIfExists(client, role.name, role.policyName, loadPolicy(role.policyFile));
+    } else {
+      await ensureIAMRole(client, role.name, loadPolicy(role.trustFile));
+      await putRoleInlinePolicy(client, role.name, role.policyName, loadPolicy(role.policyFile));
+    }
   }
 
   console.log('\nAll done.');
