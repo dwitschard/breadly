@@ -11,20 +11,7 @@
 - [ ] Verify if custom Error Codes from Lambda-Backend are mapped to corresponding HTTP Status Codes
 
 ### Next
-- [ ] Fix Styling of Authentication
-  - [ ] Adjust `settings.json` to match design system
-  - [ ] Reuse of Design Tokens `_tokens.scss` (other branch) possible?
-
-- [ ] Revisit `shared/components` and apply styling similar to design system (paddings, inside-out styling)
-
-- [ ] Create Design System Components
-  - [ ] Everything configurable via Config (JSON or similar)
-  - [~] Make sure all variables are exposed and usable for other components too (similar to our Setup)
-  - [~] Tailwind Presets should be configurable and manageable in repository for later adjustments
-
-
 - [ ] Implement Design according to ClaudeDesign using the Design System Components
-  - [~] Create a Favicon and add it to the Application
 
 
 - [ ] DB Schema for Recipes
