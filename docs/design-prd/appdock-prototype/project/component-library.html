@@ -1,0 +1,2218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Breadly — Component Library</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="ds/colors_and_type.css">
+<link rel="stylesheet" href="ds/components.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  /* ============================================================
+     Page chrome — annotated spec sheet
+     ============================================================ */
+  html, body { background: var(--bg); }
+  body { margin: 0; color: var(--fg); }
+
+  .doc {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 64px 48px 120px;
+  }
+
+  .doc-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 28px;
+    margin-bottom: 56px;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-header h1 {
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0 0 8px;
+  }
+  .doc-header p {
+    color: var(--fg-muted);
+    max-width: 640px;
+    font-size: 15px;
+  }
+  .doc-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--fg-subtle);
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .doc-meta > div { display: flex; gap: 8px; justify-content: flex-end; }
+  .doc-meta b { color: var(--fg-muted); font-weight: 500; }
+
+  /* Section */
+  .sec {
+    margin-bottom: 80px;
+    scroll-margin-top: 24px;
+  }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sec-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg-subtle);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    width: 32px;
+  }
+  .sec-title {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+  .sec-sub {
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin-left: auto;
+    max-width: 480px;
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  /* Frame — a labelled card containing a state matrix */
+  .frame {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 0;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .frame-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px dashed var(--border);
+    background: var(--warm-25);
+  }
+  [data-theme="dark"] .frame-head { background: var(--warm-900); }
+  .frame-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--fg-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .frame-tags {
+    display: flex;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-subtle);
+  }
+  .frame-tags span {
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .frame-body {
+    padding: 32px;
+    display: grid;
+    gap: 32px 24px;
+  }
+  .frame-body.tight { padding: 24px; }
+  .frame-body.padded { padding: 48px; }
+
+  /* State matrix — labelled cells */
+  .matrix {
+    display: grid;
+    gap: 32px 24px;
+  }
+  .matrix.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .matrix.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .matrix.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .matrix.cols-5 { grid-template-columns: repeat(5, 1fr); }
+  .matrix.cols-6 { grid-template-columns: repeat(6, 1fr); }
+
+  .cell {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .cell-stage {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 56px;
+    padding: 4px 0;
+    width: 100%;
+  }
+  .cell-stage.center { justify-content: center; }
+  .cell-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-subtle);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .cell-label b {
+    color: var(--fg-muted);
+    font-weight: 500;
+  }
+
+  /* Annotation chips — for spacing/typography callouts */
+  .anno {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-sunken);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-muted);
+    letter-spacing: 0;
+  }
+  .anno.amber { background: var(--accent-soft); color: var(--amber-800); }
+  [data-theme="dark"] .anno.amber { color: var(--amber-300); }
+
+  /* Specs strip — horizontal list of token annotations under a frame */
+  .specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 20px 20px;
+    border-top: 1px dashed var(--border);
+    background: var(--warm-25);
+  }
+  [data-theme="dark"] .specs { background: var(--warm-900); }
+  .specs .anno { font-size: 10px; }
+
+  /* Toggle / theme controls */
+  .toolbar {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 50;
+    display: flex;
+    gap: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 4px;
+    box-shadow: 0 1px 2px rgba(28,25,23,0.04);
+  }
+  .toolbar button {
+    height: 28px;
+    padding: 0 12px;
+    background: transparent;
+    border: none;
+    border-radius: 99px;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: background 120ms var(--ease-standard), color 120ms var(--ease-standard);
+  }
+  .toolbar button.is-active {
+    background: var(--bg-sunken);
+    color: var(--fg);
+  }
+
+  /* TOC */
+  .toc {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px 20px;
+    padding: 24px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 64px;
+  }
+  .toc a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--fg-muted);
+    font-size: 13px;
+    padding: 6px 0;
+    transition: color 120ms var(--ease-standard);
+  }
+  .toc a:hover { color: var(--accent); }
+  .toc a span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-subtle);
+    width: 22px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================================
+     Component primitives — built fresh to match the brief exactly
+     ============================================================ */
+  :root {
+    --primary: var(--amber-600);
+    --primary-hover: var(--amber-700);
+    --primary-press: var(--amber-800);
+    --primary-soft: var(--amber-50);
+    --primary-text: #FBF7F1;
+    --ring: var(--amber-400);
+    --danger: var(--red-500);
+    --danger-soft: #FEE2E2;
+    --gray-300: var(--warm-300);
+    --gray-500: var(--warm-500);
+    --gray-700: var(--warm-700);
+    --gray-900: var(--warm-900);
+  }
+  [data-theme="dark"] {
+    --primary: var(--amber-500);
+    --primary-hover: var(--amber-400);
+    --primary-press: var(--amber-300);
+    --primary-soft: color-mix(in oklab, var(--amber-500) 18%, transparent);
+    --danger-soft: color-mix(in oklab, var(--red-500) 22%, transparent);
+  }
+
+  /* ---------- 1. BADGE ---------- */
+  .b-badge {
+    position: relative;
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+  }
+  .b-badge svg { width: 24px; height: 24px; stroke-width: 1.5; }
+  .b-badge-dot {
+    position: absolute;
+    top: -3px; right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 99px;
+    background: var(--primary);
+    color: var(--primary-text);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-elevated);
+    box-sizing: border-box;
+  }
+
+  /* ---------- 2. BUTTON ---------- */
+  .b-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: background 120ms var(--ease-standard),
+                border-color 120ms var(--ease-standard),
+                color 120ms var(--ease-standard);
+  }
+  .b-btn svg { width: 16px; height: 16px; stroke-width: 1.5; }
+  .b-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+  /* Primary */
+  .b-btn-primary { background: var(--primary); color: var(--primary-text); }
+  .b-btn-primary[data-state="hover"], .b-btn-primary:hover { background: var(--primary-hover); }
+  .b-btn-primary[data-state="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .b-btn-primary[data-state="disabled"], .b-btn-primary[disabled] {
+    opacity: 0.5; cursor: not-allowed;
+  }
+  .b-btn-primary[data-state="disabled"]:hover { background: var(--primary); }
+
+  /* Secondary */
+  .b-btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--gray-900);
+    border-color: var(--gray-300);
+  }
+  [data-theme="dark"] .b-btn-secondary { color: var(--fg); border-color: var(--border-strong); }
+  .b-btn-secondary[data-state="hover"], .b-btn-secondary:hover {
+    background: var(--bg-sunken);
+    border-color: var(--gray-500);
+  }
+  .b-btn-secondary[data-state="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .b-btn-secondary[data-state="disabled"] { opacity: 0.5; cursor: not-allowed; }
+
+  /* Ghost */
+  .b-btn-ghost {
+    background: transparent;
+    color: var(--gray-700);
+    border-color: transparent;
+  }
+  [data-theme="dark"] .b-btn-ghost { color: var(--fg-muted); }
+  .b-btn-ghost[data-state="hover"], .b-btn-ghost:hover { background: var(--bg-sunken); color: var(--fg); }
+  .b-btn-ghost[data-state="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .b-btn-ghost[data-state="disabled"] { opacity: 0.5; cursor: not-allowed; }
+
+  .b-btn-danger {
+    background: var(--danger);
+    color: white;
+  }
+  .b-btn-danger:hover { background: var(--red-600); }
+
+  /* Spinner inside button */
+  .b-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 99px;
+    animation: spin 800ms linear infinite;
+    flex-shrink: 0;
+  }
+  .b-spinner-md { width: 32px; height: 32px; border-width: 3px; }
+  .b-spinner-lg { width: 48px; height: 48px; border-width: 4px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- 3. CHECKBOX ---------- */
+  .b-check {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--gray-300);
+    border-radius: 4px;
+    background: var(--bg-elevated);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 100ms var(--ease-standard), background 100ms var(--ease-standard);
+  }
+  .b-check:hover, .b-check[data-state="hover"] { border-color: var(--gray-500); }
+  .b-check[data-state="focus"], .b-check:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-color: var(--primary); }
+  .b-check[data-checked="true"] { background: var(--primary); border-color: var(--primary); }
+  .b-check[data-checked="true"]::after {
+    content: "";
+    position: absolute;
+    left: 4px; top: 1px;
+    width: 5px; height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .b-check[data-checked="indeterminate"] { background: var(--primary); border-color: var(--primary); }
+  .b-check[data-checked="indeterminate"]::after {
+    content: "";
+    position: absolute;
+    left: 2px; right: 2px; top: 50%;
+    height: 2px;
+    background: white;
+    transform: translateY(-50%);
+  }
+  .b-check[data-state="disabled"] { opacity: 0.5; cursor: not-allowed; }
+  .b-check[data-error="true"] { border-color: var(--danger); }
+
+  .b-check-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .b-check-row label {
+    font-size: 14px;
+    color: var(--gray-900);
+    cursor: pointer;
+  }
+  [data-theme="dark"] .b-check-row label { color: var(--fg); }
+  .b-helper {
+    font-size: 12px;
+    color: var(--fg-muted);
+    margin-top: 4px;
+  }
+  .b-helper.error { color: var(--danger); }
+
+  /* ---------- 4. DIALOG ---------- */
+  .b-dialog-stage {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    background: var(--bg-overlay);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .b-dialog-stage.mobile { height: 540px; max-width: 360px; margin: 0 auto; }
+  .b-dialog {
+    width: 448px;
+    max-width: calc(100% - 32px);
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(28,25,23,0.25), 0 4px 12px rgba(28,25,23,0.10);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .b-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 0 24px;
+  }
+  .b-dialog-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .b-dialog-title svg { width: 20px; height: 20px; }
+  .b-dialog-close {
+    width: 32px; height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--fg-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .b-dialog-close:hover { background: var(--bg-sunken); color: var(--fg); }
+  .b-dialog-body {
+    padding: 12px 24px 20px;
+    font-size: 14px;
+    color: var(--fg-muted);
+    line-height: 1.5;
+  }
+  .b-dialog-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--warm-25);
+  }
+  [data-theme="dark"] .b-dialog-foot { background: var(--warm-900); }
+
+  /* ---------- 5. DROPDOWN ---------- */
+  .b-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 240px;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    font-size: 14px;
+    color: var(--fg);
+    cursor: pointer;
+    transition: border-color 100ms var(--ease-standard);
+  }
+  .b-select-trigger svg { width: 16px; height: 16px; color: var(--fg-muted); }
+  .b-select-trigger:hover, .b-select-trigger[data-state="hover"] { border-color: var(--gray-500); }
+  .b-select-trigger[data-state="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; border-color: var(--primary); }
+  .b-select-trigger[data-state="disabled"] { opacity: 0.5; cursor: not-allowed; background: var(--bg-sunken); }
+  .b-select-trigger[data-error="true"] { border-color: var(--danger); }
+
+  .b-select-list {
+    width: 240px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(28,25,23,0.08), 0 2px 6px rgba(28,25,23,0.06);
+    padding: 4px 0;
+    margin-top: 6px;
+  }
+  .b-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .b-option svg { width: 16px; height: 16px; color: var(--primary); }
+  .b-option:hover, .b-option[data-state="hover"] { background: var(--bg-sunken); }
+  .b-option[data-selected="true"] {
+    color: var(--gray-900);
+    font-weight: 500;
+  }
+  [data-theme="dark"] .b-option[data-selected="true"] { color: var(--fg); }
+
+  /* ---------- 6. FILTER TAG ---------- */
+  .b-filter {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 99px;
+    border: 1px solid var(--gray-300);
+    background: var(--bg-elevated);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+    cursor: pointer;
+    transition: all 120ms var(--ease-standard);
+  }
+  .b-filter:hover, .b-filter[data-state="hover"] { border-color: var(--gray-500); background: var(--bg-sunken); }
+  .b-filter[data-active="true"] {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary-press);
+  }
+  [data-theme="dark"] .b-filter[data-active="true"] { color: var(--amber-300); }
+  .b-filter[data-active="true"][data-state="hover"] { background: var(--amber-100); }
+  [data-theme="dark"] .b-filter[data-active="true"][data-state="hover"] { background: color-mix(in oklab, var(--amber-500) 28%, transparent); }
+  .b-filter[data-state="disabled"] { opacity: 0.5; cursor: not-allowed; }
+
+  /* ---------- 8. ICON GRID ---------- */
+  .b-icon-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-align: center;
+  }
+  .b-icon-tile .glyph {
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+  }
+  .b-icon-tile .glyph svg { stroke-width: 1.5; }
+  .b-icon-tile .name {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+  }
+  .b-icon-tile .size {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-subtle);
+  }
+
+  /* ---------- 9. RADIO ---------- */
+  .b-radio {
+    appearance: none;
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--gray-300);
+    border-radius: 99px;
+    background: var(--bg-elevated);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 100ms var(--ease-standard);
+  }
+  .b-radio:hover, .b-radio[data-state="hover"] { border-color: var(--gray-500); }
+  .b-radio[data-state="focus"], .b-radio:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-color: var(--primary); }
+  .b-radio[data-checked="true"] { border-color: var(--primary); border-width: 1.5px; }
+  .b-radio[data-checked="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 2.5px;
+    border-radius: 99px;
+    background: var(--primary);
+  }
+  .b-radio[data-state="disabled"] { opacity: 0.5; cursor: not-allowed; }
+  .b-radio[data-error="true"] { border-color: var(--danger); }
+
+  .b-radio-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .b-radio-row label {
+    font-size: 14px;
+    color: var(--gray-900);
+    cursor: pointer;
+  }
+  [data-theme="dark"] .b-radio-row label { color: var(--fg); }
+
+  /* ---------- 11. SEGMENTED ---------- */
+  .b-seg {
+    display: inline-flex;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-elevated);
+  }
+  .b-seg button {
+    height: 36px;
+    padding: 0 16px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--gray-300);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+    cursor: pointer;
+    transition: background 120ms var(--ease-standard);
+  }
+  .b-seg button:last-child { border-right: none; }
+  .b-seg button:hover, .b-seg button[data-state="hover"] { background: var(--bg-sunken); }
+  .b-seg button[data-selected="true"] {
+    background: var(--primary);
+    color: var(--primary-text);
+    border-right-color: var(--primary);
+  }
+  .b-seg button[data-selected="true"] + button { border-left: 1px solid var(--primary); margin-left: -1px; }
+  .b-seg[data-disabled="true"] { opacity: 0.5; pointer-events: none; }
+
+  /* ---------- 12. SIDEBAR / DRAWER ---------- */
+  .b-sidebar-stage {
+    position: relative;
+    width: 100%;
+    height: 460px;
+    background: var(--bg-sunken);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .b-sidebar-stage.mobile { max-width: 360px; height: 540px; margin: 0 auto; }
+  .b-sidebar-page {
+    padding: 20px;
+    color: var(--fg-muted);
+    font-size: 13px;
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .b-sidebar-page .ph {
+    height: 12px;
+    background: var(--bg-elevated);
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+  .b-sidebar-page .ph.short { width: 40%; }
+  .b-sidebar-page .ph.med { width: 70%; }
+  .b-sidebar-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(28,25,23,0.45);
+  }
+  .b-sidebar {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 360px;
+    background: var(--bg-elevated);
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+    box-shadow: -8px 0 32px rgba(28,25,23,0.18);
+    display: flex;
+    flex-direction: column;
+  }
+  .b-sidebar.mobile { left: 48px; right: 0; width: auto; }
+  .b-sidebar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .b-sidebar-head h3 {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+  }
+  .b-sidebar-content {
+    flex: 1;
+    padding: 24px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .b-sidebar-foot {
+    padding: 16px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ---------- 14. SLIDER ---------- */
+  .b-slider {
+    position: relative;
+    width: 240px;
+    padding: 24px 0 18px;
+  }
+  .b-slider-track {
+    position: relative;
+    height: 4px;
+    background: var(--gray-300);
+    border-radius: 99px;
+  }
+  .b-slider-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--primary);
+    border-radius: 99px;
+  }
+  .b-slider-thumb {
+    position: absolute;
+    top: 50%;
+    width: 18px; height: 18px;
+    background: var(--bg-elevated);
+    border: 1.5px solid var(--gray-300);
+    border-radius: 99px;
+    box-shadow: 0 2px 4px rgba(28,25,23,0.10);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+  .b-slider-thumb[data-state="active"] {
+    width: 22px; height: 22px;
+    border-color: var(--primary);
+  }
+  .b-slider[data-state="disabled"] { opacity: 0.5; pointer-events: none; }
+  .b-slider[data-state="disabled"] .b-slider-fill { background: var(--gray-500); }
+
+  .b-slider-tip {
+    position: absolute;
+    top: -2px;
+    transform: translate(-50%, -100%);
+    background: var(--gray-900);
+    color: var(--bg-elevated);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  [data-theme="dark"] .b-slider-tip { background: var(--fg); color: var(--warm-900); }
+  .b-slider-tip::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    width: 6px; height: 6px;
+    background: inherit;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .b-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+    font-family: var(--font-mono);
+  }
+  .b-slider-cap {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg);
+    margin-bottom: 8px;
+  }
+
+  /* ---------- 15. TABS ---------- */
+  .b-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .b-tab {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: color 120ms var(--ease-standard), border-color 120ms var(--ease-standard);
+  }
+  .b-tab:hover, .b-tab[data-state="hover"] { color: var(--fg); }
+  .b-tab[data-state="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+  .b-tab[data-active="true"] {
+    color: var(--primary-press);
+    border-bottom-color: var(--primary);
+  }
+  [data-theme="dark"] .b-tab[data-active="true"] { color: var(--amber-300); border-bottom-color: var(--primary); }
+  .b-tab[data-state="disabled"] { color: var(--fg-subtle); opacity: 0.6; cursor: not-allowed; }
+
+  /* ---------- 16. TAG (status) ---------- */
+  .b-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .b-tag .dot {
+    width: 4px; height: 4px;
+    border-radius: 99px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .b-tag.success { background: #ECFCCB; color: #3F6212; }
+  .b-tag.danger { background: #FEE2E2; color: var(--red-600); }
+  .b-tag.neutral { background: var(--warm-100); color: var(--gray-700); }
+  .b-tag.disabled { background: var(--warm-100); color: var(--fg-subtle); }
+  .b-tag.info { background: var(--slate-100); color: var(--slate-700); }
+  [data-theme="dark"] .b-tag.success { background: color-mix(in oklab, #65A30D 22%, transparent); color: #BEF264; }
+  [data-theme="dark"] .b-tag.danger { background: color-mix(in oklab, var(--red-500) 22%, transparent); color: #FCA5A5; }
+  [data-theme="dark"] .b-tag.neutral { background: var(--warm-800); color: var(--warm-200); }
+  [data-theme="dark"] .b-tag.disabled { background: var(--warm-800); color: var(--fg-subtle); }
+  [data-theme="dark"] .b-tag.info { background: color-mix(in oklab, var(--slate-500) 24%, transparent); color: var(--slate-200); }
+
+  /* ---------- 17. TOGGLE ---------- */
+  .b-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--gray-300);
+    border-radius: 99px;
+    cursor: pointer;
+    transition: background 150ms var(--ease-standard);
+    flex-shrink: 0;
+  }
+  .b-toggle::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 99px;
+    box-shadow: 0 1px 2px rgba(28,25,23,0.15);
+    transition: left 150ms var(--ease-standard);
+  }
+  .b-toggle[data-on="true"] { background: var(--primary); }
+  .b-toggle[data-on="true"]::after { left: 18px; }
+  .b-toggle[data-state="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .b-toggle[data-state="hover"] { background: var(--gray-500); }
+  .b-toggle[data-on="true"][data-state="hover"] { background: var(--primary-hover); }
+  .b-toggle[data-state="disabled"] { opacity: 0.5; cursor: not-allowed; }
+
+  .b-toggle-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .b-toggle-row label {
+    font-size: 14px;
+    color: var(--gray-900);
+    cursor: pointer;
+  }
+  [data-theme="dark"] .b-toggle-row label { color: var(--fg); }
+
+  /* ---------- TYPE SCALE ---------- */
+  .type-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 200px;
+    gap: 24px;
+    align-items: baseline;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-row .lbl {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-subtle);
+    letter-spacing: 0.04em;
+  }
+  .type-row .meta {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+  }
+  .t-h1 { font-size: 36px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; color: var(--fg); }
+  .t-h2 { font-size: 24px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; color: var(--fg); }
+  .t-h3 { font-size: 20px; font-weight: 500; line-height: 1.3; color: var(--fg); }
+  .t-h4 { font-size: 18px; font-weight: 500; line-height: 1.4; color: var(--fg); }
+  .t-body { font-size: 14px; font-weight: 400; color: var(--fg); }
+  .t-muted { font-size: 14px; font-weight: 400; color: var(--fg-muted); }
+  .t-cap { font-size: 12px; font-weight: 400; color: var(--fg-subtle); }
+
+  /* ---------- OVERVIEW GRID ---------- */
+  .overview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .ov-cell {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 140px;
+  }
+  .ov-cell .ov-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-subtle);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: auto;
+  }
+  .ov-cell .ov-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+  }
+
+  /* Helpers */
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .row.lg { gap: 24px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 13px; font-weight: 500; color: var(--fg); }
+
+  @media (max-width: 900px) {
+    .doc { padding: 32px 20px 80px; }
+    .matrix.cols-3, .matrix.cols-4, .matrix.cols-5, .matrix.cols-6 { grid-template-columns: repeat(2, 1fr); }
+    .overview { grid-template-columns: repeat(2, 1fr); }
+    .toc { grid-template-columns: repeat(2, 1fr); }
+    .doc-header { flex-direction: column; align-items: flex-start; }
+    .doc-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button id="theme-light" class="is-active" onclick="setTheme('light')">Light</button>
+  <button id="theme-dark" onclick="setTheme('dark')">Dark</button>
+</div>
+
+<div class="doc">
+
+  <!-- ============================================================
+       Header
+       ============================================================ -->
+  <header class="doc-header">
+    <div>
+      <div class="ad-eyebrow" style="margin-bottom: 14px;">Breadly · Component Library</div>
+      <h1>17 components, all states.</h1>
+      <p>An engineering-ready spec sheet for the Breadly bread-recipe app. Every frame is annotated with spacing, typography, and Tailwind class names. Built on the AppDock design system — warm neutrals, amber accent, two type weights, no gradients.</p>
+    </div>
+    <div class="doc-meta">
+      <div><b>System</b> AppDock v1.0</div>
+      <div><b>Brand</b> Breadly</div>
+      <div><b>Accent</b> amber-600 #D97706</div>
+      <div><b>Type</b> Geist 400 / 500</div>
+      <div><b>Icons</b> Lucide · 1.5px</div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       TOC
+       ============================================================ -->
+  <nav class="toc" aria-label="Components">
+    <a href="#sec-1"><span>01</span>Badge</a>
+    <a href="#sec-2"><span>02</span>Button</a>
+    <a href="#sec-3"><span>03</span>Checkbox</a>
+    <a href="#sec-4"><span>04</span>Dialog</a>
+    <a href="#sec-5"><span>05</span>Dropdown</a>
+    <a href="#sec-6"><span>06</span>FilterTag</a>
+    <a href="#sec-7"><span>07</span>Headline</a>
+    <a href="#sec-8"><span>08</span>Icon</a>
+    <a href="#sec-9"><span>09</span>Radio</a>
+    <a href="#sec-10"><span>10</span>RadioGroup</a>
+    <a href="#sec-11"><span>11</span>Segmented</a>
+    <a href="#sec-12"><span>12</span>Sidebar</a>
+    <a href="#sec-13"><span>13</span>Spinner</a>
+    <a href="#sec-14"><span>14</span>Slider</a>
+    <a href="#sec-15"><span>15</span>TabGroup</a>
+    <a href="#sec-16"><span>16</span>Tag</a>
+    <a href="#sec-17"><span>17</span>Toggle</a>
+    <a href="#sec-overview"><span>+</span>Overview</a>
+  </nav>
+
+  <!-- ============================================================
+       1. BADGE
+       ============================================================ -->
+  <section class="sec" id="sec-1">
+    <header class="sec-head">
+      <span class="sec-num">01</span>
+      <span class="sec-title">Badge</span>
+      <span class="sec-sub">A 24px Lucide icon with a 18px count indicator anchored top-right. Indicator clips to <code>99+</code>.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">States</span>
+        <div class="frame-tags"><span>Bell · 24px</span><span>indicator · 18px</span><span>text-xs · 500</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-3">
+          <div class="cell">
+            <div class="cell-stage center">
+              <div class="b-badge"><i data-lucide="bell"></i></div>
+            </div>
+            <div class="cell-label"><b>Default</b> · no indicator</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage center">
+              <div class="b-badge"><i data-lucide="bell"></i><span class="b-badge-dot">3</span></div>
+            </div>
+            <div class="cell-label"><b>Low count</b> · 3</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage center">
+              <div class="b-badge"><i data-lucide="bell"></i><span class="b-badge-dot">99+</span></div>
+            </div>
+            <div class="cell-label"><b>High count</b> · 99+ (clipped)</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">icon: 24px</span>
+        <span class="anno">indicator: 18px ⌀</span>
+        <span class="anno">offset: top -3px / right -6px</span>
+        <span class="anno amber">bg: amber-600</span>
+        <span class="anno">text: text-xs font-medium · white</span>
+        <span class="anno">ring: 2px solid bg-elevated</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       2. BUTTON
+       ============================================================ -->
+  <section class="sec" id="sec-2">
+    <header class="sec-head">
+      <span class="sec-num">02</span>
+      <span class="sec-title">Button</span>
+      <span class="sec-sub">Three variants × five interaction states. Disabled = <code>opacity-50 cursor-not-allowed</code>. Loading inlines a 16px spinner.</span>
+    </header>
+
+    <!-- Primary -->
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Primary · "Rezept erstellen"</span>
+        <div class="frame-tags"><span>h-10 px-4</span><span>rounded-md</span><span>text-sm font-medium</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-5">
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary">Rezept erstellen</button></div><div class="cell-label"><b>default</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="hover">Rezept erstellen</button></div><div class="cell-label"><b>hover</b> · amber-700</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="focus">Rezept erstellen</button></div><div class="cell-label"><b>focus</b> · ring-amber-400</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="disabled">Rezept erstellen</button></div><div class="cell-label"><b>disabled</b> · opacity-50</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="disabled"><span class="b-spinner"></span>Speichern…</button></div><div class="cell-label"><b>loading</b></div></div>
+        </div>
+        <div class="matrix cols-5">
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary"><i data-lucide="plus"></i>Rezept erstellen</button></div><div class="cell-label"><b>+ icon</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="hover"><i data-lucide="plus"></i>Rezept erstellen</button></div><div class="cell-label"><b>+ icon</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="focus"><i data-lucide="plus"></i>Rezept erstellen</button></div><div class="cell-label"><b>+ icon</b> · focus</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="disabled"><i data-lucide="plus"></i>Rezept erstellen</button></div><div class="cell-label"><b>+ icon</b> · disabled</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-primary" data-state="disabled"><span class="b-spinner"></span><i data-lucide="plus"></i>Erstelle…</button></div><div class="cell-label"><b>+ icon</b> · loading</div></div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">h: 40 / px: 16 / gap: 8</span>
+        <span class="anno">rounded: 8px</span>
+        <span class="anno amber">bg: amber-600</span>
+        <span class="anno amber">hover: amber-700</span>
+        <span class="anno">text: #FBF7F1 / text-sm font-medium</span>
+        <span class="anno">leading icon: 16px</span>
+        <span class="anno">spinner: border-2 / 16px / animate-spin</span>
+      </div>
+    </div>
+
+    <!-- Secondary -->
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Secondary · "Abbrechen"</span>
+        <div class="frame-tags"><span>border border-gray-300</span><span>bg-white</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-5">
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary">Abbrechen</button></div><div class="cell-label"><b>default</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="hover">Abbrechen</button></div><div class="cell-label"><b>hover</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="focus">Abbrechen</button></div><div class="cell-label"><b>focus</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="disabled">Abbrechen</button></div><div class="cell-label"><b>disabled</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="disabled"><span class="b-spinner"></span>Lade…</button></div><div class="cell-label"><b>loading</b></div></div>
+        </div>
+        <div class="matrix cols-5">
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary"><i data-lucide="plus"></i>Hinzufügen</button></div><div class="cell-label"><b>+ icon</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="hover"><i data-lucide="plus"></i>Hinzufügen</button></div><div class="cell-label"><b>+ icon</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="focus"><i data-lucide="plus"></i>Hinzufügen</button></div><div class="cell-label"><b>+ icon</b> · focus</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="disabled"><i data-lucide="plus"></i>Hinzufügen</button></div><div class="cell-label"><b>+ icon</b> · disabled</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-secondary" data-state="disabled"><span class="b-spinner"></span><i data-lucide="plus"></i>Lade…</button></div><div class="cell-label"><b>+ icon</b> · loading</div></div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">border: 1px gray-300</span>
+        <span class="anno">bg: white / hover: warm-100</span>
+        <span class="anno">color: gray-900</span>
+      </div>
+    </div>
+
+    <!-- Ghost -->
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Ghost · "Mehr anzeigen"</span>
+        <div class="frame-tags"><span>bg-transparent</span><span>no border</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-5">
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost">Mehr anzeigen</button></div><div class="cell-label"><b>default</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="hover">Mehr anzeigen</button></div><div class="cell-label"><b>hover</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="focus">Mehr anzeigen</button></div><div class="cell-label"><b>focus</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="disabled">Mehr anzeigen</button></div><div class="cell-label"><b>disabled</b></div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="disabled"><span class="b-spinner"></span>Lade…</button></div><div class="cell-label"><b>loading</b></div></div>
+        </div>
+        <div class="matrix cols-5">
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost"><i data-lucide="plus"></i>Mehr anzeigen</button></div><div class="cell-label"><b>+ icon</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="hover"><i data-lucide="plus"></i>Mehr anzeigen</button></div><div class="cell-label"><b>+ icon</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="focus"><i data-lucide="plus"></i>Mehr anzeigen</button></div><div class="cell-label"><b>+ icon</b> · focus</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="disabled"><i data-lucide="plus"></i>Mehr anzeigen</button></div><div class="cell-label"><b>+ icon</b> · disabled</div></div>
+          <div class="cell"><div class="cell-stage"><button class="b-btn b-btn-ghost" data-state="disabled"><span class="b-spinner"></span><i data-lucide="plus"></i>Lade…</button></div><div class="cell-label"><b>+ icon</b> · loading</div></div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">bg: transparent / hover: warm-100</span>
+        <span class="anno">color: gray-700 / hover: gray-900</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       3. CHECKBOX
+       ============================================================ -->
+  <section class="sec" id="sec-3">
+    <header class="sec-head">
+      <span class="sec-num">03</span>
+      <span class="sec-title">Checkbox</span>
+      <span class="sec-sub">16×16 rounded square. Label <code>text-sm</code> · 8px gap. Helper text <code>text-xs</code> · 4px below.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">All states</span>
+        <div class="frame-tags"><span>16px · rounded-sm</span><span>label · gap-2</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-3">
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><input class="b-check" type="checkbox" id="c1"><label for="c1">Schritt als aktiv markieren</label></div></div><div class="cell-label"><b>unchecked</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-state="hover"></span><label>Schritt als aktiv markieren</label></div></div><div class="cell-label"><b>unchecked</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-state="focus"></span><label>Schritt als aktiv markieren</label></div></div><div class="cell-label"><b>unchecked</b> · focus</div></div>
+
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-checked="true"></span><label>Schritt als aktiv markieren</label></div></div><div class="cell-label"><b>checked</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-checked="true" data-state="hover"></span><label>Schritt als aktiv markieren</label></div></div><div class="cell-label"><b>checked</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-checked="true" data-state="focus"></span><label>Schritt als aktiv markieren</label></div></div><div class="cell-label"><b>checked</b> · focus</div></div>
+
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-checked="indeterminate"></span><label>Alle Schritte</label></div></div><div class="cell-label"><b>indeterminate</b></div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-state="disabled"></span><label style="opacity:.5">Schritt als aktiv</label></div></div><div class="cell-label"><b>disabled</b> · unchecked</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-check-row"><span class="b-check" data-checked="true" data-state="disabled"></span><label style="opacity:.5">Schritt als aktiv</label></div></div><div class="cell-label"><b>disabled</b> · checked</div></div>
+        </div>
+
+        <div style="border-top: 1px dashed var(--border); padding-top: 28px;">
+          <div class="cell" style="max-width: 320px;">
+            <div class="cell-stage" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+              <div class="b-check-row"><span class="b-check" data-error="true"></span><label>Schritt als aktiv markieren</label></div>
+              <div class="b-helper error" style="margin-left: 24px;">Pflichtfeld</div>
+            </div>
+            <div class="cell-label"><b>error</b> · red border + helper</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">size: 16×16</span>
+        <span class="anno">radius: 4px (rounded)</span>
+        <span class="anno">border: 1.5px gray-300</span>
+        <span class="anno amber">checked: amber-600 fill</span>
+        <span class="anno">label gap: 8px</span>
+        <span class="anno">helper gap: 4px below</span>
+        <span class="anno">error: red-500 border</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       4. DIALOG
+       ============================================================ -->
+  <section class="sec" id="sec-4">
+    <header class="sec-head">
+      <span class="sec-num">04</span>
+      <span class="sec-title">Dialog (Modal)</span>
+      <span class="sec-sub">Centered overlay with <code>bg-black/50</code> backdrop. Max-width 448px desktop. Mobile fills viewport minus 16px each side.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Default · destructive · loading · mobile</span>
+        <div class="frame-tags"><span>448px max</span><span>shadow-xl</span><span>rounded-lg</span></div>
+      </div>
+      <div class="frame-body" style="grid-template-columns: 1fr 1fr; gap: 32px;">
+        <!-- Default open / destructive -->
+        <div class="cell" style="width:100%;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-dialog-stage">
+              <div class="b-dialog">
+                <div class="b-dialog-head">
+                  <div class="b-dialog-title">
+                    <i data-lucide="alert-triangle" style="color: var(--danger);"></i>
+                    Rezept löschen?
+                  </div>
+                  <button class="b-dialog-close"><i data-lucide="x"></i></button>
+                </div>
+                <div class="b-dialog-body">
+                  Diese Aktion kann nicht rückgängig gemacht werden.
+                </div>
+                <div class="b-dialog-foot">
+                  <button class="b-btn b-btn-ghost">Abbrechen</button>
+                  <button class="b-btn b-btn-danger">Löschen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cell-label"><b>destructive</b> · warning icon · red confirm</div>
+        </div>
+
+        <!-- Loading -->
+        <div class="cell" style="width:100%;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-dialog-stage">
+              <div class="b-dialog">
+                <div class="b-dialog-head">
+                  <div class="b-dialog-title">Rezept speichern</div>
+                  <button class="b-dialog-close"><i data-lucide="x"></i></button>
+                </div>
+                <div class="b-dialog-body" style="display:flex; align-items:center; justify-content:center; min-height: 88px;">
+                  <span class="b-spinner b-spinner-md" style="color: var(--primary);"></span>
+                </div>
+                <div class="b-dialog-foot">
+                  <button class="b-btn b-btn-ghost" data-state="disabled">Abbrechen</button>
+                  <button class="b-btn b-btn-primary" data-state="disabled">Speichern</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cell-label"><b>loading</b> · centered spinner · actions disabled</div>
+        </div>
+
+        <!-- Default -->
+        <div class="cell" style="width:100%;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-dialog-stage">
+              <div class="b-dialog">
+                <div class="b-dialog-head">
+                  <div class="b-dialog-title">Schritt verwerfen?</div>
+                  <button class="b-dialog-close"><i data-lucide="x"></i></button>
+                </div>
+                <div class="b-dialog-body">
+                  Deine Änderungen am Schritt "Bulk-Fermentation" gehen verloren.
+                </div>
+                <div class="b-dialog-foot">
+                  <button class="b-btn b-btn-ghost">Abbrechen</button>
+                  <button class="b-btn b-btn-primary">Bestätigen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cell-label"><b>default</b> · confirm + cancel</div>
+        </div>
+
+        <!-- Mobile -->
+        <div class="cell" style="width:100%;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-dialog-stage mobile">
+              <div class="b-dialog" style="width: calc(100% - 32px);">
+                <div class="b-dialog-head">
+                  <div class="b-dialog-title">Rezept löschen?</div>
+                  <button class="b-dialog-close"><i data-lucide="x"></i></button>
+                </div>
+                <div class="b-dialog-body">
+                  Diese Aktion kann nicht rückgängig gemacht werden.
+                </div>
+                <div class="b-dialog-foot" style="flex-direction: column-reverse; align-items: stretch;">
+                  <button class="b-btn b-btn-ghost" style="width:100%;">Abbrechen</button>
+                  <button class="b-btn b-btn-danger" style="width:100%;">Löschen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cell-label"><b>mobile</b> · 16px margins · stacked actions</div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">backdrop: rgba(0,0,0,0.5)</span>
+        <span class="anno">max-w: 448px</span>
+        <span class="anno">radius: 12px</span>
+        <span class="anno">title: text-lg font-semibold</span>
+        <span class="anno">body: text-sm text-gray-600 · p-6</span>
+        <span class="anno">footer: gap-3 · right-aligned</span>
+        <span class="anno">close: top-right Lucide X</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       5. DROPDOWN
+       ============================================================ -->
+  <section class="sec" id="sec-5">
+    <header class="sec-head">
+      <span class="sec-num">05</span>
+      <span class="sec-title">Dropdown (Form Select)</span>
+      <span class="sec-sub">Custom select with ChevronDown trigger. Options list <code>rounded-lg shadow-lg</code> · max 5 visible before scroll.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Trigger · Options · States</span>
+        <div class="frame-tags"><span>h-10</span><span>border-gray-300</span><span>option · h-9 px-3</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-3">
+          <div class="cell">
+            <div class="cell-stage" style="flex-direction:column; align-items:flex-start; gap:4px; width: 100%;">
+              <div class="field-label">Einheit</div>
+              <button class="b-select-trigger"><span style="color: var(--fg-subtle);">Wählen</span><i data-lucide="chevron-down"></i></button>
+            </div>
+            <div class="cell-label"><b>closed</b> · default</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage" style="flex-direction:column; align-items:flex-start; gap:4px;">
+              <div class="field-label">Einheit</div>
+              <button class="b-select-trigger" data-state="hover">Minuten<i data-lucide="chevron-down"></i></button>
+            </div>
+            <div class="cell-label"><b>closed</b> · hover</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage" style="flex-direction:column; align-items:flex-start; gap:4px;">
+              <div class="field-label">Einheit</div>
+              <button class="b-select-trigger" data-state="focus">Minuten<i data-lucide="chevron-down"></i></button>
+            </div>
+            <div class="cell-label"><b>closed</b> · focus</div>
+          </div>
+        </div>
+
+        <div class="matrix cols-2" style="border-top: 1px dashed var(--border); padding-top: 28px;">
+          <!-- Open -->
+          <div class="cell">
+            <div class="cell-stage" style="flex-direction:column; align-items:flex-start; gap:4px; width:100%;">
+              <div class="field-label">Einheit</div>
+              <button class="b-select-trigger" data-state="focus">Minuten<i data-lucide="chevron-down" style="transform: rotate(180deg);"></i></button>
+              <div class="b-select-list">
+                <div class="b-option" data-selected="true">Minuten<i data-lucide="check"></i></div>
+                <div class="b-option" data-state="hover">Stunden</div>
+                <div class="b-option">Tage</div>
+              </div>
+            </div>
+            <div class="cell-label"><b>open</b> · with selected + hover row</div>
+          </div>
+
+          <!-- Disabled / Error -->
+          <div class="cell" style="gap: 24px;">
+            <div class="cell-stage" style="flex-direction:column; align-items:flex-start; gap:4px;">
+              <div class="field-label">Einheit</div>
+              <button class="b-select-trigger" data-state="disabled"><span style="color: var(--fg-subtle);">Wählen</span><i data-lucide="chevron-down"></i></button>
+            </div>
+            <div class="cell-label"><b>disabled</b></div>
+
+            <div class="cell-stage" style="flex-direction:column; align-items:flex-start; gap:4px; margin-top: 8px;">
+              <div class="field-label">Einheit</div>
+              <button class="b-select-trigger" data-error="true"><span style="color: var(--fg-subtle);">Wählen</span><i data-lucide="chevron-down"></i></button>
+              <div class="b-helper error">Bitte wählen</div>
+            </div>
+            <div class="cell-label"><b>error</b> · red border + helper</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">trigger h: 40 · px: 12</span>
+        <span class="anno">chevron: 16px right</span>
+        <span class="anno">option h: 36 · text-sm</span>
+        <span class="anno">list: rounded-lg · shadow-lg · py-1</span>
+        <span class="anno">selected: check + font-medium</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       6. FILTER TAG
+       ============================================================ -->
+  <section class="sec" id="sec-6">
+    <header class="sec-head">
+      <span class="sec-num">06</span>
+      <span class="sec-title">FilterTag</span>
+      <span class="sec-sub">Pill-shaped toggle. Tap activates; tap again deactivates. <code>rounded-full · px-3 py-1 · text-sm font-medium</code></span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Inactive · Active · Disabled</span>
+        <div class="frame-tags"><span>h-7</span><span>rounded-full</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-3">
+          <div class="cell">
+            <div class="cell-stage" style="gap: 8px; flex-wrap: wrap;">
+              <button class="b-filter">Alle</button>
+              <button class="b-filter">Aktiv</button>
+              <button class="b-filter">Warten</button>
+            </div>
+            <div class="cell-label"><b>inactive</b> · default</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage" style="gap: 8px;">
+              <button class="b-filter" data-state="hover">Alle</button>
+              <button class="b-filter">Aktiv</button>
+              <button class="b-filter">Warten</button>
+            </div>
+            <div class="cell-label"><b>inactive</b> · hover</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage" style="gap: 8px;">
+              <button class="b-filter" data-state="disabled">Alle</button>
+              <button class="b-filter" data-state="disabled">Aktiv</button>
+            </div>
+            <div class="cell-label"><b>disabled</b></div>
+          </div>
+
+          <div class="cell">
+            <div class="cell-stage" style="gap: 8px;">
+              <button class="b-filter" data-active="true">Alle</button>
+              <button class="b-filter">Aktiv</button>
+              <button class="b-filter">Warten</button>
+            </div>
+            <div class="cell-label"><b>active</b> · default</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage" style="gap: 8px;">
+              <button class="b-filter" data-active="true" data-state="hover">Alle</button>
+              <button class="b-filter">Aktiv</button>
+              <button class="b-filter">Warten</button>
+            </div>
+            <div class="cell-label"><b>active</b> · hover</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">padding: px-3 py-1 (12 / 4)</span>
+        <span class="anno">font: text-sm font-medium</span>
+        <span class="anno">inactive: border-gray-300 · bg-white</span>
+        <span class="anno amber">active: amber-50 bg / amber-700 text / amber-600 border</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       7. HEADLINE / TYPE SCALE
+       ============================================================ -->
+  <section class="sec" id="sec-7">
+    <header class="sec-head">
+      <span class="sec-num">07</span>
+      <span class="sec-title">Headline (Type scale)</span>
+      <span class="sec-sub">Geist 400 / 500 only — full hierarchy from H1 to caption. Each row annotated with Tailwind class + rendered px.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Type specimen</span>
+        <div class="frame-tags"><span>Geist</span><span>weights: 400 / 500</span></div>
+      </div>
+      <div class="frame-body" style="padding: 8px 32px 24px;">
+        <div class="type-row">
+          <div class="lbl">H1</div>
+          <div class="t-h1">Meine Rezepte</div>
+          <div class="meta"><span class="anno">text-4xl font-bold</span> · <span class="anno">36px</span></div>
+        </div>
+        <div class="type-row">
+          <div class="lbl">H2</div>
+          <div class="t-h2">Zutaten</div>
+          <div class="meta"><span class="anno">text-2xl font-bold</span> · <span class="anno">24px</span></div>
+        </div>
+        <div class="type-row">
+          <div class="lbl">H3</div>
+          <div class="t-h3">Bulk-Fermentation</div>
+          <div class="meta"><span class="anno">text-xl font-semibold</span> · <span class="anno">20px</span></div>
+        </div>
+        <div class="type-row">
+          <div class="lbl">H4</div>
+          <div class="t-h4">Wassertemperatur</div>
+          <div class="meta"><span class="anno">text-lg font-semibold</span> · <span class="anno">18px</span></div>
+        </div>
+        <div class="type-row">
+          <div class="lbl">Body</div>
+          <div class="t-body">500 g Brotmehl, 75 % Hydration. Knete 8 Minuten, dann 4 Stunden Stockgare.</div>
+          <div class="meta"><span class="anno">text-sm</span> · <span class="anno">14px</span></div>
+        </div>
+        <div class="type-row">
+          <div class="lbl">Muted</div>
+          <div class="t-muted">Zuletzt gebacken am 12. Mai · 2 Laibe</div>
+          <div class="meta"><span class="anno">text-sm secondary</span> · <span class="anno">14px</span></div>
+        </div>
+        <div class="type-row">
+          <div class="lbl">Caption</div>
+          <div class="t-cap">Bereit um 18:30</div>
+          <div class="meta"><span class="anno">text-xs</span> · <span class="anno">12px</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       8. ICON
+       ============================================================ -->
+  <section class="sec" id="sec-8">
+    <header class="sec-head">
+      <span class="sec-num">08</span>
+      <span class="sec-title">Icon</span>
+      <span class="sec-sub">All Lucide icons used in the app, shown at three sizes — 16px (inline), 24px (interactive), 36px (avatar / placeholder).</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Lucide · 1.5px stroke · rounded caps</span>
+        <div class="frame-tags"><span>16 / 24 / 36 px</span></div>
+      </div>
+      <div class="frame-body" style="gap: 36px;">
+        <div>
+          <div class="cell-label" style="margin-bottom: 12px;"><b>16px</b> · inline (buttons, list items)</div>
+          <div class="matrix cols-6" id="icons-16"></div>
+        </div>
+        <div>
+          <div class="cell-label" style="margin-bottom: 12px;"><b>24px</b> · standalone interactive</div>
+          <div class="matrix cols-6" id="icons-24"></div>
+        </div>
+        <div>
+          <div class="cell-label" style="margin-bottom: 12px;"><b>36px</b> · avatar fallback / large placeholders</div>
+          <div class="matrix cols-6" id="icons-36"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       9. RADIO
+       ============================================================ -->
+  <section class="sec" id="sec-9">
+    <header class="sec-head">
+      <span class="sec-num">09</span>
+      <span class="sec-title">Radio</span>
+      <span class="sec-sub">16×16 round. Selected = filled inner dot in primary color. Label <code>text-sm</code>, 8px gap.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">All states</span>
+        <div class="frame-tags"><span>16px ⌀</span><span>fill: amber-600</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-3">
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio"></span><label>Aktiv</label></div></div><div class="cell-label"><b>unselected</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio" data-state="hover"></span><label>Aktiv</label></div></div><div class="cell-label"><b>unselected</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio" data-state="focus"></span><label>Aktiv</label></div></div><div class="cell-label"><b>unselected</b> · focus</div></div>
+
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio" data-checked="true"></span><label>Warten</label></div></div><div class="cell-label"><b>selected</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio" data-checked="true" data-state="hover"></span><label>Warten</label></div></div><div class="cell-label"><b>selected</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio" data-checked="true" data-state="focus"></span><label>Warten</label></div></div><div class="cell-label"><b>selected</b> · focus</div></div>
+
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio" data-state="disabled"></span><label style="opacity:.5">Aktiv</label></div></div><div class="cell-label"><b>disabled</b> · unselected</div></div>
+          <div class="cell"><div class="cell-stage"><div class="b-radio-row"><span class="b-radio" data-checked="true" data-state="disabled"></span><label style="opacity:.5">Warten</label></div></div><div class="cell-label"><b>disabled</b> · selected</div></div>
+          <div class="cell">
+            <div class="cell-stage" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+              <div class="b-radio-row"><span class="b-radio" data-error="true"></span><label>Aktiv</label></div>
+              <div class="b-helper error" style="margin-left: 24px;">Pflichtfeld</div>
+            </div>
+            <div class="cell-label"><b>error</b> · red accent + helper</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">size: 16×16 · rounded-full</span>
+        <span class="anno amber">selected: amber-600 dot (8px ⌀)</span>
+        <span class="anno">label gap: 8px</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       10. RADIO GROUP
+       ============================================================ -->
+  <section class="sec" id="sec-10">
+    <header class="sec-head">
+      <span class="sec-num">10</span>
+      <span class="sec-title">RadioGroup</span>
+      <span class="sec-sub">Group label <code>text-sm font-medium · mb-2</code>, options stack with <code>gap-2</code>. Group-level error sits below the last option.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Default · Error</span>
+        <div class="frame-tags"><span>vertical stack · gap-2</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-2">
+          <div class="cell">
+            <div class="cell-stage" style="flex-direction: column; align-items: flex-start; gap: 0;">
+              <div class="field-label" style="margin-bottom: 8px;">Schritttyp</div>
+              <div class="stack" style="gap: 8px;">
+                <div class="b-radio-row"><span class="b-radio" data-checked="true"></span><label>Aktiv</label></div>
+                <div class="b-radio-row"><span class="b-radio" data-state="hover"></span><label>Warten</label></div>
+                <div class="b-radio-row"><span class="b-radio" data-state="disabled"></span><label style="opacity:.5">Pause</label></div>
+              </div>
+            </div>
+            <div class="cell-label"><b>default</b> · selected · hovered · disabled</div>
+          </div>
+
+          <div class="cell">
+            <div class="cell-stage" style="flex-direction: column; align-items: flex-start; gap: 0;">
+              <div class="field-label" style="margin-bottom: 8px;">Schritttyp</div>
+              <div class="stack" style="gap: 8px;">
+                <div class="b-radio-row"><span class="b-radio" data-error="true"></span><label>Aktiv</label></div>
+                <div class="b-radio-row"><span class="b-radio" data-error="true"></span><label>Warten</label></div>
+                <div class="b-radio-row"><span class="b-radio" data-error="true" data-state="disabled"></span><label style="opacity:.5">Pause</label></div>
+              </div>
+              <div class="b-helper error" style="margin-top: 4px;">Bitte einen Schritttyp auswählen</div>
+            </div>
+            <div class="cell-label"><b>error</b> · group-level message</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">group label: text-sm font-medium · mb-2</span>
+        <span class="anno">row gap: 8px</span>
+        <span class="anno">error: text-xs danger · mt-1</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       11. SEGMENTED
+       ============================================================ -->
+  <section class="sec" id="sec-11">
+    <header class="sec-head">
+      <span class="sec-num">11</span>
+      <span class="sec-title">Segmented Button</span>
+      <span class="sec-sub">Connected horizontal group; exactly one segment selected. Outer corners <code>rounded-lg</code>, inner segments share borders.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">2-segment · 3-segment · states</span>
+        <div class="frame-tags"><span>h-9</span><span>text-sm font-medium</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-2">
+          <div class="cell">
+            <div class="cell-stage">
+              <div class="b-seg">
+                <button data-selected="true">Aktiv</button>
+                <button>Warten</button>
+              </div>
+            </div>
+            <div class="cell-label"><b>2-segment</b> · selected + unselected</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage">
+              <div class="b-seg">
+                <button>Aktiv</button>
+                <button data-state="hover">Warten</button>
+              </div>
+            </div>
+            <div class="cell-label"><b>2-segment</b> · hover on unselected</div>
+          </div>
+
+          <div class="cell">
+            <div class="cell-stage">
+              <div class="b-seg">
+                <button>Tag</button>
+                <button data-selected="true">Woche</button>
+                <button>Monat</button>
+              </div>
+            </div>
+            <div class="cell-label"><b>3-segment</b> · middle selected</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage">
+              <div class="b-seg" data-disabled="true">
+                <button>Tag</button>
+                <button data-selected="true">Woche</button>
+                <button>Monat</button>
+              </div>
+            </div>
+            <div class="cell-label"><b>all disabled</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">outer radius: 8px</span>
+        <span class="anno">inner: shared 1px border / no radius</span>
+        <span class="anno amber">selected: amber-600 fill / white text</span>
+        <span class="anno">unselected: white / hover bg-warm-100</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       12. SIDEBAR
+       ============================================================ -->
+  <section class="sec" id="sec-12">
+    <header class="sec-head">
+      <span class="sec-num">12</span>
+      <span class="sec-title">Sidebar (Slide-over / Drawer)</span>
+      <span class="sec-sub">Right-edge overlay. Desktop ~360px wide. Mobile fills viewport minus 48px left margin.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Closed · Open desktop · Open mobile</span>
+        <div class="frame-tags"><span>360px desktop</span><span>shadow-xl</span></div>
+      </div>
+      <div class="frame-body" style="grid-template-columns: 1fr 1fr; gap: 32px;">
+        <!-- Closed -->
+        <div class="cell" style="width:100%; grid-column: 1 / -1;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-sidebar-stage" style="height: 200px;">
+              <div class="b-sidebar-page">
+                <div class="ph med"></div>
+                <div class="ph short"></div>
+                <div style="position: absolute; top: 16px; right: 16px;">
+                  <button class="b-btn b-btn-secondary"><i data-lucide="sliders-horizontal"></i>Filter</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cell-label"><b>closed</b> · trigger button visible on page</div>
+        </div>
+
+        <!-- Open desktop -->
+        <div class="cell" style="width:100%;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-sidebar-stage">
+              <div class="b-sidebar-page">
+                <div class="ph med"></div><div class="ph short"></div><div class="ph"></div>
+                <div class="ph med"></div><div class="ph short"></div>
+              </div>
+              <div class="b-sidebar-scrim"></div>
+              <aside class="b-sidebar">
+                <div class="b-sidebar-head">
+                  <h3>Filter</h3>
+                  <button class="b-dialog-close"><i data-lucide="x"></i></button>
+                </div>
+                <div class="b-sidebar-content">
+                  <div>
+                    <div class="field-label" style="margin-bottom: 10px;">Status</div>
+                    <div class="row" style="gap: 8px;">
+                      <button class="b-filter" data-active="true">Alle</button>
+                      <button class="b-filter">Aktiv</button>
+                      <button class="b-filter">Warten</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="field-label" style="margin-bottom: 10px;">Hydration</div>
+                    <div class="b-slider" style="width: 100%;">
+                      <div class="b-slider-track">
+                        <div class="b-slider-fill" style="width: 65%;"></div>
+                        <div class="b-slider-thumb" style="left: 65%;"></div>
+                      </div>
+                      <div class="b-slider-labels"><span>0%</span><span>100%</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="b-sidebar-foot">
+                  <button class="b-btn b-btn-ghost">Zurücksetzen</button>
+                  <button class="b-btn b-btn-primary">Anwenden</button>
+                </div>
+              </aside>
+            </div>
+          </div>
+          <div class="cell-label"><b>open · desktop</b> · 360px panel · scrim</div>
+        </div>
+
+        <!-- Open mobile -->
+        <div class="cell" style="width:100%;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-sidebar-stage mobile">
+              <div class="b-sidebar-page">
+                <div class="ph short"></div><div class="ph med"></div>
+              </div>
+              <div class="b-sidebar-scrim"></div>
+              <aside class="b-sidebar mobile">
+                <div class="b-sidebar-head">
+                  <h3>Filter</h3>
+                  <button class="b-dialog-close"><i data-lucide="x"></i></button>
+                </div>
+                <div class="b-sidebar-content">
+                  <div>
+                    <div class="field-label" style="margin-bottom: 10px;">Status</div>
+                    <div class="row" style="gap: 8px;">
+                      <button class="b-filter" data-active="true">Alle</button>
+                      <button class="b-filter">Aktiv</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="field-label" style="margin-bottom: 10px;">Hydration</div>
+                    <div class="b-slider" style="width: 100%;">
+                      <div class="b-slider-track">
+                        <div class="b-slider-fill" style="width: 50%;"></div>
+                        <div class="b-slider-thumb" style="left: 50%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="b-sidebar-foot">
+                  <button class="b-btn b-btn-ghost">Zurücksetzen</button>
+                  <button class="b-btn b-btn-primary">Anwenden</button>
+                </div>
+              </aside>
+            </div>
+          </div>
+          <div class="cell-label"><b>open · mobile</b> · 48px left margin</div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">desktop width: 360px</span>
+        <span class="anno">mobile: viewport - 48px left</span>
+        <span class="anno">header: p-6 pb-4 · border-b</span>
+        <span class="anno">content: p-6 · scrollable</span>
+        <span class="anno">footer: sticky · p-4</span>
+        <span class="anno">scrim: black/45</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       13. SPINNER
+       ============================================================ -->
+  <section class="sec" id="sec-13">
+    <header class="sec-head">
+      <span class="sec-num">13</span>
+      <span class="sec-title">Spinner</span>
+      <span class="sec-sub"><code>animate-spin</code> circular arc, primary color. 16 / 32 / 48 px.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Three sizes</span>
+        <div class="frame-tags"><span>animate-spin</span><span>border-2 / border-4</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-3">
+          <div class="cell">
+            <div class="cell-stage center"><span class="b-spinner" style="color: var(--primary);"></span></div>
+            <div class="cell-label"><b>small</b> · 16px · border-2 · inline</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage center"><span class="b-spinner b-spinner-md" style="color: var(--primary);"></span></div>
+            <div class="cell-label"><b>medium</b> · 32px · border-3 · section</div>
+          </div>
+          <div class="cell">
+            <div class="cell-stage center"><span class="b-spinner b-spinner-lg" style="color: var(--primary);"></span></div>
+            <div class="cell-label"><b>large</b> · 48px · border-4 · full-page</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">animation: spin 800ms linear infinite</span>
+        <span class="anno">arc: 270° (top-color: transparent)</span>
+        <span class="anno amber">color: amber-600</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       14. SLIDER
+       ============================================================ -->
+  <section class="sec" id="sec-14">
+    <header class="sec-head">
+      <span class="sec-num">14</span>
+      <span class="sec-title">Slider</span>
+      <span class="sec-sub">Single value range. 4px track, 18px thumb. Tooltip pill above thumb shows current value.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Default · Active · Disabled</span>
+        <div class="frame-tags"><span>track 4px</span><span>thumb 18px</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-3">
+          <div class="cell" style="align-items: stretch;">
+            <div class="cell-stage" style="flex-direction: column; align-items: flex-start; width: 100%; gap: 0;">
+              <div class="b-slider-cap">Hydration</div>
+              <div class="b-slider">
+                <div class="b-slider-track">
+                  <div class="b-slider-fill" style="width: 50%;"></div>
+                  <div class="b-slider-thumb" style="left: 50%;"></div>
+                </div>
+                <div class="b-slider-labels"><span>0%</span><span>100%</span></div>
+              </div>
+            </div>
+            <div class="cell-label"><b>default</b> · thumb at 50%</div>
+          </div>
+          <div class="cell" style="align-items: stretch;">
+            <div class="cell-stage" style="flex-direction: column; align-items: flex-start; width: 100%; gap: 0;">
+              <div class="b-slider-cap">Hydration</div>
+              <div class="b-slider">
+                <div class="b-slider-track">
+                  <div class="b-slider-fill" style="width: 75%;"></div>
+                  <div class="b-slider-thumb" data-state="active" style="left: 75%;"></div>
+                  <div class="b-slider-tip" style="left: 75%;">75%</div>
+                </div>
+                <div class="b-slider-labels"><span>0%</span><span>100%</span></div>
+              </div>
+            </div>
+            <div class="cell-label"><b>active / dragging</b> · thumb +4px · tooltip</div>
+          </div>
+          <div class="cell" style="align-items: stretch;">
+            <div class="cell-stage" style="flex-direction: column; align-items: flex-start; width: 100%; gap: 0;">
+              <div class="b-slider-cap" style="opacity: .5;">Hydration</div>
+              <div class="b-slider" data-state="disabled">
+                <div class="b-slider-track">
+                  <div class="b-slider-fill" style="width: 30%;"></div>
+                  <div class="b-slider-thumb" style="left: 30%;"></div>
+                </div>
+                <div class="b-slider-labels"><span>0%</span><span>100%</span></div>
+              </div>
+            </div>
+            <div class="cell-label"><b>disabled</b> · gray track + thumb</div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">track: h-1 rounded-full</span>
+        <span class="anno amber">fill: amber-600</span>
+        <span class="anno">thumb: 18px ⌀ · white · 1.5px border · shadow</span>
+        <span class="anno">active thumb: 22px ⌀</span>
+        <span class="anno">tooltip: bg-gray-900 · text-xs mono</span>
+        <span class="anno">labels: text-xs text-gray-500</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       15. TAB GROUP
+       ============================================================ -->
+  <section class="sec" id="sec-15">
+    <header class="sec-head">
+      <span class="sec-num">15</span>
+      <span class="sec-title">TabGroup</span>
+      <span class="sec-sub">Bottom-bordered row. Active tab gets a 2px primary underline flush with the row border.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">All states</span>
+        <div class="frame-tags"><span>border-b</span><span>px-4 py-2</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="cell" style="width:100%;">
+          <div class="cell-stage" style="width:100%;">
+            <div class="b-tabs" style="width: 100%;">
+              <button class="b-tab" data-active="true">Rezepte</button>
+              <button class="b-tab">Profil</button>
+              <button class="b-tab" data-state="hover">Plan</button>
+              <button class="b-tab" data-state="focus">Verlauf</button>
+              <button class="b-tab" data-state="disabled">Gesundheit</button>
+            </div>
+          </div>
+          <div class="cell-label" style="margin-top: 16px;">
+            <b>Rezepte</b> active · <b>Plan</b> hover · <b>Verlauf</b> focus · <b>Gesundheit</b> disabled
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">row: border-b border-gray-200</span>
+        <span class="anno amber">active: border-b-2 amber-600 · text-amber-700</span>
+        <span class="anno">tab: text-sm font-medium · px-4 py-2</span>
+        <span class="anno">hover (inactive): text-gray-900</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       16. TAG (status)
+       ============================================================ -->
+  <section class="sec" id="sec-16">
+    <header class="sec-head">
+      <span class="sec-num">16</span>
+      <span class="sec-title">Tag (Status chip)</span>
+      <span class="sec-sub">Five non-interactive variants × with-dot / without-dot. <code>rounded · px-2 py-0.5 · text-xs font-medium</code></span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Five variants × two forms</span>
+        <div class="frame-tags"><span>rounded · 4px</span><span>dot · 4px ⌀</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-5">
+          <div class="cell"><div class="cell-stage"><span class="b-tag success"><span class="dot"></span>Verifiziert</span></div><div class="cell-label"><b>success</b> · with dot</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag danger"><span class="dot"></span>Fehler</span></div><div class="cell-label"><b>danger</b> · with dot</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag neutral"><span class="dot"></span>Entwurf</span></div><div class="cell-label"><b>neutral</b> · with dot</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag disabled"><span class="dot"></span>Inaktiv</span></div><div class="cell-label"><b>disabled</b> · with dot</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag info"><span class="dot"></span>Information</span></div><div class="cell-label"><b>information</b> · with dot</div></div>
+
+          <div class="cell"><div class="cell-stage"><span class="b-tag success">Verifiziert</span></div><div class="cell-label"><b>success</b> · text only</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag danger">Fehler</span></div><div class="cell-label"><b>danger</b> · text only</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag neutral">Entwurf</span></div><div class="cell-label"><b>neutral</b> · text only</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag disabled">Inaktiv</span></div><div class="cell-label"><b>disabled</b> · text only</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-tag info">Information</span></div><div class="cell-label"><b>information</b> · text only</div></div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">padding: px-2 py-0.5 (8 / 2)</span>
+        <span class="anno">font: text-xs font-medium</span>
+        <span class="anno">dot gap: 4px</span>
+        <span class="anno">success: lime-100 / lime-800</span>
+        <span class="anno">danger: red-100 / red-700</span>
+        <span class="anno">neutral: warm-100 / warm-700</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       17. TOGGLE
+       ============================================================ -->
+  <section class="sec" id="sec-17">
+    <header class="sec-head">
+      <span class="sec-num">17</span>
+      <span class="sec-title">Toggle (Switch)</span>
+      <span class="sec-sub">36×20 track, 16px thumb. Off = gray-300; on = primary. Label optional, on either side.</span>
+    </header>
+    <div class="frame">
+      <div class="frame-head">
+        <span class="frame-title">Off · On · Disabled · Layouts</span>
+        <div class="frame-tags"><span>track 36×20</span><span>thumb 16px</span></div>
+      </div>
+      <div class="frame-body">
+        <div class="matrix cols-4">
+          <div class="cell"><div class="cell-stage"><span class="b-toggle"></span></div><div class="cell-label"><b>off</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-toggle" data-state="hover"></span></div><div class="cell-label"><b>off</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-toggle" data-state="focus"></span></div><div class="cell-label"><b>off</b> · focus</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-toggle" data-state="disabled"></span></div><div class="cell-label"><b>disabled</b> · off</div></div>
+
+          <div class="cell"><div class="cell-stage"><span class="b-toggle" data-on="true"></span></div><div class="cell-label"><b>on</b> · default</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-toggle" data-on="true" data-state="hover"></span></div><div class="cell-label"><b>on</b> · hover</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-toggle" data-on="true" data-state="focus"></span></div><div class="cell-label"><b>on</b> · focus</div></div>
+          <div class="cell"><div class="cell-stage"><span class="b-toggle" data-on="true" data-state="disabled"></span></div><div class="cell-label"><b>disabled</b> · on</div></div>
+        </div>
+
+        <div style="border-top: 1px dashed var(--border); padding-top: 24px;">
+          <div class="matrix cols-2">
+            <div class="cell">
+              <div class="cell-stage">
+                <div class="b-toggle-row"><span class="b-toggle" data-on="true"></span><label>Benachrichtigungen aktivieren</label></div>
+              </div>
+              <div class="cell-label"><b>label · right</b></div>
+            </div>
+            <div class="cell">
+              <div class="cell-stage">
+                <div class="b-toggle-row"><label>Benachrichtigungen aktivieren</label><span class="b-toggle" data-on="true"></span></div>
+              </div>
+              <div class="cell-label"><b>label · left</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="specs">
+        <span class="anno">track: 36×20 · rounded-full</span>
+        <span class="anno">thumb: 16px · 2px offset · white</span>
+        <span class="anno amber">on: amber-600</span>
+        <span class="anno">off: gray-300</span>
+        <span class="anno">label gap: 8px</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       OVERVIEW
+       ============================================================ -->
+  <section class="sec" id="sec-overview">
+    <header class="sec-head">
+      <span class="sec-num">+</span>
+      <span class="sec-title">Component Overview</span>
+      <span class="sec-sub">One representative instance of each component, in default / resting state.</span>
+    </header>
+    <div class="overview">
+      <div class="ov-cell"><div class="ov-stage"><div class="b-badge"><i data-lucide="bell"></i><span class="b-badge-dot">3</span></div></div><div class="ov-label">01 · Badge</div></div>
+      <div class="ov-cell"><div class="ov-stage"><button class="b-btn b-btn-primary">Rezept erstellen</button></div><div class="ov-label">02 · Button</div></div>
+      <div class="ov-cell"><div class="ov-stage"><div class="b-check-row"><span class="b-check" data-checked="true"></span><label>Aktiv</label></div></div><div class="ov-label">03 · Checkbox</div></div>
+      <div class="ov-cell"><div class="ov-stage"><div style="background: var(--bg-sunken); border-radius: 6px; padding: 12px; font-size: 12px; color: var(--fg-muted); border: 1px solid var(--border); width: 100%; text-align: center;">Rezept löschen?<br><span style="font-size: 10px; color: var(--fg-subtle);">modal preview</span></div></div><div class="ov-label">04 · Dialog</div></div>
+
+      <div class="ov-cell"><div class="ov-stage"><button class="b-select-trigger" style="width: 100%;">Minuten<i data-lucide="chevron-down"></i></button></div><div class="ov-label">05 · Dropdown</div></div>
+      <div class="ov-cell"><div class="ov-stage"><div class="row" style="gap: 6px; flex-wrap: wrap;"><button class="b-filter" data-active="true">Alle</button><button class="b-filter">Aktiv</button></div></div><div class="ov-label">06 · FilterTag</div></div>
+      <div class="ov-cell"><div class="ov-stage" style="flex-direction: column; align-items: flex-start; gap: 4px;"><div class="t-h2">Meine Rezepte</div><div class="t-cap">H1 · 36 · 500</div></div><div class="ov-label">07 · Headline</div></div>
+      <div class="ov-cell"><div class="ov-stage" style="gap: 12px;"><i data-lucide="bell" style="width:24px;height:24px;stroke-width:1.5;"></i><i data-lucide="plus" style="width:24px;height:24px;stroke-width:1.5;"></i><i data-lucide="circle-user" style="width:24px;height:24px;stroke-width:1.5;"></i></div><div class="ov-label">08 · Icon</div></div>
+
+      <div class="ov-cell"><div class="ov-stage"><div class="b-radio-row"><span class="b-radio" data-checked="true"></span><label>Aktiv</label></div></div><div class="ov-label">09 · Radio</div></div>
+      <div class="ov-cell"><div class="ov-stage" style="flex-direction: column; align-items: flex-start; gap: 6px;"><div class="b-radio-row"><span class="b-radio" data-checked="true"></span><label>Aktiv</label></div><div class="b-radio-row"><span class="b-radio"></span><label>Warten</label></div></div><div class="ov-label">10 · RadioGroup</div></div>
+      <div class="ov-cell"><div class="ov-stage"><div class="b-seg"><button data-selected="true">Tag</button><button>Woche</button><button>Monat</button></div></div><div class="ov-label">11 · Segmented</div></div>
+      <div class="ov-cell"><div class="ov-stage"><div style="position: relative; width: 100%; height: 64px; background: var(--bg-sunken); border-radius: 6px; overflow: hidden; border: 1px solid var(--border);"><div style="position: absolute; right: 0; top: 0; bottom: 0; width: 60%; background: var(--bg-elevated); border-left: 1px solid var(--border); padding: 8px;"><div style="height: 6px; background: var(--warm-200); border-radius: 4px; margin-bottom: 4px;"></div><div style="height: 6px; width: 60%; background: var(--warm-200); border-radius: 4px;"></div></div></div></div><div class="ov-label">12 · Sidebar</div></div>
+
+      <div class="ov-cell"><div class="ov-stage"><span class="b-spinner b-spinner-md" style="color: var(--primary);"></span></div><div class="ov-label">13 · Spinner</div></div>
+      <div class="ov-cell"><div class="ov-stage" style="width: 100%;"><div class="b-slider" style="width: 100%; padding-top: 8px;"><div class="b-slider-track"><div class="b-slider-fill" style="width: 50%;"></div><div class="b-slider-thumb" style="left: 50%;"></div></div></div></div><div class="ov-label">14 · Slider</div></div>
+      <div class="ov-cell"><div class="ov-stage" style="width: 100%;"><div class="b-tabs" style="width: 100%;"><button class="b-tab" data-active="true">Rezepte</button><button class="b-tab">Profil</button></div></div><div class="ov-label">15 · TabGroup</div></div>
+      <div class="ov-cell"><div class="ov-stage" style="gap: 6px;"><span class="b-tag success"><span class="dot"></span>Verifiziert</span><span class="b-tag neutral">Entwurf</span></div><div class="ov-label">16 · Tag</div></div>
+
+      <div class="ov-cell"><div class="ov-stage"><div class="b-toggle-row"><span class="b-toggle" data-on="true"></span><label>Aktiviert</label></div></div><div class="ov-label">17 · Toggle</div></div>
+    </div>
+  </section>
+
+  <footer style="margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle);">
+    <span>Breadly · Component Library v1.0</span>
+    <span>17 components · all states · engineering-ready</span>
+  </footer>
+</div>
+
+<script>
+  // Theme toggle
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+    document.getElementById('theme-light').classList.toggle('is-active', t === 'light');
+    document.getElementById('theme-dark').classList.toggle('is-active', t === 'dark');
+    try { localStorage.setItem('breadly-cl-theme', t); } catch (e) {}
+  }
+  try {
+    const saved = localStorage.getItem('breadly-cl-theme');
+    if (saved === 'dark') setTheme('dark');
+  } catch (e) {}
+
+  // Build icon grid
+  const iconList = ['trash-2', 'plus', 'circle-user', 'chevron-right', 'chevron-down', 'refresh-cw', 'bell', 'x', 'check'];
+  function makeTile(name, sizePx) {
+    const el = document.createElement('div');
+    el.className = 'b-icon-tile';
+    el.innerHTML = `
+      <div class="glyph"><i data-lucide="${name}" style="width:${sizePx}px;height:${sizePx}px;"></i></div>
+      <div class="name">${name}</div>
+      <div class="size">${sizePx}px</div>
+    `;
+    return el;
+  }
+  iconList.forEach(n => {
+    document.getElementById('icons-16').appendChild(makeTile(n, 16));
+    document.getElementById('icons-24').appendChild(makeTile(n, 24));
+    document.getElementById('icons-36').appendChild(makeTile(n, 36));
+  });
+
+  // Hydrate Lucide
+  if (window.lucide) {
+    lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+  }
+</script>
+
+</body>
+</html>

@@ -26,6 +26,14 @@ describe('RadioComponent', () => {
     expect(screen.getByTestId('radio-input')).toBeDisabled();
   });
 
+  it('applies border-warning class when warning', async () => {
+    await renderWithProviders(RadioComponent, {
+      componentInputs: { value: 'a', warning: true },
+    });
+    const circle = screen.getByTestId('radio-label').querySelector('[aria-hidden]');
+    expect(circle!.className).toContain('border-warning');
+  });
+
   it('emits selected with value on click', async () => {
     const user = userEvent.setup();
     const selected = vi.fn();

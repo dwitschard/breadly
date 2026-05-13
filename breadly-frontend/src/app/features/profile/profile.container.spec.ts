@@ -8,7 +8,7 @@ describe('ProfileContainerComponent', () => {
   it('renders the profile view child component', async () => {
     await setup({ profile: mockProfile });
 
-    expect(screen.getByTestId('profile-title')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
     expect(screen.getByText('PROFILE.TITLE')).toBeInTheDocument();
   });
 

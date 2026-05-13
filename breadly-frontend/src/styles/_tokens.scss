@@ -1,0 +1,115 @@
+// ── Color token maps ──────────────────────────────────────────────────────────
+// This partial contains only SCSS declarations — no CSS output.
+// styles.scss owns all CSS output and controls rule ordering.
+
+// Light-mode color tokens
+$light: (
+  // Brand
+  brand: #d97706,
+  // amber-600 — primary actions
+  brand-hover: #b45309,
+  // amber-700
+  brand-muted: #fffbeb,
+  // amber-50 — subtle brand bg
+  brand-focus: #fbbf24,
+  // amber-400 — focus ring
+  brand-on: #451a03,
+  // amber-950 — text on brand bg
+  // Content / text
+  content: #1c1917,
+  content-muted: #57534e,
+  content-subtle: #78716c,
+  content-inverted: #faf8f5,
+  // Surface / background
+  surface: #faf8f5,
+  // page
+  surface-card: #fdfcfa,
+  // card / modal
+  surface-raised: #f4f1ec,
+  // hover overlay, raised
+  surface-sunken: #e9e4dc,
+  // sunken / pressed
+  // Border
+  border: #d6cfc4,
+  // interactive element borders
+  border-subtle: #e9e4dc,
+  // panel / section dividers
+  border-strong: #a8a096,
+  border-brand: #d97706,
+  // Danger / error
+  danger: #dc2626,
+  // red-500 — solid bg
+  danger-hover: #b91c1c,
+  // red-600
+  danger-focus: #f87171,
+  // red-400 — focus ring
+  danger-bg: #fef2f2,
+  // red-50 — tinted bg
+  danger-bg-strong: #fee2e2,
+  // red-100
+  danger-border: #fecaca,
+  // red-200
+  danger-text: #b91c1c,
+  // red-700 — text on danger bg
+  // Warning
+  warning: #eab308,
+  // yellow-500 — border, icon
+  warning-focus: #fde047,
+  // yellow-300 — focus ring
+  warning-bg: #fefce8,
+  // yellow-50 — tinted bg
+  warning-text: #713f12,
+  // yellow-900 — text on warning bg
+  // Link
+  link: #d97706
+);
+
+// Dark-mode overrides (only tokens that change)
+$dark: (
+  // Brand
+  brand: #f59e0b,
+  // amber-500
+  brand-hover: #fbbf24,
+  // amber-400
+  brand-muted: #292524,
+  brand-focus: #fbbf24,
+  border-brand: #f59e0b,
+  // Content / text
+  content: #faf8f5,
+  content-muted: #d6cfc4,
+  content-subtle: #a8a096,
+  content-inverted: #1c1917,
+  // Surface / background
+  surface: #0f0e0d,
+  surface-card: #1c1917,
+  surface-raised: #292524,
+  surface-sunken: #3f3b36,
+  // Border
+  border: #57534e,
+  border-subtle: #3f3b36,
+  border-strong: #78716c,
+  // Danger / error (semantic text/bg shift for dark surfaces)
+  danger-bg: #450a0a,
+  // red-950
+  danger-bg-strong: #7f1d1d,
+  // red-900
+  danger-border: #991b1b,
+  // red-800
+  danger-text: #f87171,
+  // red-400
+  // Warning (dark overrides)
+  warning-bg: #422006,
+  // yellow-950
+  warning-text: #fde047,
+  // yellow-300 — readable on dark surfaces
+  // Link
+  link: #fbbf24
+);
+
+// ── Mixin: emit --color-{key}: {value} for every entry in a map ───────────────
+
+@mixin color-vars($map) {
+  @each $key, $value in $map {
+    --color-#{$key}: #{$value};
+  }
+}

@@ -48,6 +48,6 @@ describe('ButtonComponent', () => {
     await renderWithProviders(ButtonComponent, {
       componentInputs: { variant: 'primary' },
     });
-    expect(screen.getByTestId('button').className).toContain('bg-amber-600');
+    expect(screen.getByRole('button').className).toContain('bg-brand');
   });
 });

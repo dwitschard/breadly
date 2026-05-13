@@ -37,6 +37,24 @@ describe('ToggleComponent', () => {
     expect(toggled).toHaveBeenCalledWith(true);
   });
 
+  it('shows spinner when loading', async () => {
+    await renderWithProviders(ToggleComponent, {
+      componentInputs: { on: false, loading: true },
+    });
+    expect(screen.getByTestId('spinner')).toBeInTheDocument();
+  });
+
+  it('does not emit when loading', async () => {
+    const user = userEvent.setup();
+    const toggled = vi.fn();
+    await render('<app-toggle [on]="false" [loading]="true" (toggled)="toggled($event)" />', {
+      imports: [ToggleComponent, TranslateModule.forRoot()],
+      componentProperties: { toggled },
+    });
+    await user.click(screen.getByRole('switch'));
+    expect(toggled).not.toHaveBeenCalled();
+  });
+
   it('does not emit when disabled', async () => {
     const user = userEvent.setup();
     const toggled = vi.fn();

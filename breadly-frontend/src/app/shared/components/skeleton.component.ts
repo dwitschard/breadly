@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   selector: 'app-skeleton',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    '[class]': '"block animate-pulse rounded bg-gray-200 " + cssClass()',
+    '[class]': '"block animate-pulse rounded bg-surface-raised " + cssClass()',
     '[style.width]': 'width()',
     '[style.height]': 'height()',
   },

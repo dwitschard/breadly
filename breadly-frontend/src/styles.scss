@@ -1,0 +1,28 @@
+// @use must precede all CSS output. _tokens.scss is SCSS-only (no CSS output),
+// so the import order of the CSS rules below is preserved exactly as written.
+@use 'styles/tokens' as t;
+
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
+// All theme variables (Tailwind defaults + project custom) live in _theme.scss.
+// @import is used (not @use) because @use does not inject CSS output.
+
+@import 'styles/theme';
+
+// ── Dark-mode overrides ───────────────────────────────────────────────────────
+// CSS custom properties in .dark override @theme values for all descendants.
+// Semantic token classes (bg-brand, text-content, …) auto-adapt — no dark:
+// prefix needed on components using only semantic tokens.
+
+.dark {
+  @include t.color-vars(t.$dark);
+}
+
+// ── Base ──────────────────────────────────────────────────────────────────────
+
+body {
+  @apply bg-surface text-content;
+}

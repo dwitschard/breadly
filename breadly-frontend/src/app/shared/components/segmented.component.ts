@@ -12,7 +12,7 @@ export interface SegmentedOption {
   template: `
     <div
       role="group"
-      class="inline-flex rounded-lg border border-warm-300 dark:border-warm-600 overflow-hidden"
+      class="inline-flex rounded-lg border border-border overflow-hidden"
       [class.opacity-50]="disabled()"
       [class.pointer-events-none]="disabled()"
       data-testid="segmented"
@@ -40,12 +40,12 @@ export class SegmentedComponent {
 
   protected segmentClass(optValue: string, index: number, last: boolean): string {
     const base =
-      'px-4 h-9 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400';
-    const border = index === 0 ? '' : 'border-l border-warm-300 dark:border-warm-600';
+      'px-4 h-8 text-sm font-medium transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-focus';
+    const border = index === 0 ? '' : 'border-l border-border';
     const selected = this.value() === optValue;
     const stateClass = selected
-      ? 'bg-amber-600 text-white dark:bg-amber-500'
-      : 'bg-white text-warm-700 hover:bg-warm-50 dark:bg-warm-900 dark:text-warm-300 dark:hover:bg-warm-800';
+      ? 'bg-brand text-white'
+      : 'bg-surface-card text-content-muted hover:bg-surface-raised';
     return `${base} ${border} ${stateClass}`;
   }
 

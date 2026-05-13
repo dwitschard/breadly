@@ -26,6 +26,23 @@ describe('CheckboxComponent', () => {
     expect(screen.getByTestId('checkbox-input')).toBeDisabled();
   });
 
+  it('shows required asterisk when required', async () => {
+    await renderWithProviders(CheckboxComponent, {
+      componentInputs: { label: 'Akzeptieren', required: true },
+    });
+    expect(screen.getByTestId('checkbox-label')).toHaveTextContent('*');
+  });
+
+  it('shows warning helperText after interaction', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(CheckboxComponent, {
+      componentInputs: { label: 'Test', warning: true, helperText: 'Bitte beachten' },
+    });
+    await user.click(screen.getByTestId('checkbox-label'));
+    expect(screen.getByTestId('checkbox-helper')).toHaveTextContent('Bitte beachten');
+    expect(screen.getByTestId('checkbox-helper').className).toContain('text-warning-text');
+  });
+
   it('emits checkedChange on toggle', async () => {
     const user = userEvent.setup();
     const checkedChange = vi.fn();

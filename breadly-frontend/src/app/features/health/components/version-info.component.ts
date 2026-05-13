@@ -1,17 +1,18 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { VersionInfo } from '../../../generated/api';
+import { HeadlineComponent } from '../../../shared/components/headline.component';
 
 @Component({
   selector: 'health-version-info',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslateModule],
+  imports: [TranslateModule, HeadlineComponent],
   template: `
-    <h2 class="mb-3 text-lg font-semibold">{{ 'HEALTH.VERSIONS' | translate }}</h2>
+    <app-headline level="h4" class="mb-3">{{ 'HEALTH.VERSIONS' | translate }}</app-headline>
     <ul class="space-y-3" [attr.aria-label]="'HEALTH.VERSIONS_LABEL' | translate">
       <li
         data-testid="health-version-frontend"
-        class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+        class="flex items-center justify-between rounded-lg border border-border px-4 py-3"
       >
         <span class="font-medium">{{ 'HEALTH.FRONTEND' | translate }}</span>
         @if (frontendVersion().releaseUrl) {
@@ -20,19 +21,22 @@ import { VersionInfo } from '../../../generated/api';
             [href]="frontendVersion().releaseUrl"
             target="_blank"
             rel="noopener"
-            class="text-sm font-mono text-blue-600 hover:underline"
+            class="text-sm font-mono text-link hover:underline"
           >
             {{ frontendVersion().version }}
           </a>
         } @else {
-          <span data-testid="health-version-frontend-value" class="text-sm font-mono text-gray-600">
+          <span
+            data-testid="health-version-frontend-value"
+            class="text-sm font-mono text-content-muted"
+          >
             {{ frontendVersion().version }}
           </span>
         }
       </li>
       <li
         data-testid="health-version-backend"
-        class="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+        class="flex items-center justify-between rounded-lg border border-border px-4 py-3"
       >
         <span class="font-medium">{{ 'HEALTH.BACKEND' | translate }}</span>
         @if (backendVersion().releaseUrl) {
@@ -41,12 +45,15 @@ import { VersionInfo } from '../../../generated/api';
             [href]="backendVersion().releaseUrl"
             target="_blank"
             rel="noopener"
-            class="text-sm font-mono text-blue-600 hover:underline"
+            class="text-sm font-mono text-link hover:underline"
           >
             {{ backendVersion().version }}
           </a>
         } @else {
-          <span data-testid="health-version-backend-value" class="text-sm font-mono text-gray-600">
+          <span
+            data-testid="health-version-backend-value"
+            class="text-sm font-mono text-content-muted"
+          >
             {{ backendVersion().version }}
           </span>
         }

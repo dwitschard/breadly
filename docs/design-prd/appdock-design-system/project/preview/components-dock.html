@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dock bar</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { margin: 0; padding: 26px 20px; background: var(--bg); display: flex; justify-content: center; }
+  .ad-dock-icon svg { width: 22px; height: 22px; stroke-width: 1.5; }
+</style>
+</head>
+<body>
+  <div class="ad-dock">
+    <button class="ad-dock-icon is-active" title="Breadly"><i data-lucide="cookie"></i></button>
+    <button class="ad-dock-icon" title="Calendar"><i data-lucide="calendar"></i></button>
+    <button class="ad-dock-icon" title="Notes"><i data-lucide="notebook-pen"></i></button>
+    <button class="ad-dock-icon" title="Settings"><i data-lucide="settings"></i></button>
+    <div class="ad-dock-placeholder" title="More apps coming"><i data-lucide="plus" style="width:18px;height:18px;stroke-width:1.5"></i></div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body></html>

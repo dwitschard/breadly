@@ -33,6 +33,21 @@ describe('RadioGroupComponent', () => {
     expect(inputs[1].checked).toBe(true);
   });
 
+  it('shows required asterisk on label when required', async () => {
+    await renderWithProviders(RadioGroupComponent, {
+      componentInputs: { options: OPTIONS, label: 'Schritttyp', required: true },
+    });
+    expect(screen.getByTestId('radio-group-label')).toHaveTextContent('*');
+  });
+
+  it('shows helperText when warning', async () => {
+    await renderWithProviders(RadioGroupComponent, {
+      componentInputs: { options: OPTIONS, warning: true, helperText: 'Bitte prüfen' },
+    });
+    expect(screen.getByTestId('radio-group-helper')).toHaveTextContent('Bitte prüfen');
+    expect(screen.getByTestId('radio-group-helper').className).toContain('text-warning-text');
+  });
+
   it('emits valueChange on selection', async () => {
     const user = userEvent.setup();
     const valueChange = vi.fn();

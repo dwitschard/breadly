@@ -20,8 +20,7 @@ export class SpinnerComponent {
   readonly size = input<'sm' | 'md' | 'lg'>('md');
 
   protected readonly spinnerClass = computed(() => {
-    const base =
-      'animate-spin rounded-full border-warm-200 border-t-amber-600 dark:border-warm-700 dark:border-t-amber-500';
+    const base = 'animate-spin rounded-full border-border-subtle border-t-brand';
     const sizes: Record<string, string> = {
       sm: 'h-4 w-4 border-2',
       md: 'h-8 w-8 border-4',

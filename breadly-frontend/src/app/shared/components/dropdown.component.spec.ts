@@ -49,6 +49,28 @@ describe('DropdownComponent', () => {
     expect(valueChange).toHaveBeenCalledWith('min');
   });
 
+  it('shows label with required asterisk when required', async () => {
+    await renderWithProviders(DropdownComponent, {
+      componentInputs: { options: OPTIONS, label: 'Einheit', required: true },
+    });
+    expect(screen.getByTestId('dropdown-label')).toHaveTextContent('*');
+  });
+
+  it('applies border-warning class when warning', async () => {
+    await renderWithProviders(DropdownComponent, {
+      componentInputs: { options: OPTIONS, warning: true },
+    });
+    expect(screen.getByTestId('dropdown-trigger').className).toContain('border-warning');
+  });
+
+  it('shows warning helperText with warning color', async () => {
+    await renderWithProviders(DropdownComponent, {
+      componentInputs: { options: OPTIONS, warning: true, helperText: 'Bitte prüfen' },
+    });
+    expect(screen.getByTestId('dropdown-helper')).toHaveTextContent('Bitte prüfen');
+    expect(screen.getByTestId('dropdown-helper').className).toContain('text-warning-text');
+  });
+
   it('is disabled when disabled input is true', async () => {
     await renderWithProviders(DropdownComponent, {
       componentInputs: { options: OPTIONS, value: null, disabled: true },

@@ -8,7 +8,11 @@
   "projects": {
     "breadly-frontend": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -30,7 +34,7 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ]
           },
           "configurations": {
@@ -86,7 +90,7 @@
             "tsConfig": "tsconfig.storybook.json",
             "compodoc": false,
             "port": 6006,
-            "styles": ["src/styles.css"]
+            "styles": ["src/styles.scss"]
           }
         },
         "build-storybook": {
@@ -97,7 +101,7 @@
             "tsConfig": "tsconfig.storybook.json",
             "compodoc": false,
             "outputDir": "storybook-static",
-            "styles": ["src/styles.css"]
+            "styles": ["src/styles.scss"]
           }
         }
       }

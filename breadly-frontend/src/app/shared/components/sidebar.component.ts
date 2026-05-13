@@ -9,7 +9,7 @@ import { TranslateModule } from '@ngx-translate/core';
     @if (open() || _visible()) {
       <!-- Scrim -->
       <div
-        class="fixed inset-0 z-40 bg-black/50 transition-opacity duration-[220ms]"
+        class="fixed inset-0 z-40 bg-black/50 transition-opacity duration-slide"
         [class.opacity-0]="!_visible()"
         [class.opacity-100]="_visible()"
         data-testid="sidebar-scrim"
@@ -19,7 +19,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
       <!-- Panel -->
       <aside
-        class="fixed bottom-0 right-0 top-0 z-50 flex w-[360px] max-w-[calc(100vw-48px)] flex-col bg-white shadow-xl transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-warm-900"
+        class="fixed bottom-0 right-0 top-0 z-50 flex w-sidebar max-w-[calc(100vw-48px)] flex-col bg-surface-card shadow-elevated transition-transform duration-slide ease-spring"
         [class.translate-x-full]="!_visible()"
         [class.translate-x-0]="_visible()"
         role="dialog"
@@ -28,17 +28,14 @@ import { TranslateModule } from '@ngx-translate/core';
       >
         <!-- Header -->
         <div
-          class="flex shrink-0 items-center justify-between border-b border-warm-200 px-6 py-4 dark:border-warm-700"
+          class="flex shrink-0 items-center justify-between border-b border-border-subtle px-6 py-4"
         >
-          <h2
-            class="text-lg font-medium text-warm-900 dark:text-warm-50"
-            data-testid="sidebar-title"
-          >
+          <h2 class="text-lg font-medium text-content" data-testid="sidebar-title">
             {{ title() }}
           </h2>
           <button
             type="button"
-            class="flex h-8 w-8 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:hover:bg-warm-800 dark:hover:text-warm-50"
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-content-subtle transition-colors hover:bg-surface-raised hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus"
             data-testid="sidebar-close"
             [attr.aria-label]="'COMMON.CANCEL' | translate"
             (click)="dismissed.emit()"
@@ -63,10 +60,7 @@ import { TranslateModule } from '@ngx-translate/core';
         </div>
 
         <!-- Footer -->
-        <div
-          class="shrink-0 border-t border-warm-200 p-4 dark:border-warm-700"
-          data-testid="sidebar-footer"
-        >
+        <div class="shrink-0 border-t border-border-subtle p-4" data-testid="sidebar-footer">
           <ng-content select="[slot=footer]" />
         </div>
       </aside>

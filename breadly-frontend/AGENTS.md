@@ -470,22 +470,98 @@ export class RecipeFeatureService {
 
 ## 10. Styling
 
-### Tailwind CSS v4
+### Tailwind CSS v4 + SCSS
 
-The project uses Tailwind CSS v4 with PostCSS. No other CSS framework or component library is used.
+The project uses Tailwind CSS v4 with PostCSS and SCSS (Dart Sass). No other CSS framework or component library is used.
+
+### Global styles file structure
+
+```
+src/
+  styles.scss          ← entry point — all CSS output lives here
+  styles/
+    _tokens.scss       ← SCSS-only partial: $light / $dark maps + color-vars mixin
+```
+
+- `_tokens.scss` is a **SCSS-only partial** (no CSS output). It defines the `$light` and `$dark` color maps and the `color-vars` mixin that iterates them. Adding or changing a color token requires only one line in the appropriate map.
+- `styles.scss` owns all CSS output in the correct order: `@import 'tailwindcss'`, `@custom-variant`, `@theme`, `.dark`, `body`.
+- Google Fonts are loaded via `<link>` in `index.html`, not via CSS `@import` (better performance; avoids render-blocking CSS and `@use` ordering constraints).
 
 ### Rules
 
-- **Tailwind utilities only** — no custom CSS files per component
+- **Tailwind utilities only** — no component-scoped `.scss` / `.css` files
 - **Extract repeated patterns** with `@apply` when a utility combination is used 3+ times across the codebase
 - **No arbitrary values** — use Tailwind's design tokens exclusively (e.g., `p-4` not `p-[13px]`)
-- **Dark mode via `dark:` prefix** — Tailwind's class-based dark strategy is active. The `dark` class on `<html>` toggles dark mode. Always pair light and dark variants: e.g. `bg-white dark:bg-warm-900`. Do not use `[data-theme="dark"]` selectors.
 - **Tailwind animations and transitions** — use Tailwind's `transition-*`, `duration-*`, `animate-*` utilities. Do not use `@angular/animations`
-- **Custom colour tokens** — the `warm-25`–`warm-950` neutral ramp is defined in `src/styles.css` via `@theme`. Use `bg-warm-*`, `text-warm-*`, `border-warm-*` etc. Do not substitute Tailwind's `stone` palette for `warm`.
+- **SCSS comments** — use `//` for all documentation inside `.scss` files. `/* */` comments are emitted into CSS output; `//` comments are stripped. Never put `/* */` comment blocks inside `@theme` or `.dark`.
 
-### Dark mode pattern
+### Design tokens — mandatory use
 
-Dark mode is toggled by adding/removing the `dark` class on `document.documentElement`. Use `ThemeService` (`shared/services/theme.service.ts`) to do this — never manipulate `classList` directly in components.
+All design decisions are expressed as tokens defined in `src/styles.css` via `@theme` and `.dark {}`. **Never invent a local colour, size, shadow, radius, duration, or easing value in a component.** If a visual property is not covered by an existing token, add the token to `styles.css` first, then use it everywhere.
+
+#### Token catalogue
+
+| Category | Available tokens | Tailwind prefix |
+|---|---|---|
+| **Brand** | `brand`, `brand-hover`, `brand-muted`, `brand-focus`, `brand-on` | `bg-`, `text-`, `border-`, `ring-` |
+| **Content / text** | `content`, `content-muted`, `content-subtle`, `content-inverted` | `text-` |
+| **Surface / bg** | `surface`, `surface-card`, `surface-raised`, `surface-sunken` | `bg-` |
+| **Border** | `border`, `border-subtle`, `border-strong`, `border-brand` | `border-`, `divide-`, `ring-` |
+| **Danger** | `danger`, `danger-hover`, `danger-focus`, `danger-bg`, `danger-bg-strong`, `danger-border`, `danger-text` | `bg-`, `text-`, `border-`, `ring-` |
+| **Link** | `link` | `text-` |
+| **Shadow** | `subtle`, `elevated` | `shadow-` |
+| **Radius** | `control`, `card`, `tag` | `rounded-` |
+| **Duration** | `fast`, `base`, `slide` | `duration-` |
+| **Easing** | `spring` | `ease-` |
+| **Size** | `control`, `touch`, `sidebar` | `h-`, `w-`, `min-h-`, `min-w-`, `size-` |
+
+#### Mapping rules
+
+| Intent | Token to use | Never use |
+|---|---|---|
+| Primary action bg | `bg-brand` | `bg-amber-600`, `bg-blue-600`, raw hex |
+| Primary action hover | `bg-brand-hover` | `bg-amber-700`, `hover:bg-blue-700` |
+| Focus ring colour | `ring-brand-focus` | `ring-amber-400`, `ring-blue-500` |
+| Text on brand bg | `text-brand-on` | `text-amber-950` |
+| Body / heading text | `text-content` | `text-gray-900`, `text-warm-900` |
+| Secondary / label text | `text-content-muted` | `text-gray-600`, `text-warm-600` |
+| Placeholder / caption | `text-content-subtle` | `text-gray-500`, `text-warm-500` |
+| Page background | `bg-surface` | `bg-warm-50`, `bg-gray-50` |
+| Card / modal bg | `bg-surface-card` | `bg-white`, `bg-warm-900` (dark) |
+| Hover overlay | `bg-surface-raised` | `bg-warm-100`, `bg-gray-100` |
+| Panel divider | `border-border-subtle` | `border-warm-200`, `border-gray-200` |
+| Interactive border | `border-border` | `border-warm-300`, `border-gray-300` |
+| Error text | `text-danger-text` | `text-red-600`, `text-red-700` |
+| Error border | `border-danger-border` | `border-red-200` |
+| Error tinted bg | `bg-danger-bg` | `bg-red-50` |
+| Solid error bg | `bg-danger` | `bg-red-500`, `bg-red-600` |
+| Standard control height | `h-control` | `h-[38px]` |
+| Min touch target | `min-w-touch` | `min-w-[44px]` |
+| Button / input radius | `rounded-control` | `rounded-[10px]` |
+| Card / dialog radius | `rounded-card` | `rounded-[16px]` |
+| Pill / chip radius | `rounded-tag` | `rounded-full` (for interactive chips) |
+| Fast interaction speed | `duration-fast` | `duration-[120ms]`, `duration-150` |
+| Hover fade speed | `duration-base` | `duration-200` |
+| Panel slide speed | `duration-slide` | `duration-[220ms]` |
+| Spring easing | `ease-spring` | `ease-[cubic-bezier(...)]` |
+| Side panel width | `w-sidebar` | `w-[360px]` |
+| Card shadow | `shadow-elevated` | `shadow-lg`, `shadow-xl` |
+| Subtle shadow | `shadow-subtle` | custom box-shadow values |
+
+#### Dark mode
+
+Dark mode is handled entirely by the `.dark {}` CSS custom property overrides in `src/styles.css`. **Do not add `dark:` prefixes to semantic token classes** — the token already flips automatically. Only use `dark:` prefixes when applying Tailwind's built-in palette colours (e.g. the `info` or `success` status colours that intentionally remain green/blue).
+
+```html
+<!-- Correct: semantic token, no dark: needed -->
+<p class="text-content-muted">…</p>
+
+<!-- Incorrect: pairing raw palette colours with dark: -->
+<p class="text-warm-600 dark:text-warm-300">…</p>
+<p class="text-gray-600 dark:text-gray-300">…</p>
+```
+
+Dark mode is toggled by adding/removing the `dark` class on `document.documentElement`. Use `ThemeService` (`shared/services/theme.service.ts`) — never manipulate `classList` directly in components.
 
 ```typescript
 // In a container or settings page:
@@ -494,6 +570,15 @@ toggleTheme() {
   this.theme.setTheme(this.theme.theme() === 'light' ? 'dark' : 'light');
 }
 ```
+
+#### Adding new tokens
+
+When a visual requirement cannot be expressed with an existing token:
+
+1. **Color token** — add the key-value pair to `$light` in `src/styles/_tokens.scss`. If it needs a dark-mode value, add the override to `$dark` in the same file. The `color-vars` mixin in `styles.scss` will emit the CSS custom property automatically.
+2. **Non-color token** (shadow, radius, duration, size, easing) — add `--token-name: value;` directly to the `@theme` block in `src/styles.scss` with a `//` comment. If it needs a dark override, add it to the `.dark {}` block.
+3. Use the new token everywhere — never use the raw value directly in a component.
+4. Do not duplicate a token that already exists under a different name. Check the catalogue above first.
 
 ### Templates
 

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color · Warm neutrals</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--bg); }
+  .row { display: grid; grid-template-columns: repeat(11, 1fr); gap: 6px; }
+  .swatch { aspect-ratio: 1.2; border-radius: 8px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+  .swatch .label { position: absolute; left: 6px; bottom: 5px; font-family: var(--font-mono); font-size: 10px; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .head .t { font-weight: 500; font-size: 13px; color: var(--fg); }
+  .head .s { font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle); }
+</style>
+</head>
+<body>
+  <div class="head"><div class="t">Warm gray neutrals</div><div class="s">--warm-25 → 950</div></div>
+  <div class="row">
+    <div class="swatch" style="background:var(--warm-25)"><span class="label" style="color:var(--warm-700)">25</span></div>
+    <div class="swatch" style="background:var(--warm-50)"><span class="label" style="color:var(--warm-700)">50</span></div>
+    <div class="swatch" style="background:var(--warm-100)"><span class="label" style="color:var(--warm-700)">100</span></div>
+    <div class="swatch" style="background:var(--warm-200)"><span class="label" style="color:var(--warm-700)">200</span></div>
+    <div class="swatch" style="background:var(--warm-300)"><span class="label" style="color:var(--warm-800)">300</span></div>
+    <div class="swatch" style="background:var(--warm-400)"><span class="label" style="color:#fff">400</span></div>
+    <div class="swatch" style="background:var(--warm-500)"><span class="label" style="color:#fff">500</span></div>
+    <div class="swatch" style="background:var(--warm-600)"><span class="label" style="color:#fff">600</span></div>
+    <div class="swatch" style="background:var(--warm-700)"><span class="label" style="color:#fff">700</span></div>
+    <div class="swatch" style="background:var(--warm-800)"><span class="label" style="color:#fff">800</span></div>
+    <div class="swatch" style="background:var(--warm-950)"><span class="label" style="color:#fff">950</span></div>
+  </div>
+</body></html>

@@ -65,7 +65,11 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh search *)",
       "Bash(git -C /Users/V009403/source-vontobel/private/breadly log --oneline -50)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(xargs cat)",
+      "Bash(node_modules/.bin/playwright --version)",
+      "Bash(/Users/V009403/source-vontobel/private/breadly/e2e/node_modules/.bin/playwright --version)",
+      "Bash(node_modules/.bin/playwright install *)"
     ]
   }
 }

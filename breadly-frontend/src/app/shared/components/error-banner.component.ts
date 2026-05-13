@@ -6,7 +6,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   template: `
     <div
       role="alert"
-      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      class="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 text-sm text-danger-text"
     >
       {{ message() }}
     </div>
