@@ -186,7 +186,7 @@ module "cognito" {
 
 import {
   to = module.cognito.aws_cognito_managed_login_branding.this[0]
-  id = "${module.cognito.user_pool_id}/${module.cognito.client_id}"
+  id = "${module.cognito.user_pool_id},${module.cognito.client_id}"
 }
 
 # ---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ resource "aws_cognito_user_pool_client" "localhost" {
 
 import {
   to = aws_cognito_managed_login_branding.localhost
-  id = "${module.cognito.user_pool_id}/${aws_cognito_user_pool_client.localhost.id}"
+  id = "${module.cognito.user_pool_id},${aws_cognito_user_pool_client.localhost.id}"
 }
 
 resource "aws_cognito_managed_login_branding" "localhost" {
