@@ -40,7 +40,9 @@ runs:
       if: inputs.local_backend == 'false'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
-      run: echo "Update Terraform state if needed"
+      run: |
+        terraform state rm 'module.cognito.aws_cognito_managed_login_branding.this[0]' 2>/dev/null || true
+        terraform state rm 'aws_cognito_managed_login_branding.localhost' 2>/dev/null || true
 
     # Release stale DynamoDB state locks left behind by crashed CI runners.
     - name: Release stale state lock
