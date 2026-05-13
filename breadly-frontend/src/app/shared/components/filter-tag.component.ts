@@ -25,7 +25,7 @@ export class FilterTagComponent {
 
   protected readonly computedClass = computed(() => {
     const base =
-      'rounded-tag px-3 py-1 text-sm font-medium border transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
+      'rounded-tag px-4 py-1 text-sm font-medium border transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
     const disabledClass = this.disabled() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
     const stateClass = this.active()
       ? 'bg-brand-muted border-brand text-brand-hover'

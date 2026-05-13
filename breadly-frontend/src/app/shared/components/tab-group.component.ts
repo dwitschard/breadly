@@ -35,7 +35,7 @@ export class TabGroupComponent {
 
   protected tabClass(tab: TabItem): string {
     const base =
-      'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
+      'px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
     if (tab.disabled)
       return `${base} border-transparent text-content-subtle cursor-not-allowed pointer-events-none`;
     if (this.activeTab() === tab.id) return `${base} border-brand text-brand`;

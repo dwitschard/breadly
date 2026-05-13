@@ -19,6 +19,9 @@ export interface DropdownOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="relative w-full" data-testid="dropdown">
+      @if (label()) {
+        <label class="block mb-1 text-sm font-medium text-content" data-testid="dropdown-label">{{ label() }}</label>
+      }
       <!-- Trigger -->
       <button
         type="button"
@@ -83,6 +86,7 @@ export class DropdownComponent {
   readonly options = input.required<DropdownOption[]>();
   readonly value = input<string | null>(null);
   readonly placeholder = input<string>('Auswählen');
+  readonly label = input<string>('');
   readonly disabled = input<boolean>(false);
   readonly error = input<boolean>(false);
   readonly helperText = input<string>('');
@@ -106,7 +110,7 @@ export class DropdownComponent {
 
   protected optionClass(optValue: string): string {
     const base =
-      'flex items-center px-3 py-[9px] text-sm cursor-pointer transition-colors duration-fast';
+      'flex items-center px-4 py-2 text-sm cursor-pointer transition-colors duration-fast';
     const selected = this.value() === optValue;
     return selected
       ? `${base} font-medium text-brand bg-brand-muted`

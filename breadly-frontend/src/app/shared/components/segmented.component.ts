@@ -40,7 +40,7 @@ export class SegmentedComponent {
 
   protected segmentClass(optValue: string, index: number, last: boolean): string {
     const base =
-      'px-4 h-9 text-sm font-medium transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-focus';
+      'px-4 h-8 text-sm font-medium transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-focus';
     const border = index === 0 ? '' : 'border-l border-border';
     const selected = this.value() === optValue;
     const stateClass = selected

@@ -47,12 +47,12 @@ export class ToggleComponent {
 
   protected readonly trackClass = computed(
     () =>
-      `relative h-5 w-9 rounded-full transition-colors duration-base ${this.on() ? 'bg-brand' : 'bg-border'}`,
+      `relative h-6 w-11 rounded-full transition-colors duration-base ${this.on() ? 'bg-brand' : 'bg-surface-raised'}`,
   );
 
   protected readonly thumbClass = computed(
     () =>
-      `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-[left] duration-200 ${this.on() ? 'left-[18px]' : 'left-0.5'}`,
+      `absolute top-px h-[22px] w-[22px] rounded-full bg-white shadow-sm transition-[left] duration-200 ${this.on() ? 'left-[21px]' : 'left-px'}`,
   );
 
   protected toggle(): void {
