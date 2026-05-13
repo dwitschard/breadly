@@ -20,6 +20,8 @@
   - [ ] Adjust `settings.json` to match design system
   - [ ] Reuse of Design Tokens `_tokens.scss` (other branch) possible?
 
+- [ ] Revisit `shared/components` and apply styling similar to design system (paddings, inside-out styling)
+
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
   - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
