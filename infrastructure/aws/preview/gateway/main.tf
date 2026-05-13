@@ -175,6 +175,9 @@ module "cognito" {
   frontend_urls              = local.preview_url
   custom_domain              = local.preview_auth_domain
   certificate_arn            = data.aws_ssm_parameter.certificate_arn.value
+  ui_settings                = file("${path.module}/../../../../breadly-idp-ui/settings.json")
+  ui_logo_png                = fileexists("${path.module}/../../../../breadly-idp-ui/logo.png") ? filebase64("${path.module}/../../../../breadly-idp-ui/logo.png") : ""
+  ui_background_svg          = fileexists("${path.module}/../../../../breadly-idp-ui/background.svg") ? filebase64("${path.module}/../../../../breadly-idp-ui/background.svg") : ""
 
   tags = {
     Component = "preview-cognito"
@@ -216,6 +219,32 @@ resource "aws_cognito_user_pool_client" "localhost" {
 
   callback_urls = ["http://localhost:4200/oidc-callback"]
   logout_urls   = ["http://localhost:4200"]
+}
+
+resource "aws_cognito_managed_login_branding" "localhost" {
+  user_pool_id = module.cognito.user_pool_id
+  client_id    = aws_cognito_user_pool_client.localhost.id
+  settings     = file("${path.module}/../../../../breadly-idp-ui/settings.json")
+
+  dynamic "asset" {
+    for_each = fileexists("${path.module}/../../../../breadly-idp-ui/logo.png") ? [1] : []
+    content {
+      category   = "PAGE_HEADER_LOGO"
+      color_mode = "LIGHT"
+      extension  = "PNG"
+      bytes      = filebase64("${path.module}/../../../../breadly-idp-ui/logo.png")
+    }
+  }
+
+  dynamic "asset" {
+    for_each = fileexists("${path.module}/../../../../breadly-idp-ui/background.svg") ? [1] : []
+    content {
+      category   = "PAGE_BACKGROUND"
+      color_mode = "LIGHT"
+      extension  = "SVG"
+      bytes      = filebase64("${path.module}/../../../../breadly-idp-ui/background.svg")
+    }
+  }
 }
 
 # ---------------------------------------------------------------------------

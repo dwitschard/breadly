@@ -16,6 +16,9 @@
 - [ ] Dynamo Setup
   - [~] Add E-Mail and Last-Login to User Settings
 
+- [ ] Fix Styling of Authentication
+  - [ ] Adjust `settings.json` to match design system
+  - [ ] Reuse of Design Tokens `_tokens.scss` (other branch) possible?
 
 - [ ] Create Design System Components
   - [ ] Everything configurable via Config (JSON or similar)
