@@ -22,14 +22,6 @@
   - [~] Make sure all variables are exposed and usable for other components too (similar to our Setup)
   - [~] Tailwind Presets should be configurable and manageable in repository for later adjustments
 
-- [ ] Fix Styling of Authentication
-
-- [x] Give AI possibility to run e2e locally
-  - [x] Add IAM-User with Inline Policy for local development to access DynamoDB (local)
-    - [x] Document in a Readme when setting up project again
-    - [x] Create a Script for it to be run on Shell for those IAM Permissions
-  - [x] Should be a quality gate before finishing a UI Task
-
 
 - [ ] Implement Design according to ClaudeDesign using the Design System Components
   - [~] Create a Favicon and add it to the Application
