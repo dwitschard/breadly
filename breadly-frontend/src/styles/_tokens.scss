@@ -51,6 +51,15 @@ $light: (
   // red-200
   danger-text: #b91c1c,
   // red-700 — text on danger bg
+  // Warning
+  warning: #eab308,
+  // yellow-500 — border, icon
+  warning-focus: #fde047,
+  // yellow-300 — focus ring
+  warning-bg: #fefce8,
+  // yellow-50 — tinted bg
+  warning-text: #713f12,
+  // yellow-900 — text on warning bg
   // Link
   link: #d97706
 );
@@ -88,6 +97,11 @@ $dark: (
   // red-800
   danger-text: #f87171,
   // red-400
+  // Warning (dark overrides)
+  warning-bg: #422006,
+  // yellow-950
+  warning-text: #fde047,
+  // yellow-300 — readable on dark surfaces
   // Link
   link: #fbbf24
 );

@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { SpinnerComponent } from './spinner.component';
 
 @Component({
   selector: 'app-toggle',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [SpinnerComponent],
   template: `
     <button
       type="button"
@@ -21,7 +23,13 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
       }
 
       <div [class]="trackClass()" aria-hidden="true">
-        <span [class]="thumbClass()"></span>
+        @if (loading()) {
+          <div class="absolute inset-0 flex items-center justify-center">
+            <app-spinner size="sm" />
+          </div>
+        } @else {
+          <span [class]="thumbClass()"></span>
+        }
       </div>
 
       @if (label() && labelPosition() === 'right') {
@@ -35,15 +43,18 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 export class ToggleComponent {
   readonly on = input<boolean>(false);
   readonly disabled = input<boolean>(false);
+  readonly loading = input<boolean>(false);
   readonly label = input<string>('');
   readonly labelPosition = input<'left' | 'right'>('right');
 
   readonly toggled = output<boolean>();
 
-  protected readonly containerClass = computed(
-    () =>
-      `inline-flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2 ${this.disabled() ? 'opacity-50 cursor-not-allowed' : ''}`,
-  );
+  protected readonly containerClass = computed(() => {
+    const base =
+      'inline-flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
+    const isInert = this.disabled() || this.loading();
+    return `${base} ${isInert ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`;
+  });
 
   protected readonly trackClass = computed(
     () =>
@@ -56,6 +67,6 @@ export class ToggleComponent {
   );
 
   protected toggle(): void {
-    if (!this.disabled()) this.toggled.emit(!this.on());
+    if (!this.disabled() && !this.loading()) this.toggled.emit(!this.on());
   }
 }

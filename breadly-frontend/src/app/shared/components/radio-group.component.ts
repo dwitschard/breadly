@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RadioComponent } from './radio.component';
 
 export interface RadioOption {
@@ -20,6 +20,9 @@ export interface RadioOption {
           data-testid="radio-group-label"
         >
           {{ label() }}
+          @if (required()) {
+            <span class="ml-0.5 text-danger" aria-hidden="true">*</span>
+          }
         </p>
       }
       <div class="flex flex-col gap-2">
@@ -29,13 +32,14 @@ export interface RadioOption {
             [checked]="value() === opt.value"
             [disabled]="opt.disabled ?? false"
             [error]="error()"
+            [warning]="warning()"
             [label]="opt.label"
             (selected)="valueChange.emit($event)"
           />
         }
       </div>
-      @if (error() && helperText()) {
-        <p class="mt-1 text-xs text-danger-text" data-testid="radio-group-helper">
+      @if ((error() || warning()) && helperText()) {
+        <p class="mt-1 text-xs" [class]="helperClass()" data-testid="radio-group-helper">
           {{ helperText() }}
         </p>
       }
@@ -47,8 +51,16 @@ export class RadioGroupComponent {
   readonly value = input<string>('');
   readonly label = input<string>('');
   readonly error = input<boolean>(false);
+  readonly warning = input<boolean>(false);
+  readonly required = input<boolean>(false);
   readonly helperText = input<string>('');
   readonly groupId = input<string>('radio-group');
 
   readonly valueChange = output<string>();
+
+  protected readonly helperClass = computed(() => {
+    if (this.error()) return 'text-danger-text';
+    if (this.warning()) return 'text-warning-text';
+    return 'text-content-subtle';
+  });
 }

@@ -43,11 +43,16 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
           </div>
         </div>
         @if (label()) {
-          <span class="text-sm text-content select-none">{{ label() }}</span>
+          <span class="text-sm text-content select-none">
+            {{ label() }}
+            @if (required()) {
+              <span class="ml-0.5 text-danger" aria-hidden="true">*</span>
+            }
+          </span>
         }
       </label>
-      @if (error() && _touched() && helperText()) {
-        <p class="text-xs text-danger-text ml-10" data-testid="checkbox-helper">
+      @if ((error() || warning()) && _touched() && helperText()) {
+        <p class="ml-10 text-xs" [class]="helperClass()" data-testid="checkbox-helper">
           {{ helperText() }}
         </p>
       }
@@ -59,6 +64,8 @@ export class CheckboxComponent {
   readonly indeterminate = input<boolean>(false);
   readonly disabled = input<boolean>(false);
   readonly error = input<boolean>(false);
+  readonly warning = input<boolean>(false);
+  readonly required = input<boolean>(false);
   readonly label = input<string>('');
   readonly helperText = input<string>('');
 
@@ -69,11 +76,20 @@ export class CheckboxComponent {
   protected readonly boxClass = computed(() => {
     const base =
       'flex h-6 w-6 items-center justify-center rounded border transition-colors duration-base focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
-    const checked = this.checked() || this.indeterminate();
+    const isChecked = this.checked() || this.indeterminate();
     const hasError = this.error() && this._touched();
-    if (checked) return `${base} bg-brand border-brand hover:bg-brand-hover hover:border-brand-hover`;
+    const hasWarning = this.warning() && this._touched();
+    if (isChecked && hasWarning) return `${base} bg-warning border-warning`;
+    if (isChecked) return `${base} bg-brand border-brand hover:bg-brand-hover hover:border-brand-hover`;
     if (hasError) return `${base} border-danger bg-surface-card`;
+    if (hasWarning) return `${base} border-warning bg-surface-card hover:bg-warning-bg`;
     return `${base} border-border bg-surface-card hover:bg-brand-muted hover:border-brand-focus`;
+  });
+
+  protected readonly helperClass = computed(() => {
+    if (this.error() && this._touched()) return 'text-danger-text';
+    if (this.warning() && this._touched()) return 'text-warning-text';
+    return 'text-content-subtle';
   });
 
   protected onToggle(): void {

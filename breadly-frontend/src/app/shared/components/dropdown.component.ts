@@ -20,7 +20,12 @@ export interface DropdownOption {
   template: `
     <div class="relative w-full" data-testid="dropdown">
       @if (label()) {
-        <label class="block mb-1 text-sm font-medium text-content" data-testid="dropdown-label">{{ label() }}</label>
+        <label class="block mb-1 text-sm font-medium text-content" data-testid="dropdown-label">
+          {{ label() }}
+          @if (required()) {
+            <span class="ml-0.5 text-danger" aria-hidden="true">*</span>
+          }
+        </label>
       }
       <!-- Trigger -->
       <button
@@ -74,8 +79,8 @@ export interface DropdownOption {
         </ul>
       }
 
-      @if (error() && helperText()) {
-        <p class="mt-1 text-xs text-danger-text" data-testid="dropdown-helper">
+      @if ((error() || warning()) && helperText()) {
+        <p class="mt-1 text-xs" [class]="helperClass()" data-testid="dropdown-helper">
           {{ helperText() }}
         </p>
       }
@@ -88,7 +93,9 @@ export class DropdownComponent {
   readonly placeholder = input<string>('Auswählen');
   readonly label = input<string>('');
   readonly disabled = input<boolean>(false);
+  readonly required = input<boolean>(false);
   readonly error = input<boolean>(false);
+  readonly warning = input<boolean>(false);
   readonly helperText = input<string>('');
 
   readonly valueChange = output<string>();
@@ -103,9 +110,19 @@ export class DropdownComponent {
   protected readonly triggerClass = computed(() => {
     const base =
       'flex w-full items-center gap-2 h-10 rounded-lg border px-3 text-sm bg-surface-card text-content transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2';
-    const errorClass = this.error() ? 'border-danger' : 'border-border hover:border-border-strong';
+    const borderClass = this.error()
+      ? 'border-danger'
+      : this.warning()
+        ? 'border-warning'
+        : 'border-border hover:border-border-strong';
     const disabledClass = this.disabled() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
-    return `${base} ${errorClass} ${disabledClass}`;
+    return `${base} ${borderClass} ${disabledClass}`;
+  });
+
+  protected readonly helperClass = computed(() => {
+    if (this.error()) return 'text-danger-text';
+    if (this.warning()) return 'text-warning-text';
+    return 'text-content-subtle';
   });
 
   protected optionClass(optValue: string): string {

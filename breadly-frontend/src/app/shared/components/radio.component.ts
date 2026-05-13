@@ -37,6 +37,7 @@ export class RadioComponent {
   readonly checked = input<boolean>(false);
   readonly disabled = input<boolean>(false);
   readonly error = input<boolean>(false);
+  readonly warning = input<boolean>(false);
   readonly label = input<string>('');
 
   readonly selected = output<string>();
@@ -46,6 +47,7 @@ export class RadioComponent {
       'flex h-6 w-6 items-center justify-center rounded-full border transition-colors duration-base';
     if (this.checked()) return `${base} border-brand bg-surface-card`;
     if (this.error()) return `${base} border-danger bg-surface-card`;
+    if (this.warning()) return `${base} border-warning bg-surface-card hover:bg-warning-bg`;
     return `${base} border-border bg-surface-card hover:bg-brand-muted hover:border-brand-focus`;
   });
 
