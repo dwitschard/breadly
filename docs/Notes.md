@@ -22,12 +22,11 @@
 
 - [ ] Fix Styling of Authentication
 
-- [~] Give AI possibility to run e2e locally
-  - [~] Add IAM-User with Inline Policy for local development to access DynamoDB (local)
-    - [ ] Document in a Readme when setting up project again → probably not easily doable with Terraform
-    - [ ] Document in a Readme when setting up project again → github-deployer with inline Policy
-    - [ ] Create a Script for it to be run on Shell for those IAM Permissions
-  - [~] Should be a quality gate before finishing a UI Task
+- [x] Give AI possibility to run e2e locally
+  - [x] Add IAM-User with Inline Policy for local development to access DynamoDB (local)
+    - [x] Document in a Readme when setting up project again
+    - [x] Create a Script for it to be run on Shell for those IAM Permissions
+  - [x] Should be a quality gate before finishing a UI Task
 
 
 - [ ] Implement Design according to ClaudeDesign using the Design System Components
