@@ -29,7 +29,7 @@
       "sessionTimerDisplay": "NONE"
     },
     "global": {
-      "colorSchemeMode": "SYSTEM",
+      "colorSchemeMode": "LIGHT",
       "pageFooter": {
         "enabled": false
       },
