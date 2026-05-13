@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phase bars</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-family: var(--font-mono); font-size: 10px; color: var(--fg-subtle); margin-top: 4px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .live-tick { animation: tick 1s ease-out infinite; display: inline-block; }
+  }
+  @keyframes tick { 0%, 80%, 100% { transform: scale(1); } 90% { transform: scale(1.02); } }
+</style>
+</head>
+<body>
+  <div class="lbl">warm · in progress (live tick)</div>
+  <div class="ad-phasebar is-warm" style="background:var(--phase-warm)">
+    <div class="ad-phasebar-fill" style="background:var(--phase-warm-fill);width:55%"></div>
+    <div class="ad-phasebar-content"><span>Bulk ferment</span><span class="ad-phasebar-tick live-tick">2 h 14 m 03 s</span></div>
+  </div>
+  <div class="lbl">cold · scheduled</div>
+  <div class="ad-phasebar is-cold">
+    <div class="ad-phasebar-content"><span>Cold retard</span><span>12 h</span></div>
+  </div>
+  <div class="lbl">idle · upcoming</div>
+  <div class="ad-phasebar">
+    <div class="ad-phasebar-content"><span>Shape</span><span>20 m</span></div>
+  </div>
+  <div class="lbl">complete · ready</div>
+  <div class="ad-phasebar is-warm" style="background:var(--phase-warm-fill);color:var(--amber-950)">
+    <div class="ad-phasebar-content"><span>Ready</span><span>now</span></div>
+  </div>
+</body></html>

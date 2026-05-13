@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brand · marks</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--bg); display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pane { border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+  .pane.dark { background: var(--warm-950); border-color: var(--warm-700); }
+  .glyph { width: 44px; height: 44px; flex-shrink: 0; color: var(--accent); }
+  .pane.breadly .glyph { color: var(--breadly-accent); }
+  .pane.dark.shell .glyph { color: var(--accent); }
+  .pane.dark.breadly .glyph { color: var(--amber-500); }
+  .name { font-family: var(--font-sans); font-weight: 500; font-size: 18px; color: var(--fg); letter-spacing: -0.5px; }
+  .pane.dark .name { color: var(--warm-50); }
+  .sub { font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle); margin-top: 2px; }
+  .pane.dark .sub { color: var(--warm-400); }
+</style>
+</head>
+<body>
+  <div class="pane shell">
+    <svg class="glyph" viewBox="0 0 64 64" fill="none">
+      <rect x="6" y="18" width="52" height="32" rx="10" stroke="currentColor" stroke-width="3" fill="none"/>
+      <rect x="14" y="28" width="10" height="14" rx="3" fill="currentColor"/>
+      <rect x="27" y="28" width="10" height="14" rx="3" fill="currentColor" opacity="0.6"/>
+      <rect x="40" y="28" width="10" height="14" rx="3" fill="currentColor" opacity="0.3"/>
+    </svg>
+    <div><div class="name">AppDock</div><div class="sub">shell · #F59E0B</div></div>
+  </div>
+  <div class="pane breadly">
+    <svg class="glyph" viewBox="0 0 64 64" fill="none">
+      <path d="M10 42 Q10 22 32 22 Q54 22 54 42 L54 48 Q54 50 52 50 L12 50 Q10 50 10 48 Z" stroke="currentColor" stroke-width="3" fill="none" stroke-linejoin="round"/>
+      <path d="M22 30 Q32 24 42 30" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M28 38 L36 38" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div><div class="name">Breadly</div><div class="sub">sub-brand · #D97706</div></div>
+  </div>
+  <div class="pane dark shell">
+    <svg class="glyph" viewBox="0 0 64 64" fill="none">
+      <rect x="6" y="18" width="52" height="32" rx="10" stroke="currentColor" stroke-width="3" fill="none"/>
+      <rect x="14" y="28" width="10" height="14" rx="3" fill="currentColor"/>
+      <rect x="27" y="28" width="10" height="14" rx="3" fill="currentColor" opacity="0.6"/>
+      <rect x="40" y="28" width="10" height="14" rx="3" fill="currentColor" opacity="0.3"/>
+    </svg>
+    <div><div class="name">AppDock</div><div class="sub">dark · #F59E0B</div></div>
+  </div>
+  <div class="pane dark breadly">
+    <svg class="glyph" viewBox="0 0 64 64" fill="none">
+      <path d="M10 42 Q10 22 32 22 Q54 22 54 42 L54 48 Q54 50 52 50 L12 50 Q10 50 10 48 Z" stroke="currentColor" stroke-width="3" fill="none" stroke-linejoin="round"/>
+      <path d="M22 30 Q32 24 42 30" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M28 38 L36 38" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div><div class="name">Breadly</div><div class="sub">dark · #F59E0B</div></div>
+  </div>
+</body></html>

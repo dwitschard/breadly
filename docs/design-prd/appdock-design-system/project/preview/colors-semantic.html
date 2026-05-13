@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color · Semantic tokens</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 16px; background: var(--bg); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pane { border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .pane.dark { background: var(--warm-950); color: #fff; }
+  .label { font-family: var(--font-mono); font-size: 10px; color: var(--fg-subtle); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .pane.dark .label { color: var(--warm-400); }
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 12px; }
+  .chip { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; }
+  .name { font-family: var(--font-mono); font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="pane">
+      <div class="label">Light</div>
+      <div class="row"><div class="chip" style="background:#FAF8F5"></div><span class="name">--bg</span></div>
+      <div class="row"><div class="chip" style="background:#FDFCFA"></div><span class="name">--bg-elevated</span></div>
+      <div class="row"><div class="chip" style="background:#1C1917"></div><span class="name">--fg</span></div>
+      <div class="row"><div class="chip" style="background:#57534E"></div><span class="name">--fg-muted</span></div>
+      <div class="row"><div class="chip" style="background:#F59E0B"></div><span class="name">--accent</span></div>
+      <div class="row"><div class="chip" style="background:#E9E4DC"></div><span class="name">--border</span></div>
+    </div>
+    <div class="pane dark">
+      <div class="label">Dark</div>
+      <div class="row"><div class="chip" style="background:#0F0E0D;border-color:#3F3B36"></div><span class="name">--bg</span></div>
+      <div class="row"><div class="chip" style="background:#1C1917;border-color:#3F3B36"></div><span class="name">--bg-elevated</span></div>
+      <div class="row"><div class="chip" style="background:#FAF8F5;border-color:#3F3B36"></div><span class="name">--fg</span></div>
+      <div class="row"><div class="chip" style="background:#D6CFC4;border-color:#3F3B36"></div><span class="name">--fg-muted</span></div>
+      <div class="row"><div class="chip" style="background:#F59E0B;border-color:#3F3B36"></div><span class="name">--accent</span></div>
+      <div class="row"><div class="chip" style="background:#292524;border-color:#3F3B36"></div><span class="name">--border</span></div>
+    </div>
+  </div>
+</body></html>

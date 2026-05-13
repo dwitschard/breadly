@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cards</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--bg); display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .recipe { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 0; overflow: hidden; position: relative; }
+  .recipe::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); opacity: 0.6; }
+  .recipe .pad { padding: 16px; }
+  .name { font-size: 18px; font-weight: 500; color: var(--fg); margin-bottom: 6px; }
+  .meta { font-size: 12px; color: var(--fg-muted); }
+  .meta b { font-weight: 500; color: var(--fg); }
+  .pillrow { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="ad-card">
+    <div style="font-size:13px;font-weight:500;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Shell card</div>
+    <div style="font-size:16px;color:var(--fg)">Generic surface · 1px border · 12px radius · no shadow.</div>
+  </div>
+  <div class="recipe">
+    <div class="pad">
+      <div class="name">Country sourdough</div>
+      <div class="meta">Bread flour · 75 % hydration</div>
+      <div class="pillrow">
+        <span class="ad-pill">24 h</span>
+        <span class="ad-pill">2 loaves</span>
+      </div>
+    </div>
+  </div>
+</body></html>

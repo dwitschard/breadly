@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Breadly — Hi-Fi Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="ds/colors_and_type.css">
+<link rel="stylesheet" href="ds/components.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @keyframes spin    { to { transform: rotate(360deg); } }
+  @keyframes pulse   { 0%,100% { opacity:1; } 50% { opacity:.45; } }
+  html, body { background: #E8E3DB; font-family: 'Geist', sans-serif; }
+</style>
+</head>
+<body>
+<script type="text/babel" src="breadly-shared.jsx"></script>
+<script type="text/babel" src="breadly-screens-2.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel">
+// ─────────────────────────────────────────────────────────────
+// Pull shared exports from window (set by breadly-shared.jsx)
+// ─────────────────────────────────────────────────────────────
+const { useState, useEffect, useRef } = React;
+
+// ══════════════════════════════════════════════════════════════
+// SCREEN 1 — Home (unauthenticated)
+// ══════════════════════════════════════════════════════════════
+function LiveBakeCard({ mobile, T }) {
+  const [progress, setProgress] = useState(34);
+  const [pulse, setPulse] = useState(true);
+
+  // Animate progress bar slowly forward
+  useEffect(() => {
+    const id = setInterval(() => {
+      setProgress(p => p >= 92 ? 34 : p + 0.06);
+    }, 60);
+    return () => clearInterval(id);
+  }, []);
+
+  // Pulse the active dot every 2s
+  useEffect(() => {
+    const id = setInterval(() => setPulse(p => !p), 900);
+    return () => clearInterval(id);
+  }, []);
+
+  const steps = [
+    { name:'Mischen',   pct:6,  type:'active' },
+    { name:'Autolyse',  pct:12, type:'wait'   },
+    { name:'Falten',    pct:4,  type:'active' },
+    { name:'Stockgare', pct:38, type:'wait'   },
+    { name:'Formen',    pct:5,  type:'active' },
+    { name:'Stückgare', pct:28, type:'wait'   },
+    { name:'Backen',    pct:7,  type:'active' },
+  ];
+
+  // Which step is current?
+  let cum = 0, currentStep = steps[0], stepLocalPct = 0;
+  for (const s of steps) {
+    if (progress >= cum && progress < cum + s.pct) {
+      currentStep = s;
+      stepLocalPct = (progress - cum) / s.pct;
+      break;
+    }
+    cum += s.pct;
+  }
+
+  const totalMins = 15 * 60;
+  const remaining = Math.round(((100 - progress) / 100) * totalMins);
+  const rh = Math.floor(remaining / 60), rm = remaining % 60;
+
+  return (
+    <div style={{
+      background: T.warm25,
+      border: `1px solid ${T.warm200}`,
+      borderRadius: 16,
+      overflow: 'hidden',
+      boxShadow: '0 4px 24px rgba(28,25,23,0.07)',
+      width: mobile ? '100%' : 420,
+    }}>
+      {/* Card top accent */}
+      <div style={{ height: 3, background: T.amber600 }} />
+
+      <div style={{ padding: mobile ? 20 : 24, display:'flex', flexDirection:'column', gap:20 }}>
+        {/* Recipe + status */}
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+          <div>
+            <div style={{ fontSize:11, fontWeight:500, color:T.warm400, letterSpacing:'0.07em', textTransform:'uppercase', marginBottom:5 }}>Laufender Backplan</div>
+            <div style={{ fontSize:18, fontWeight:500, color:T.warm900, letterSpacing:'-0.01em' }}>Country Sourdough</div>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:6, paddingTop:2 }}>
+            <span style={{
+              width:8, height:8, borderRadius:'50%',
+              background: T.green500,
+              boxShadow: pulse ? `0 0 0 4px ${T.green500}33` : 'none',
+              transition: 'box-shadow 400ms ease',
+              flexShrink:0,
+            }} />
+            <span style={{ fontSize:12, fontWeight:500, color:T.green500 }}>Aktiv</span>
+          </div>
+        </div>
+
+        {/* Current step */}
+        <div style={{ background: T.warm100, borderRadius:10, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+          <div>
+            <div style={{ fontSize:11, color:T.warm500, marginBottom:3 }}>Aktueller Schritt</div>
+            <div style={{ fontSize:15, fontWeight:500, color:T.warm900 }}>{currentStep.name}</div>
+            <div style={{ fontSize:12, color:T.warm400, marginTop:2 }}>
+              {currentStep.type === 'wait' ? 'Warten ·' : 'Aktiv ·'} {Math.round(stepLocalPct * 100)}% abgeschlossen
+            </div>
+          </div>
+          <div style={{ textAlign:'right', flexShrink:0 }}>
+            <div style={{ fontSize:11, color:T.warm500, marginBottom:3 }}>Verbleibend</div>
+            <div style={{ fontFamily:"'Geist Mono',monospace", fontSize:18, fontWeight:500, color:T.warm900 }}>
+              {rh}h {rm < 10 ? '0'+rm : rm}min
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+            <span style={{ fontSize:12, color:T.warm500 }}>Fortschritt</span>
+            <span style={{ fontSize:12, fontFamily:"'Geist Mono',monospace", color:T.warm700, fontWeight:500 }}>{Math.round(progress)}%</span>
+          </div>
+          {/* Segmented timeline */}
+          <div style={{ display:'flex', gap:2, height:8, borderRadius:4, overflow:'hidden' }}>
+            {steps.map((s, i) => {
+              let cum2 = steps.slice(0,i).reduce((a,x) => a+x.pct, 0);
+              const filled = Math.min(1, Math.max(0, (progress - cum2) / s.pct));
+              return (
+                <div key={i} style={{ flex: s.pct, position:'relative', background: T.warm200, borderRadius: i===0?'4px 0 0 4px': i===steps.length-1?'0 4px 4px 0':'0', overflow:'hidden' }}>
+                  <div style={{
+                    position:'absolute', inset:0,
+                    background: s.type==='wait' ? T.slate600 : T.amber600,
+                    width:`${filled*100}%`,
+                    transition:'width 80ms linear',
+                  }} />
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, fontSize:10, fontFamily:"'Geist Mono',monospace", color:T.warm400 }}>
+            <span>00:00</span><span>15:00h</span>
+          </div>
+        </div>
+
+        {/* Next step hint */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background:'#FEFDFB', border:`1px solid ${T.warm100}`, borderRadius:8 }}>
+          <window.Icon name="clock" size={14} color={T.warm400} />
+          <span style={{ fontSize:13, color:T.warm600 }}>
+            Nächster Schritt: <strong style={{ color:T.warm900, fontWeight:500 }}>
+              {steps[(steps.findIndex(s => s === currentStep) + 1) % steps.length].name}
+            </strong>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ mobile }) {
+  const T = window.BreadlyT;
+  const w = mobile ? 375 : 1280;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(id);
+  }, []);
+
+  return (
+    <div style={{ width:w, minHeight: mobile ? 780 : 860, background: T.warm50, display:'flex', flexDirection:'column' }}>
+      {/* Navbar-style top strip */}
+      <div style={{ height:3, background: T.amber600, flexShrink:0 }} />
+
+      <div style={{
+        flex:1,
+        display:'flex',
+        flexDirection: mobile ? 'column' : 'row',
+        alignItems:'center',
+        justifyContent:'center',
+        gap: mobile ? 32 : 64,
+        padding: mobile ? '40px 24px 48px' : '0 80px',
+      }}>
+
+        {/* LEFT — brand + CTA */}
+        <div style={{
+          display:'flex', flexDirection:'column', gap: mobile ? 20 : 24,
+          alignItems: mobile ? 'center' : 'flex-start',
+          flex: mobile ? 'none' : '0 0 420px',
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'none' : 'translateY(12px)',
+          transition: 'opacity 420ms ease, transform 420ms ease',
+        }}>
+          {/* Wordmark */}
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:48, height:48, borderRadius:12, background: T.amber600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <window.Icon name="wheat" size={26} color="#FBF7F1" />
+            </div>
+            <h1 style={{ fontSize: mobile ? 36 : 48, fontWeight:500, color:T.warm900, letterSpacing:'-0.03em', lineHeight:1 }}>Breadly</h1>
+          </div>
+
+          <p style={{ fontSize: mobile ? 20 : 24, fontWeight:500, color:T.warm800, letterSpacing:'-0.015em', lineHeight:1.25, textAlign: mobile ? 'center' : 'left', maxWidth: mobile ? 280 : 360 }}>
+            Plane, verfolge und backe dein perfektes Brot.
+          </p>
+
+          <p style={{ fontSize:15, color:T.warm500, lineHeight:1.6, textAlign: mobile ? 'center' : 'left', maxWidth:320 }}>
+            Erstelle Rezepte, zeitplane deine Backschritte und behalte jeden Gärschritt im Blick.
+          </p>
+
+          <div style={{ display:'flex', flexDirection: mobile ? 'column' : 'row', gap:10, width: mobile ? '100%' : 'auto' }}>
+            <window.Btn variant="primary" size="lg" style={{ minWidth: mobile ? '100%' : 150 }}>
+              Jetzt anmelden
+            </window.Btn>
+            <window.Btn variant="ghost" size="lg" iconRight="chevron-right" style={{ minWidth: mobile ? '100%' : 150 }}>
+              Mehr erfahren
+            </window.Btn>
+          </div>
+
+          {/* Trust strip */}
+          <div style={{ display:'flex', gap:16, alignItems:'center', flexWrap:'wrap', justifyContent: mobile ? 'center' : 'flex-start' }}>
+            {['Kostenlos', 'Kein Abo', 'Sofort starten'].map(label => (
+              <div key={label} style={{ display:'flex', alignItems:'center', gap:5, fontSize:13, color:T.warm500 }}>
+                <window.Icon name="check" size={13} color={T.green500} />
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT — live bake preview */}
+        <div style={{
+          flex: mobile ? 'none' : '0 0 auto',
+          width: mobile ? '100%' : 420,
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'none' : 'translateY(20px)',
+          transition: 'opacity 500ms ease 180ms, transform 500ms ease 180ms',
+        }}>
+          <LiveBakeCard mobile={mobile} T={T} />
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCREEN 2 — Recipes
+// ══════════════════════════════════════════════════════════════
+const SAMPLE_STEPS_INITIAL = [
+  { id:1, name:'Mischen',      mins:30,  type:'active', durationVal:'30', unit:'min' },
+  { id:2, name:'Autolyse',     mins:60,  type:'wait',   durationVal:'1',  unit:'h'   },
+  { id:3, name:'Falten',       mins:10,  type:'active', durationVal:'10', unit:'min' },
+  { id:4, name:'Stockgare',    mins:240, type:'wait',   durationVal:'4',  unit:'h'   },
+  { id:5, name:'Formen',       mins:20,  type:'active', durationVal:'20', unit:'min' },
+  { id:6, name:'Stückgare',    mins:480, type:'wait',   durationVal:'8',  unit:'h'   },
+  { id:7, name:'Backen',       mins:45,  type:'active', durationVal:'45', unit:'min' },
+];
+
+// ── Flour catalogue (client-side reference, PRD §22-23) ──────
+const FLOUR_CATALOGUE = [
+  { id:'mehl-550',  sorte:'Weizenmehl', typ:550  },
+  { id:'mehl-1150', sorte:'Roggenmehl', typ:1150 },
+  { id:'mehl-630',  sorte:'Dinkelmehl', typ:630  },
+  { id:'mehl-00',   sorte:'00-Mehl',    typ:null },
+];
+
+// ── Sample data (full PRD schema) ────────────────────────────
+const SAMPLE_RECIPES = [
+  { id:'r1', titel:'Country Sourdough',  scope:'GLOBAL',   bewertung:4.7, menge:{beschreibung:'Laibe',anzahl:2}, erstelldatum:'2024-03-15', gesamtdauerMin:810,  gesamtdauerMax:960,  teigausbeute:178, durchschnittlicherMehltyp:550,  mehlIds:['mehl-550'],            original:null },
+  { id:'r2', titel:'Olive Oil Ciabatta', scope:'GLOBAL',   bewertung:4.2, menge:{beschreibung:'Laibe',anzahl:4}, erstelldatum:'2024-01-10', gesamtdauerMin:480,  gesamtdauerMax:600,  teigausbeute:180, durchschnittlicherMehltyp:null,  mehlIds:['mehl-00'],             original:null },
+  { id:'r3', titel:'100% Roggensauer',   scope:'GLOBAL',   bewertung:null,menge:{beschreibung:'Laib', anzahl:1}, erstelldatum:'2024-02-20', gesamtdauerMin:1080, gesamtdauerMax:1440, teigausbeute:185, durchschnittlicherMehltyp:1150, mehlIds:['mehl-1150'],           original:null },
+  { id:'r4', titel:'Dinkelvollkorn',     scope:'GLOBAL',   bewertung:3.8, menge:{beschreibung:'Laibe',anzahl:2}, erstelldatum:'2023-12-05', gesamtdauerMin:720,  gesamtdauerMax:900,  teigausbeute:172, durchschnittlicherMehltyp:630,  mehlIds:['mehl-630'],            original:null },
+  { id:'r5', titel:'Mein Weizensauer',   scope:'USER#max', bewertung:5.0, menge:{beschreibung:'Laib', anzahl:1}, erstelldatum:'2024-04-01', gesamtdauerMin:900,  gesamtdauerMax:1080, teigausbeute:175, durchschnittlicherMehltyp:550,  mehlIds:['mehl-550'],            original:'r1' },
+  { id:'r6', titel:'Roggen-Dinkel Mix',  scope:'USER#max', bewertung:null,menge:{beschreibung:'Laibe',anzahl:2}, erstelldatum:'2024-04-15', gesamtdauerMin:660,  gesamtdauerMax:840,  teigausbeute:168, durchschnittlicherMehltyp:890,  mehlIds:['mehl-1150','mehl-630'],original:null },
+];
+
+// ── Helpers ──────────────────────────────────────────────────
+function fmtDur(mins) {
+  if (!mins) return '–';
+  const h = Math.floor(mins/60), m = mins%60;
+  return h > 0 ? `${h}h${m ? ' '+m+'min' : ''}` : `${m}min`;
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('de-DE',{day:'numeric',month:'short',year:'numeric'});
+}
+
+// ── StarRating ───────────────────────────────────────────────
+function StarRating({ value, size=12 }) {
+  const T = window.BreadlyT;
+  if (value == null) return <span style={{ fontSize:size, color:T.warm400, fontFamily:"'Geist Mono',monospace" }}>–</span>;
+  return (
+    <span style={{ display:'inline-flex', alignItems:'center', gap:1 }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i} style={{ fontSize:size, color: i <= Math.round(value) ? T.amber500 : T.warm300, lineHeight:1 }}>★</span>
+      ))}
+      <span style={{ fontSize:size-1, color:T.warm600, marginLeft:3, fontFamily:"'Geist Mono',monospace", fontWeight:500 }}>{value.toFixed(1)}</span>
+    </span>
+  );
+}
+
+// ── SkeletonCard ─────────────────────────────────────────────
+function SkeletonCard() {
+  const T = window.BreadlyT;
+  return (
+    <div style={{ background:T.warm25, border:`1px solid ${T.warm200}`, borderRadius:12, overflow:'hidden' }}>
+      <div style={{ height:88, background:T.warm100, animation:'pulse 1.4s ease-in-out infinite' }} />
+      <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ display:'flex', justifyContent:'space-between' }}>
+          <div style={{ width:56, height:20, borderRadius:4, background:T.warm200, animation:'pulse 1.4s ease-in-out infinite' }} />
+          <div style={{ width:64, height:14, borderRadius:4, background:T.warm200, animation:'pulse 1.4s ease-in-out infinite 0.1s' }} />
+        </div>
+        <div style={{ height:15, width:'65%', borderRadius:4, background:T.warm200, animation:'pulse 1.4s ease-in-out infinite 0.15s' }} />
+        <div style={{ display:'flex', gap:6 }}>
+          {[68,52,52].map((w,i) => <div key={i} style={{ width:w, height:22, borderRadius:4, background:T.warm200, animation:`pulse 1.4s ease-in-out infinite ${i*0.08}s` }} />)}
+        </div>
+        <div style={{ height:1, background:T.warm100, marginTop:2 }} />
+        <div style={{ display:'flex', justifyContent:'space-between' }}>
+          <div style={{ width:80, height:12, borderRadius:4, background:T.warm200, animation:'pulse 1.4s ease-in-out infinite 0.2s' }} />
+          <div style={{ width:64, height:12, borderRadius:4, background:T.warm200, animation:'pulse 1.4s ease-in-out infinite 0.25s' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── RecipeCard ───────────────────────────────────────────────
+function RecipeCard({ recipe }) {
+  const T = window.BreadlyT;
+  const [hovered, setHovered] = useState(false);
+  const isGlobal = recipe.scope === 'GLOBAL';
+  const flourNames = recipe.mehlIds.map(id => FLOUR_CATALOGUE.find(f => f.id===id)?.sorte).filter(Boolean);
+  const dur = recipe.gesamtdauerMin === recipe.gesamtdauerMax
+    ? fmtDur(recipe.gesamtdauerMax)
+    : `${fmtDur(recipe.gesamtdauerMin)} – ${fmtDur(recipe.gesamtdauerMax)}`;
+  return (
+    <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)} style={{
+      background:T.warm25, border:`1px solid ${hovered?T.warm300:T.warm200}`, borderRadius:12, overflow:'hidden', cursor:'pointer',
+      transform:hovered?'translateY(-2px)':'none', boxShadow:hovered?'0 4px 16px rgba(28,25,23,0.08)':'0 1px 3px rgba(28,25,23,0.03)',
+      transition:'border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease', display:'flex', flexDirection:'column',
+    }}>
+      <div style={{ height:88, background:T.warm100, display:'flex', alignItems:'center', justifyContent:'center', position:'relative', flexShrink:0 }}>
+        <window.Icon name="wheat" size={26} color={T.warm300} />
+        {recipe.original && (
+          <span style={{ position:'absolute', bottom:8, right:8, fontSize:10, color:T.warm500, background:T.warm25, border:`1px solid ${T.warm200}`, padding:'2px 6px', borderRadius:4, fontFamily:"'Geist Mono',monospace" }}>Fork</span>
+        )}
+      </div>
+      <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:8, flex:1 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+          <window.Tag variant={isGlobal?'info':'amber'}>{isGlobal?'Global':'Meine'}</window.Tag>
+          <StarRating value={recipe.bewertung} />
+        </div>
+        <div style={{ fontSize:15, fontWeight:500, color:T.warm900, lineHeight:1.3 }}>{recipe.titel}</div>
+        <div style={{ fontSize:13, color:T.warm500 }}>{recipe.menge.anzahl} {recipe.menge.beschreibung}</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+          <span style={{ fontSize:12, color:T.warm600, background:T.warm100, borderRadius:4, padding:'2px 7px', fontFamily:"'Geist Mono',monospace" }}>{dur}</span>
+          {recipe.teigausbeute && <span style={{ fontSize:12, color:T.warm600, background:T.warm100, borderRadius:4, padding:'2px 7px', fontFamily:"'Geist Mono',monospace" }}>TA {recipe.teigausbeute}</span>}
+          {recipe.durchschnittlicherMehltyp && <span style={{ fontSize:12, color:T.warm600, background:T.warm100, borderRadius:4, padding:'2px 7px', fontFamily:"'Geist Mono',monospace" }}>Ø {recipe.durchschnittlicherMehltyp}</span>}
+        </div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'auto', paddingTop:8, borderTop:`1px solid ${T.warm100}` }}>
+          <span style={{ fontSize:12, color:T.warm400 }}>{flourNames.join(', ')}</span>
+          <span style={{ fontSize:11, color:T.warm400, fontFamily:"'Geist Mono',monospace" }}>{fmtDate(recipe.erstelldatum)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepRow({ step, onChange, onRemove, showErrors }) {
+  const T = window.BreadlyT;
+  return (
+    <div style={{ display:'flex', alignItems:'flex-end', gap:8, padding:'10px 12px', background: T.warm25, border:`1px solid ${T.warm200}`, borderRadius:8 }}>
+      <window.FormField
+        label="Schritt"
+        value={step.name}
+        onChange={v => onChange({ ...step, name: v })}
+        placeholder="Schritt benennen"
+        error={showErrors && !step.name.trim() ? 'Pflichtfeld' : null}
+        style={{ flex:2, minWidth:0 }}
+      />
+      <window.FormField
+        label="Dauer"
+        type="number"
+        value={step.durationVal}
+        onChange={v => onChange({ ...step, durationVal: v, mins: v * (step.unit==='h' ? 60 : 1) })}
+        placeholder="0"
+        min={1}
+        error={showErrors && !step.durationVal ? 'Pflichtfeld' : null}
+        style={{ width:72 }}
+      />
+      <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+        <label style={{ fontSize:13, fontWeight:500, color: T.warm900 }}>Einheit</label>
+        <window.Select value={step.unit} onChange={v => onChange({ ...step, unit:v, mins: step.durationVal * (v==='h' ? 60 : 1) })} options={[{value:'min',label:'min'},{value:'h',label:'h'}]} width={72} />
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+        <label style={{ fontSize:13, fontWeight:500, color: T.warm900 }}>Typ</label>
+        <window.SegmentedBtn
+          options={[{value:'active',label:'Aktiv'},{value:'wait',label:'Warten'}]}
+          value={step.type}
+          onChange={v => onChange({ ...step, type:v })}
+        />
+      </div>
+      <button onClick={onRemove} style={{ height:40, width:36, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${T.warm200}`, borderRadius:6, cursor:'pointer', color: T.warm400, flexShrink:0, transition:'color 120ms ease, border-color 120ms ease' }}
+        onMouseEnter={e => { e.currentTarget.style.color = T.red500; e.currentTarget.style.borderColor = T.red200; }}
+        onMouseLeave={e => { e.currentTarget.style.color = T.warm400; e.currentTarget.style.borderColor = T.warm200; }}
+      >
+        <window.Icon name="trash-2" size={15} />
+      </button>
+    </div>
+  );
+}
+
+function RecipeCreateForm({ mobile, showErrors: forceErrors }) {
+  const T = window.BreadlyT;
+  const [name, setName] = useState('');
+  const [hydration, setHydration] = useState('75');
+  const [steps, setSteps] = useState([{ id: Date.now(), name:'', durationVal:'30', unit:'min', type:'active', mins:30 }]);
+  const [showErrors, setShowErrors] = useState(forceErrors || false);
+  const canSubmit = name.trim().length > 0;
+
+  function addStep() {
+    setSteps(prev => [...prev, { id: Date.now(), name:'', durationVal:'30', unit:'min', type:'active', mins:30 }]);
+  }
+  function updateStep(id, next) { setSteps(prev => prev.map(s => s.id===id ? next : s)); }
+  function removeStep(id) { setSteps(prev => prev.filter(s => s.id!==id)); }
+
+  return (
+    <div style={{ background: T.warm25, border:`1px solid ${T.warm200}`, borderRadius:12, padding: mobile ? 16 : 24, display:'flex', flexDirection:'column', gap:20 }}>
+      <div>
+        <h2 style={{ fontSize:18, fontWeight:500, color: T.warm900, marginBottom:16 }}>Neues Rezept</h2>
+        <div style={{ display: mobile ? 'flex' : 'grid', flexDirection: mobile ? 'column' : undefined, gridTemplateColumns:'1fr 160px', gap:12 }}>
+          <window.FormField
+            label="Rezeptname"
+            value={name}
+            onChange={setName}
+            placeholder="z.B. Country Sourdough"
+            error={showErrors && !name.trim() ? 'Pflichtfeld' : null}
+          />
+          <window.FormField
+            label="Hydration"
+            type="number"
+            value={hydration}
+            onChange={setHydration}
+            suffix="%"
+            placeholder="75"
+            min={50} max={100}
+            error={showErrors && !hydration ? 'Pflichtfeld' : null}
+          />
+        </div>
+      </div>
+
+      <div>
+        <div style={{ fontSize:13, fontWeight:500, color: T.warm900, marginBottom:10 }}>Schritte</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {steps.map(step => (
+            mobile
+              ? <MobileStepRow key={step.id} step={step} onChange={s => updateStep(step.id, s)} onRemove={() => removeStep(step.id)} showErrors={showErrors} />
+              : <StepRow key={step.id} step={step} onChange={s => updateStep(step.id, s)} onRemove={() => removeStep(step.id)} showErrors={showErrors} />
+          ))}
+        </div>
+        <div style={{ marginTop:10 }}>
+          <window.Btn variant="ghost" icon="plus" onClick={addStep} style={{ color: T.warm600, fontSize:13 }}>
+            Schritt hinzufügen
+          </window.Btn>
+        </div>
+      </div>
+
+      <div style={{ display:'flex', justifyContent:'flex-end', paddingTop:4, borderTop:`1px solid ${T.warm100}` }}>
+        <window.Btn variant="primary" disabled={!canSubmit} onClick={() => { if (!canSubmit) setShowErrors(true); }}>
+          Rezept erstellen
+        </window.Btn>
+      </div>
+    </div>
+  );
+}
+
+function MobileStepRow({ step, onChange, onRemove, showErrors }) {
+  const T = window.BreadlyT;
+  return (
+    <div style={{ background: T.warm25, border:`1px solid ${T.warm200}`, borderRadius:8, padding:12, display:'flex', flexDirection:'column', gap:10 }}>
+      <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
+        <window.FormField label="Schritt" value={step.name} onChange={v => onChange({ ...step, name:v })} placeholder="Schritt benennen" error={showErrors && !step.name.trim() ? 'Pflichtfeld' : null} style={{ flex:1 }} />
+        <button onClick={onRemove} style={{ height:40, width:36, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${T.warm200}`, borderRadius:6, cursor:'pointer', color: T.warm400, marginTop:21, flexShrink:0 }}>
+          <window.Icon name="trash-2" size={15} />
+        </button>
+      </div>
+      <div style={{ display:'flex', gap:8 }}>
+        <window.FormField label="Dauer" type="number" value={step.durationVal} onChange={v => onChange({ ...step, durationVal:v, mins: v*(step.unit==='h'?60:1) })} placeholder="0" min={1} style={{ flex:1 }} />
+        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+          <label style={{ fontSize:13, fontWeight:500, color: T.warm900 }}>Einheit</label>
+          <window.Select value={step.unit} onChange={v => onChange({ ...step, unit:v, mins: step.durationVal*(v==='h'?60:1) })} options={[{value:'min',label:'min'},{value:'h',label:'h'}]} width={72} />
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize:13, fontWeight:500, color: T.warm900, marginBottom:5 }}>Typ</div>
+        <window.SegmentedBtn options={[{value:'active',label:'Aktiv'},{value:'wait',label:'Warten'}]} value={step.type} onChange={v => onChange({ ...step, type:v })} />
+      </div>
+    </div>
+  );
+}
+
+function RecipesScreen({ mobile, listState = 'populated' }) {
+  const T = window.BreadlyT;
+  const w = mobile ? 375 : 1280;
+  const [search, setSearch] = useState('');
+  const [scope, setScope] = useState('all');
+  const [sortBy, setSortBy] = useState('datum');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [minBewertung, setMinBewertung] = useState(null);
+  const [selectedMehl, setSelectedMehl] = useState([]);
+  const [maxDauer, setMaxDauer] = useState('');
+  const [mehlTypMin, setMehlTypMin] = useState('');
+  const [mehlTypMax, setMehlTypMax] = useState('');
+
+  let recipes = SAMPLE_RECIPES;
+  if (scope === 'global') recipes = recipes.filter(r => r.scope === 'GLOBAL');
+  if (scope === 'mine')   recipes = recipes.filter(r => r.scope !== 'GLOBAL');
+  if (search.trim())      recipes = recipes.filter(r => r.titel.toLowerCase().includes(search.toLowerCase()));
+  if (minBewertung)       recipes = recipes.filter(r => r.bewertung != null && r.bewertung >= minBewertung);
+  if (selectedMehl.length > 0) recipes = recipes.filter(r => selectedMehl.some(m => r.mehlIds.includes(m)));
+  if (maxDauer)           recipes = recipes.filter(r => r.gesamtdauerMax <= parseInt(maxDauer) * 60);
+  if (mehlTypMin)         recipes = recipes.filter(r => r.durchschnittlicherMehltyp != null && r.durchschnittlicherMehltyp >= parseInt(mehlTypMin));
+  if (mehlTypMax)         recipes = recipes.filter(r => r.durchschnittlicherMehltyp != null && r.durchschnittlicherMehltyp <= parseInt(mehlTypMax));
+  if (sortBy === 'bewertung') recipes = [...recipes].filter(r => r.bewertung != null).sort((a,b) => b.bewertung - a.bewertung);
+  else recipes = [...recipes].sort((a,b) => new Date(b.erstelldatum) - new Date(a.erstelldatum));
+
+  const activeFilters = [minBewertung, ...selectedMehl, maxDauer, mehlTypMin, mehlTypMax].filter(Boolean).length;
+
+  const chip = (active, label, onClick) => (
+    <button onClick={onClick} style={{
+      height:32, padding:'0 12px', border:`1px solid ${active ? T.amber600 : T.warm300}`,
+      borderRadius:6, background: active ? T.amber50 : T.warm25,
+      color: active ? T.amber700 : T.warm700, fontSize:13, fontWeight:500,
+      cursor:'pointer', fontFamily:"'Geist',sans-serif",
+      transition:'all 100ms ease',
+    }}>{label}</button>
+  );
+
+  return (
+    <div style={{ width:w, minHeight:mobile?1100:1000, background:T.warm50 }}>
+      <window.Navbar active="recipes" mobile={mobile} env="Lokal" />
+      <div style={{ maxWidth:mobile?'100%':1080, margin:'0 auto', padding:mobile?'20px 16px':'32px 40px', display:'flex', flexDirection:'column', gap:20 }}>
+
+        {/* Page header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <h1 style={{ fontSize:26, fontWeight:500, color:T.warm900, letterSpacing:'-0.02em' }}>Rezepte</h1>
+            <p style={{ fontSize:13, color:T.warm400, marginTop:3 }}>{recipes.length} {recipes.length===1?'Rezept':'Rezepte'} gefunden</p>
+          </div>
+          <window.Btn variant="primary" icon="plus">Neues Rezept</window.Btn>
+        </div>
+
+        {/* Search + scope + sort + filter toggle */}
+        <div style={{ display:'flex', flexDirection:mobile?'column':'row', gap:8, alignItems:mobile?'stretch':'center' }}>
+          <div style={{ flex:1, position:'relative' }}>
+            <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}>
+              <window.Icon name="search" size={15} color={T.warm400} />
+            </span>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Titel suchen…"
+              style={{ width:'100%', height:40, padding:'0 12px 0 34px', border:`1px solid ${T.warm300}`, borderRadius:8, fontFamily:"'Geist',sans-serif", fontSize:14, color:T.warm900, background:T.warm25, outline:'none', boxSizing:'border-box' }} />
+          </div>
+          <window.SegmentedBtn options={[{value:'all',label:'Alle'},{value:'global',label:'Global'},{value:'mine',label:'Meine'}]} value={scope} onChange={setScope} />
+          <window.Select value={sortBy} onChange={setSortBy} options={[{value:'datum',label:'Neueste'},{value:'bewertung',label:'Bewertung ↓'}]} width={148} />
+          <button onClick={()=>setFilterOpen(!filterOpen)} style={{
+            height:40, padding:'0 14px', display:'flex', alignItems:'center', gap:6, borderRadius:8, flexShrink:0,
+            border:`1px solid ${filterOpen||activeFilters>0 ? T.amber600 : T.warm300}`,
+            background: filterOpen||activeFilters>0 ? T.amber50 : T.warm25,
+            color: filterOpen||activeFilters>0 ? T.amber700 : T.warm700,
+            cursor:'pointer', fontFamily:"'Geist',sans-serif", fontSize:14, fontWeight:500,
+          }}>
+            <window.Icon name="sliders-horizontal" size={15} />
+            Filter
+            {activeFilters > 0 && <span style={{ width:18, height:18, borderRadius:'50%', background:T.amber600, color:'#FBF7F1', fontSize:10, fontWeight:500, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>{activeFilters}</span>}
+          </button>
+        </div>
+
+        {/* Filter panel */}
+        {filterOpen && (
+          <div style={{ background:T.warm25, border:`1px solid ${T.warm200}`, borderRadius:10, padding:mobile?'16px':'20px 24px', display:'flex', flexDirection:mobile?'column':'row', flexWrap:'wrap', gap:mobile?16:24, alignItems:'flex-start' }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <span style={{ fontSize:11, fontWeight:500, color:T.warm400, textTransform:'uppercase', letterSpacing:'0.07em' }}>Min. Bewertung</span>
+              <div style={{ display:'flex', gap:6 }}>
+                {[null,3,4,5].map(v => chip(minBewertung===v, v==null?'Alle':`★ ${v}+`, ()=>setMinBewertung(v)))}
+              </div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <span style={{ fontSize:11, fontWeight:500, color:T.warm400, textTransform:'uppercase', letterSpacing:'0.07em' }}>Mehltyp</span>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {FLOUR_CATALOGUE.map(f => chip(selectedMehl.includes(f.id), `${f.sorte}${f.typ?' '+f.typ:''}`, ()=>setSelectedMehl(prev=>prev.includes(f.id)?prev.filter(x=>x!==f.id):[...prev,f.id])))}
+              </div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <span style={{ fontSize:11, fontWeight:500, color:T.warm400, textTransform:'uppercase', letterSpacing:'0.07em' }}>Max. Dauer</span>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <input type="number" value={maxDauer} onChange={e=>setMaxDauer(e.target.value)} placeholder="24" min={1}
+                  style={{ width:60, height:32, padding:'0 8px', border:`1px solid ${T.warm300}`, borderRadius:6, fontFamily:"'Geist',sans-serif", fontSize:14, color:T.warm900, background:T.warm25, outline:'none' }} />
+                <span style={{ fontSize:13, color:T.warm500 }}>h</span>
+              </div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <span style={{ fontSize:11, fontWeight:500, color:T.warm400, textTransform:'uppercase', letterSpacing:'0.07em' }}>Ø Mehltyp</span>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <input type="number" value={mehlTypMin} onChange={e=>setMehlTypMin(e.target.value)} placeholder="500"
+                  style={{ width:60, height:32, padding:'0 8px', border:`1px solid ${T.warm300}`, borderRadius:6, fontFamily:"'Geist',sans-serif", fontSize:14, color:T.warm900, background:T.warm25, outline:'none' }} />
+                <span style={{ fontSize:13, color:T.warm400 }}>–</span>
+                <input type="number" value={mehlTypMax} onChange={e=>setMehlTypMax(e.target.value)} placeholder="1200"
+                  style={{ width:60, height:32, padding:'0 8px', border:`1px solid ${T.warm300}`, borderRadius:6, fontFamily:"'Geist',sans-serif", fontSize:14, color:T.warm900, background:T.warm25, outline:'none' }} />
+              </div>
+            </div>
+            {activeFilters > 0 && (
+              <div style={{ display:'flex', alignItems:'flex-end' }}>
+                <button onClick={()=>{setMinBewertung(null);setSelectedMehl([]);setMaxDauer('');setMehlTypMin('');setMehlTypMax('');}}
+                  style={{ height:32, padding:'0 10px', border:'none', background:'transparent', color:T.warm500, fontSize:13, cursor:'pointer', textDecoration:'underline', fontFamily:"'Geist',sans-serif" }}>
+                  Zurücksetzen
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Error */}
+        {listState === 'error' && <window.ErrorBanner message="Fehler beim Laden der Rezepte." onRetry={()=>{}} onDismiss={()=>{}} />}
+
+        {/* Loading */}
+        {listState === 'loading' && (
+          <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'1fr 1fr 1fr', gap:16 }}>
+            {[0,1,2,3,4,5].map(i => <SkeletonCard key={i} />)}
+          </div>
+        )}
+
+        {/* Empty results */}
+        {listState !== 'loading' && listState !== 'error' && recipes.length === 0 && (
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:'60px 24px', background:T.warm25, border:`1px solid ${T.warm200}`, borderRadius:10 }}>
+            <window.Icon name="search" size={28} color={T.warm300} />
+            <p style={{ fontSize:14, color:T.warm500, textAlign:'center' }}>Keine Rezepte gefunden.<br />Passe deine Filter an.</p>
+            {activeFilters > 0 && <window.Btn variant="ghost" onClick={()=>{setMinBewertung(null);setSelectedMehl([]);setMaxDauer('');setMehlTypMin('');setMehlTypMax('');}}>Filter zurücksetzen</window.Btn>}
+          </div>
+        )}
+
+        {/* Populated grid */}
+        {listState === 'populated' && recipes.length > 0 && (
+          <>
+            <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'1fr 1fr 1fr', gap:16 }}>
+              {recipes.map(r => <RecipeCard key={r.id} recipe={r} />)}
+            </div>
+            <div style={{ display:'flex', justifyContent:'center', paddingTop:4 }}>
+              <window.Btn variant="outline" iconRight="chevron-down">Weitere laden</window.Btn>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Validation error state
+function RecipesErrorFormScreen({ mobile }) {
+  const T = window.BreadlyT;
+  const w = mobile ? 375 : 1280;
+  return (
+    <div style={{ width:w, minHeight: mobile ? 680 : 700, background: T.warm50 }}>
+      <window.Navbar active="recipes" mobile={mobile} env="Dev" />
+      <div style={{ maxWidth: mobile ? '100%' : 768, margin:'0 auto', padding: mobile ? '20px 16px' : '32px 24px' }}>
+        <div style={{ background: T.warm25, border:`1px solid ${T.warm200}`, borderRadius:12, padding: mobile ? 16 : 24, display:'flex', flexDirection:'column', gap:20 }}>
+          <div>
+            <h2 style={{ fontSize:18, fontWeight:500, color: T.warm900, marginBottom:16 }}>Neues Rezept</h2>
+            <div style={{ display: mobile ? 'flex' : 'grid', flexDirection: mobile ? 'column' : undefined, gridTemplateColumns:'1fr 160px', gap:12 }}>
+              <window.FormField label="Rezeptname" value="" onChange={() => {}} placeholder="z.B. Country Sourdough" error="Pflichtfeld" />
+              <window.FormField label="Hydration" type="number" value="" onChange={() => {}} suffix="%" placeholder="75" error="Pflichtfeld" />
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize:13, fontWeight:500, color: T.warm900, marginBottom:10 }}>Schritte</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {mobile
+                ? <MobileStepRow step={{ id:1, name:'', durationVal:'', unit:'min', type:'active', mins:0 }} onChange={() => {}} onRemove={() => {}} showErrors={true} />
+                : <StepRow step={{ id:1, name:'', durationVal:'', unit:'min', type:'active', mins:0 }} onChange={() => {}} onRemove={() => {}} showErrors={true} />
+              }
+            </div>
+          </div>
+          <div style={{ display:'flex', justifyContent:'flex-end', paddingTop:4, borderTop:`1px solid ${T.warm100}` }}>
+            <window.Btn variant="primary" disabled>Rezept erstellen</window.Btn>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCREEN 3 — Profile
+// ══════════════════════════════════════════════════════════════
+function ProfileScreen({ mobile, loading }) {
+  const T = window.BreadlyT;
+  const w = mobile ? 375 : 1280;
+
+  return (
+    <div style={{ width:w, minHeight: mobile ? 600 : 700, background: T.warm50 }}>
+      <window.Navbar active="profile" mobile={mobile} env="Lokal" />
+      <div style={{ maxWidth: mobile ? '100%' : 768, margin:'0 auto', padding: mobile ? '24px 16px' : '40px 24px' }}>
+        <div style={{ background: T.warm25, border:`1px solid ${T.warm200}`, borderRadius:12, overflow:'hidden' }}>
+          {loading ? (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:320 }}>
+              <span style={{ width:48, height:48, border:`4px solid ${T.amber600}`, borderTopColor:'transparent', borderRadius:'50%', animation:'spin 700ms linear infinite', display:'inline-block' }} />
+            </div>
+          ) : (
+            <>
+              {/* Profile header */}
+              <div style={{ background: T.warm25, borderBottom:`1px solid ${T.warm100}`, padding: mobile ? '24px 20px' : '28px 28px', display:'flex', alignItems:'center', gap:16 }}>
+                <div style={{ width:48, height:48, borderRadius:'50%', background: T.warm100, border:`1px solid ${T.warm200}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <window.Icon name="circle-user" size={28} color={T.warm400} />
+                </div>
+                <div>
+                  <div style={{ fontSize:18, fontWeight:500, color: T.warm900 }}>Max Mustermann</div>
+                  <div style={{ fontSize:13, color: T.warm400, marginTop:2 }}>Zuletzt angemeldet: 11. Mai 2026</div>
+                </div>
+              </div>
+
+              {/* Definition list */}
+              <div style={{ padding: mobile ? '0 0 8px' : '0 0 8px' }}>
+                {[
+                  {
+                    label: 'E-Mail',
+                    value: (
+                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                        <span style={{ fontSize:14, color: T.warm900 }}>max.mustermann@example.com</span>
+                        <window.Tag variant="success" dot>Verifiziert</window.Tag>
+                      </div>
+                    )
+                  },
+                  {
+                    label: 'Nutzer-ID',
+                    value: (
+                      <span style={{ fontFamily:"'Geist Mono', monospace", fontSize:12, color: T.warm600, wordBreak:'break-all' }}>
+                        auth0|507f191e810c19729de860ea
+                      </span>
+                    )
+                  },
+                  {
+                    label: 'Rollen',
+                    value: (
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                        <window.Tag variant="admin">ADMIN</window.Tag>
+                        <window.Tag variant="user">USER</window.Tag>
+                      </div>
+                    )
+                  },
+                ].map((row, i, arr) => (
+                  <div key={row.label} style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '120px 1fr', gap: mobile ? 4 : 16, padding:'14px 20px', borderBottom: i < arr.length-1 ? `1px solid ${T.warm100}` : 'none', alignItems:'start' }}>
+                    <span style={{ fontSize:13, fontWeight:500, color: T.warm500 }}>{row.label}</span>
+                    <div>{row.value}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCREEN 4 — Health
+// ══════════════════════════════════════════════════════════════
+function StatusCard({ label, status, responseMs, loading, mobile }) {
+  const T = window.BreadlyT;
+  const ok = status === 'ok';
+  return (
+    <div style={{ background: T.warm25, border:`1px solid ${T.warm200}`, borderRadius:12, padding: mobile ? 16 : 20, display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <span style={{ fontSize:15, fontWeight:500, color: T.warm900 }}>{label}</span>
+        {!loading && <window.Tag variant={ok ? 'success' : 'danger'} dot>{ok ? 'OK' : 'Fehler'}</window.Tag>}
+      </div>
+      {loading ? (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:48 }}>
+          <span style={{ width:28, height:28, border:`3px solid ${T.amber600}`, borderTopColor:'transparent', borderRadius:'50%', animation:'spin 700ms linear infinite', display:'inline-block' }} />
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {responseMs != null && (
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:13, color: T.warm500 }}>Antwortzeit</span>
+              <span style={{ fontFamily:"'Geist Mono',monospace", fontSize:13, color: T.warm700, fontWeight:500 }}>{responseMs}ms</span>
+            </div>
+          )}
+          {!ok && (
+            <div style={{ fontSize:13, color: T.red600, background: T.red50, padding:'8px 10px', borderRadius:6, border:`1px solid ${T.red200}` }}>
+              Verbindung zur Datenbank fehlgeschlagen. Bitte Administrator kontaktieren.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HealthScreen({ mobile, loading, degraded }) {
+  const T = window.BreadlyT;
+  const w = mobile ? 375 : 1280;
+
+  return (
+    <div style={{ width:w, minHeight: mobile ? 800 : 900, background: T.warm50 }}>
+      <window.Navbar active="health" mobile={mobile} env="Staging" isAdmin={true} />
+      <div style={{ maxWidth: mobile ? '100%' : 720, margin:'0 auto', padding: mobile ? '24px 16px' : '40px 24px', display:'flex', flexDirection:'column', gap:24 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <div style={{ fontSize:11, fontWeight:500, color: T.warm400, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Admin-Bereich</div>
+            <h1 style={{ fontSize:28, fontWeight:500, color: T.warm900, letterSpacing:'-0.02em' }}>Systemstatus</h1>
+          </div>
+          <window.Btn variant="outline" icon="refresh-cw" size="sm">Neu laden</window.Btn>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:16 }}>
+          <StatusCard label="API Status" status="ok" responseMs={42} loading={loading} mobile={mobile} />
+          <StatusCard label="Datenbank Status" status={degraded ? 'error' : 'ok'} responseMs={degraded ? null : 18} loading={loading} mobile={mobile} />
+        </div>
+
+        {/* Versions */}
+        {!loading && (
+          <div style={{ background: T.warm25, border:`1px solid ${T.warm200}`, borderRadius:12, padding: mobile ? 16 : 20 }}>
+            <div style={{ fontSize:13, fontWeight:500, color: T.warm500, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:14 }}>Versionen</div>
+            {[
+              { label:'Frontend', version:'v1.4.2', link:'https://github.com/breadly/app' },
+              { label:'Backend API', version:'v2.1.0', link:'https://github.com/breadly/api' },
+            ].map((v, i, arr) => (
+              <div key={v.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom: i < arr.length-1 ? `1px solid ${T.warm100}` : 'none' }}>
+                <span style={{ fontSize:14, color: T.warm700 }}>{v.label}</span>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <span style={{ fontFamily:"'Geist Mono',monospace", fontSize:13, fontWeight:500, color: T.warm900 }}>{v.version}</span>
+                  <a href={v.link} style={{ fontSize:12, color: T.amber700, textDecoration:'none', display:'flex', alignItems:'center', gap:3 }}>
+                    GitHub <window.Icon name="external-link" size={11} color={T.amber700} />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// ROOT — Design Canvas
+// ══════════════════════════════════════════════════════════════
+function App() {
+  return (
+    <DesignCanvas title="Breadly — Hi-Fi Prototype">
+
+      <DCSection id="home" title="01 · Home">
+        <DCArtboard id="home-desktop" label="Desktop · 1280px" width={1280} height={820}>
+          <HomeScreen mobile={false} />
+        </DCArtboard>
+        <DCArtboard id="home-mobile" label="Mobile · 375px" width={375} height={700}>
+          <HomeScreen mobile={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="recipes" title="02 · Rezepte">
+        <DCArtboard id="recipes-desktop-populated" label="Desktop · Populated" width={1280} height={1080}>
+          <RecipesScreen mobile={false} listState="populated" />
+        </DCArtboard>
+        <DCArtboard id="recipes-mobile-populated" label="Mobile · Populated" width={375} height={1120}>
+          <RecipesScreen mobile={true} listState="populated" />
+        </DCArtboard>
+        <DCArtboard id="recipes-desktop-loading" label="Desktop · Loading" width={1280} height={860}>
+          <RecipesScreen mobile={false} listState="loading" />
+        </DCArtboard>
+        <DCArtboard id="recipes-desktop-empty" label="Desktop · Empty" width={1280} height={820}>
+          <RecipesScreen mobile={false} listState="empty" />
+        </DCArtboard>
+        <DCArtboard id="recipes-desktop-error" label="Desktop · Error" width={1280} height={860}>
+          <RecipesScreen mobile={false} listState="error" />
+        </DCArtboard>
+        <DCArtboard id="recipes-desktop-validation" label="Desktop · Validation Errors" width={1280} height={760}>
+          <RecipesErrorFormScreen mobile={false} />
+        </DCArtboard>
+        <DCArtboard id="recipes-mobile-validation" label="Mobile · Validation Errors" width={375} height={780}>
+          <RecipesErrorFormScreen mobile={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="profile" title="03 · Profil">
+        <DCArtboard id="profile-desktop" label="Desktop · Populated" width={1280} height={700}>
+          <ProfileScreen mobile={false} loading={false} />
+        </DCArtboard>
+        <DCArtboard id="profile-mobile" label="Mobile · Populated" width={375} height={600}>
+          <ProfileScreen mobile={true} loading={false} />
+        </DCArtboard>
+        <DCArtboard id="profile-loading" label="Desktop · Loading" width={1280} height={600}>
+          <ProfileScreen mobile={false} loading={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="health" title="04 · Systemstatus">
+        <DCArtboard id="health-desktop-ok" label="Desktop · Healthy" width={1280} height={640}>
+          <HealthScreen mobile={false} loading={false} degraded={false} />
+        </DCArtboard>
+        <DCArtboard id="health-desktop-degraded" label="Desktop · DB Fehler" width={1280} height={680}>
+          <HealthScreen mobile={false} loading={false} degraded={true} />
+        </DCArtboard>
+        <DCArtboard id="health-desktop-loading" label="Desktop · Loading" width={1280} height={600}>
+          <HealthScreen mobile={false} loading={true} degraded={false} />
+        </DCArtboard>
+        <DCArtboard id="health-mobile-ok" label="Mobile · Healthy" width={375} height={680}>
+          <HealthScreen mobile={true} loading={false} degraded={false} />
+        </DCArtboard>
+        <DCArtboard id="health-mobile-degraded" label="Mobile · DB Fehler" width={375} height={720}>
+          <HealthScreen mobile={true} loading={false} degraded={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="recipe-detail" title="05 · Rezept Detail">
+        <DCArtboard id="detail-desktop" label="Desktop · Populated" width={1280} height={1560}>
+          <window.RecipeDetailScreen mobile={false} loading={false} />
+        </DCArtboard>
+        <DCArtboard id="detail-mobile" label="Mobile · Populated" width={375} height={1920}>
+          <window.RecipeDetailScreen mobile={true} loading={false} />
+        </DCArtboard>
+        <DCArtboard id="detail-loading" label="Desktop · Loading" width={1280} height={580}>
+          <window.RecipeDetailScreen mobile={false} loading={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="mehl-katalog" title="06 · Mehl Katalog">
+        <DCArtboard id="mehl-desktop" label="Desktop" width={1280} height={680}>
+          <window.MehlKatalogScreen mobile={false} />
+        </DCArtboard>
+        <DCArtboard id="mehl-mobile" label="Mobile" width={375} height={740}>
+          <window.MehlKatalogScreen mobile={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="teigtemp" title="07 · Teigtemperaturen">
+        <DCArtboard id="tt-desktop" label="Desktop" width={1280} height={560}>
+          <window.TeigtemperaturScreen mobile={false} />
+        </DCArtboard>
+        <DCArtboard id="tt-mobile" label="Mobile" width={375} height={640}>
+          <window.TeigtemperaturScreen mobile={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="ursprung" title="08 · Ursprünge">
+        <DCArtboard id="ursprung-desktop" label="Desktop · Liste" width={1280} height={720}>
+          <window.UrsprungScreen mobile={false} showCreate={false} />
+        </DCArtboard>
+        <DCArtboard id="ursprung-desktop-create" label="Desktop · Neuer Ursprung" width={1280} height={720}>
+          <window.UrsprungScreen mobile={false} showCreate={true} />
+        </DCArtboard>
+        <DCArtboard id="ursprung-mobile" label="Mobile" width={375} height={760}>
+          <window.UrsprungScreen mobile={true} showCreate={false} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="einstellungen" title="09 · Einstellungen">
+        <DCArtboard id="settings-desktop" label="Desktop" width={1280} height={660}>
+          <window.EinstellungenScreen mobile={false} />
+        </DCArtboard>
+        <DCArtboard id="settings-mobile" label="Mobile" width={375} height={720}>
+          <window.EinstellungenScreen mobile={true} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="erinnerungen" title="10 · Erinnerungen">
+        <DCArtboard id="rem-desktop-populated" label="Desktop · Populated" width={1280} height={640}>
+          <window.ErinnerungenScreen mobile={false} empty={false} />
+        </DCArtboard>
+        <DCArtboard id="rem-desktop-empty" label="Desktop · Empty" width={1280} height={520}>
+          <window.ErinnerungenScreen mobile={false} empty={true} />
+        </DCArtboard>
+        <DCArtboard id="rem-mobile" label="Mobile · Populated" width={375} height={680}>
+          <window.ErinnerungenScreen mobile={true} empty={false} />
+        </DCArtboard>
+      </DCSection>
+
+    </DesignCanvas>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+<div id="root"></div>
+</body>
+</html>

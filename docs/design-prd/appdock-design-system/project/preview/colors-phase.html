@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color · Phase coding</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--bg); }
+  .head { font-size: 11px; color: var(--fg-subtle); margin-bottom: 8px; font-family: var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; }
+  .group { margin-bottom: 18px; }
+  .stack { display: flex; flex-direction: column; gap: 6px; }
+  .row {
+    height: 38px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--phase-rest); position: relative; overflow: hidden;
+    display: flex; align-items: center; padding: 0 14px; color: var(--fg);
+  }
+  .row.warm-idle { background: var(--phase-warm); border-color: transparent; }
+  .row.cold-idle { background: var(--phase-cold); border-color: transparent; }
+  .row .fill { position: absolute; inset: 0; width: var(--fill, 0%); }
+  .row .content {
+    position: relative; z-index: 1;
+    display: flex; justify-content: space-between; width: 100%;
+    font-size: 14px; font-weight: 500;
+  }
+  .row .tick { font-family: var(--font-mono); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .swatchrow { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw { width: 80px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-elevated); }
+  .sw .chip { width: 100%; height: 28px; border-radius: 4px; margin-bottom: 6px; }
+  .sw .lbl { font-family: var(--font-mono); font-size: 10px; color: var(--fg-muted); }
+</style>
+</head>
+<body>
+  <div class="group">
+    <div class="head">Phase bars · in use</div>
+    <div class="stack">
+      <div class="row" style="--fill:60%;">
+        <div class="fill" style="background: var(--phase-warm-fill); opacity: 0.9;"></div>
+        <div class="content" style="color: var(--warm-50)"><span>Bulk ferment</span><span class="tick">2 h 14 m</span></div>
+      </div>
+      <div class="row" style="--fill:40%;">
+        <div class="fill" style="background: var(--phase-cold-fill); opacity: 0.9;"></div>
+        <div class="content" style="color: var(--warm-50)"><span>Cold retard</span><span class="tick">12 h</span></div>
+      </div>
+      <div class="row warm-idle">
+        <div class="content"><span style="color: var(--amber-900)">Pre-ferment · scheduled</span><span class="tick" style="color: var(--amber-800)">12 h</span></div>
+      </div>
+      <div class="row cold-idle">
+        <div class="content"><span style="color: var(--slate-700)">Cold retard · scheduled</span><span class="tick" style="color: var(--slate-600)">8 h</span></div>
+      </div>
+      <div class="row">
+        <div class="content"><span style="color: var(--fg-muted)">Shape · idle</span><span class="tick" style="color: var(--fg-subtle)">20 m</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="head">Tokens</div>
+    <div class="swatchrow">
+      <div class="sw"><div class="chip" style="background: var(--phase-warm)"></div><div class="lbl">warm idle<br>amber-100</div></div>
+      <div class="sw"><div class="chip" style="background: var(--phase-warm-fill)"></div><div class="lbl">warm fill<br>amber-700</div></div>
+      <div class="sw"><div class="chip" style="background: var(--phase-cold)"></div><div class="lbl">cold idle<br>slate-100</div></div>
+      <div class="sw"><div class="chip" style="background: var(--phase-cold-fill)"></div><div class="lbl">cold fill<br>slate-600</div></div>
+      <div class="sw"><div class="chip" style="background: var(--phase-rest)"></div><div class="lbl">rest<br>warm-200</div></div>
+    </div>
+  </div>
+</body></html>

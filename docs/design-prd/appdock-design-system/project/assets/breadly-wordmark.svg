@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none">
+  <path d="M6 34 Q6 18 22 18 Q38 18 38 34 L38 38 Q38 40 36 40 L8 40 Q6 40 6 38 Z" stroke="#D97706" stroke-width="2.5" fill="none" stroke-linejoin="round"></path>
+  <path d="M14 24 Q22 20 30 24" stroke="#D97706" stroke-width="2" fill="none" stroke-linecap="round"></path>
+  <text x="50" y="33" font-family="Geist, system-ui, sans-serif" font-weight="500" font-size="22" fill="#1C1917" letter-spacing="-0.5">Breadly</text>
+</svg>
