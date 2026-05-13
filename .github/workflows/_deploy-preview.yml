@@ -81,7 +81,7 @@ jobs:
           name: ${{ inputs.frontend_artifact_name }}
           path: frontend-dist/
 
-      # --- Shared preview gateway (API GW + S3 + CloudFront) ---
+      # --- Shared preview gateway (read outputs only — apply happens in main.yml) ---
 
       - name: Setup Terraform (shared gateway)
         uses: ./.github/actions/terraform-setup
@@ -94,10 +94,10 @@ jobs:
           aws_region: ${{ vars.AWS_REGION }}
           project_name: ${{ env.PROJECT_NAME }}
 
-      - name: Terraform apply (shared gateway)
-        uses: ./.github/actions/terraform-action
-        with:
-          working_dir: infrastructure/aws/preview/gateway
+      - name: Select gateway workspace
+        shell: bash
+        working-directory: infrastructure/aws/preview/gateway
+        run: terraform workspace select preview
 
       - name: Read gateway outputs
         id: gw

@@ -124,11 +124,11 @@ runs:
           UUID="$RESULT"
           echo "  Found existing branding UUID: $UUID — importing into state"
 
-          if terraform import "$addr" "$UUID"; then
-            echo "  → imported $addr as $UUID"
+          if terraform import "$addr" "$pool_id/$UUID"; then
+            echo "  → imported $addr as $pool_id/$UUID"
             IMPORTED=true
           else
-            echo "  ERROR: import failed for $addr ($UUID) — apply may fail"
+            echo "  ERROR: import failed for $addr ($pool_id/$UUID) — apply may fail"
           fi
         done <<< "$PLANNED_CREATES"
 
