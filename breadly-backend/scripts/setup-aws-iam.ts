@@ -19,9 +19,9 @@
  *     + AWS_SECRET_ACCESS_KEY + AWS_SESSION_TOKEN).
  *
  * Access keys:
- *   • If local-dynamodb-user has no existing access key, one is created and
- *     printed to stdout once. Copy it immediately — AWS will never show the
- *     secret again. Re-running skips key creation if a key already exists.
+ *   • Any existing access keys for local-dynamodb-user are deleted and a fresh
+ *     key is created on every run. Copy it immediately — AWS will never show
+ *     the secret again.
  */
 
 import { readFileSync } from 'node:fs';
@@ -34,6 +34,7 @@ import {
   PutUserPolicyCommand,
   ListAccessKeysCommand,
   CreateAccessKeyCommand,
+  DeleteAccessKeyCommand,
   GetRoleCommand,
   CreateRoleCommand,
   PutRolePolicyCommand,
@@ -62,7 +63,7 @@ const IAM_CONFIG: IamConfig = {
   ],
   roles: [
     {
-      name: 'Github-Deployer',
+      name: 'Github-Deployer_test',
       policyName: 'Github_Deployer_Policy',
       policyFile: 'github-deployer-policy.json',
       trustFile: 'github-deployer-trust.json',
@@ -156,9 +157,9 @@ async function ensureAccessKey(client: IAMClient, userName: string): Promise<voi
     new ListAccessKeysCommand({ UserName: userName }),
   );
 
-  if (AccessKeyMetadata && AccessKeyMetadata.length > 0) {
-    console.log(`  Access key already exists (KeyId: ${AccessKeyMetadata[0].AccessKeyId}) — skipped.`);
-    return;
+  for (const key of AccessKeyMetadata ?? []) {
+    await client.send(new DeleteAccessKeyCommand({ UserName: userName, AccessKeyId: key.AccessKeyId }));
+    console.log(`  Deleted existing access key (KeyId: ${key.AccessKeyId}).`);
   }
 
   const { AccessKey } = await client.send(new CreateAccessKeyCommand({ UserName: userName }));

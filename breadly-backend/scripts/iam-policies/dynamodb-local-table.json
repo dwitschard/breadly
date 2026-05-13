@@ -2,10 +2,20 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "VisualEditor0",
+            "Sid": "DynamoDB",
             "Effect": "Allow",
             "Action": "dynamodb:*",
             "Resource": "arn:aws:dynamodb:eu-central-1:864899858036:table/breadly-local"
+        },
+        {
+            "Sid": "Scheduler",
+            "Effect": "Allow",
+            "Action": [
+                "scheduler:CreateSchedule",
+                "scheduler:DeleteSchedule",
+                "scheduler:ListSchedules"
+            ],
+            "Resource": "arn:aws:scheduler:eu-central-1:864899858036:schedule/*/*"
         }
     ]
 }
