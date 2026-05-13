@@ -41,40 +41,160 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: |
+        # Disable fail-on-error: this is a resilient migration step that handles
+        # partial failures explicitly rather than aborting on the first non-zero exit.
+        set +eo pipefail
+
         # Migrate aws_cognito_managed_login_branding resource IDs from the old Cognito
-        # client-ID format to the branding UUID format required by AWS provider v6.x.
-        STATE=$(terraform state pull 2>/dev/null) || true
-        if [[ -z "$STATE" ]]; then exit 0; fi
+        # client-ID format to the branding UUID required by AWS provider v6.x.
+        #
+        # Two passes:
+        #   A) Fix resources already in state whose ID is not a UUID.
+        #   B) Recover resources absent from state but present in AWS
+        #      (happens when a previous pass removed them but the reimport failed).
+
+        STATE=$(terraform state pull 2>&1)
+        if [[ $? -ne 0 || -z "$STATE" || "$STATE" == "{}" ]]; then
+          echo "No state found or failed to pull state, skipping migration"
+          exit 0
+        fi
+
+        # Look up the managed-login-branding UUID for a given user pool / client.
+        # Prints the UUID to stdout; prints the error to stderr and returns empty on failure.
+        lookup_uuid() {
+          local pool_id="$1" client_id="$2" result
+          result=$(aws cognito-idp describe-managed-login-branding-by-client \
+            --user-pool-id "$pool_id" --client-id "$client_id" \
+            --query 'ManagedLoginBranding.ManagedLoginBrandingId' --output text 2>&1)
+          local rc=$?
+          if [[ $rc -ne 0 || -z "$result" || "$result" == "None" ]]; then
+            if [[ $rc -ne 0 ]]; then
+              echo "  lookup failed (exit $rc): $result" >&2
+            fi
+            echo ""
+            return 1
+          fi
+          echo "$result"
+        }
+
+        # --- Pass A: fix stale (non-UUID) IDs already in state ---
+        #
+        # Uses (if .index_key == null then "" else tostring end) instead of
+        # (.index_key // "" | tostring) because jq treats 0 as falsy, so
+        # 0 // "" would return "" instead of "0", producing a wrong address.
 
         STALE=$(echo "$STATE" | jq -r '
-          .resources[] |
+          .resources[]? |
           select(.type == "aws_cognito_managed_login_branding") |
           . as $r |
-          .instances[] |
+          .instances[]? |
           select(.attributes.id | test("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$") | not) |
-          [$r.module // "null", $r.name, (.index_key // "null" | tostring),
-           .attributes.user_pool_id, .attributes.client_id] | @tsv
-        ' 2>/dev/null) || true
-        if [[ -z "$STALE" ]]; then exit 0; fi
+          [
+            ($r.module // ""),
+            $r.name,
+            (if .index_key == null then "" else (.index_key | tostring) end),
+            .attributes.user_pool_id,
+            .attributes.client_id
+          ] | @tsv
+        ' 2>/dev/null)
 
-        while IFS=$'\t' read -r mod name idx user_pool_id client_id; do
-          prefix="$([ "$mod" != "null" ] && echo "${mod}." || echo "")"
-          suffix="$([ "$idx" != "null" ] && echo "[${idx}]" || echo "")"
-          addr="${prefix}aws_cognito_managed_login_branding.${name}${suffix}"
+        # Track which client IDs have a branding entry in state (used in pass B).
+        TRACKED=$(echo "$STATE" | jq -r '
+          .resources[]? |
+          select(.type == "aws_cognito_managed_login_branding") |
+          .instances[]? | .attributes.client_id
+        ' 2>/dev/null)
 
-          echo "Migrating branding ID for $addr"
-          BRANDING_UUID=$(aws cognito-idp describe-managed-login-branding-by-client \
-            --user-pool-id "$user_pool_id" --client-id "$client_id" \
-            --query 'ManagedLoginBranding.ManagedLoginBrandingId' --output text 2>/dev/null) || true
+        if [[ -n "$STALE" ]]; then
+          while IFS=$'\t' read -r mod name idx pool_id client_id; do
+            if [[ -z "$pool_id" || -z "$client_id" ]]; then continue; fi
 
-          terraform state rm "$addr" || true
-          if [[ -n "$BRANDING_UUID" && "$BRANDING_UUID" != "None" ]]; then
-            echo "  → reimporting as $BRANDING_UUID"
-            terraform import "$addr" "$BRANDING_UUID"
-          else
-            echo "  → no existing branding found, will be created fresh on apply"
-          fi
-        done <<< "$STALE"
+            prefix=""; if [[ -n "$mod" ]]; then prefix="${mod}."; fi
+            suffix=""; if [[ -n "$idx" ]]; then suffix="[${idx}]"; fi
+            addr="${prefix}aws_cognito_managed_login_branding.${name}${suffix}"
+
+            echo "Pass A: fixing stale branding ID for $addr (client: $client_id)"
+
+            # Resolve UUID BEFORE touching state: never remove without a known replacement.
+            UUID=$(lookup_uuid "$pool_id" "$client_id")
+            if [[ -z "$UUID" ]]; then
+              echo "  Could not resolve UUID — leaving resource in state unchanged"
+              continue
+            fi
+
+            # Remove client_id from TRACKED now; re-add only after successful import
+            # so pass B can recover the resource if the import below fails.
+            TRACKED=$(echo "$TRACKED" | grep -vxF "$client_id")
+
+            terraform state rm "$addr"
+            if terraform import "$addr" "$UUID"; then
+              echo "  → imported $addr as $UUID"
+              TRACKED=$(printf '%s\n%s' "$TRACKED" "$client_id")
+            else
+              echo "  ERROR: import failed for $addr — pass B will attempt recovery"
+            fi
+          done <<< "$STALE"
+        fi
+
+        # --- Pass B: recover branding resources absent from state ---
+        # For every user-pool client in state, check whether a branding resource with
+        # that client ID is tracked. If not, and the branding exists in AWS, import it.
+
+        CLIENTS=$(echo "$STATE" | jq -r '
+          .resources[]? |
+          select(.type == "aws_cognito_user_pool_client") |
+          . as $r |
+          .instances[]? |
+          [
+            ($r.module // ""),
+            $r.name,
+            .attributes.user_pool_id,
+            .attributes.id
+          ] | @tsv
+        ' 2>/dev/null)
+
+        if [[ -n "$CLIENTS" ]]; then
+          while IFS=$'\t' read -r mod name pool_id client_id; do
+            if [[ -z "$pool_id" || -z "$client_id" ]]; then continue; fi
+
+            # Skip if branding is already tracked in state for this client.
+            if echo "$TRACKED" | grep -qxF "$client_id"; then continue; fi
+
+            UUID=$(lookup_uuid "$pool_id" "$client_id")
+            if [[ -z "$UUID" ]]; then continue; fi
+
+            # Derive the branding address from the client address.
+            # Child-module branding resources (modules/cognito/main.tf) use count and
+            # require the [0] index. Root-module resources do not.
+            prefix=""; if [[ -n "$mod" ]]; then prefix="${mod}."; fi
+            if [[ -n "$mod" ]]; then
+              branding_addr="${prefix}aws_cognito_managed_login_branding.${name}[0]"
+            else
+              branding_addr="${prefix}aws_cognito_managed_login_branding.${name}"
+            fi
+
+            echo "Pass B: recovering $branding_addr for client $client_id (UUID: $UUID)"
+
+            if terraform import "$branding_addr" "$UUID"; then
+              echo "  → imported $branding_addr"
+              TRACKED=$(printf '%s\n%s' "$TRACKED" "$client_id")
+            else
+              # Fallback: retry without the [0] index (for root-module count resources).
+              fallback="${prefix}aws_cognito_managed_login_branding.${name}"
+              if [[ "$fallback" != "$branding_addr" ]]; then
+                echo "  → retrying as $fallback"
+                if terraform import "$fallback" "$UUID"; then
+                  echo "  → imported $fallback"
+                  TRACKED=$(printf '%s\n%s' "$TRACKED" "$client_id")
+                else
+                  echo "  WARNING: could not import branding for client $client_id — apply may fail"
+                fi
+              else
+                echo "  WARNING: could not import branding for client $client_id — apply may fail"
+              fi
+            fi
+          done <<< "$CLIENTS"
+        fi
 
     # Release stale DynamoDB state locks left behind by crashed CI runners.
     - name: Release stale state lock
