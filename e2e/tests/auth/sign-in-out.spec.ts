@@ -17,10 +17,12 @@ test.describe('Sign in and out', () => {
     const username = process.env['E2E_DEMO_USERNAME'] ?? 'demo@breadly.app';
     const password = process.env['E2E_DEMO_PASSWORD'] ?? '';
 
+    const loginPage = new LoginPage(page);
+
     await page.goto('recipes');
 
     // Wait for the Cognito Hosted UI form to appear (ensures redirect completed)
-    await page.locator('input[name="username"]:visible').waitFor({ state: 'visible', timeout: 15_000 });
+    await loginPage.waitForCognitoForm();
 
     // Verify the Cognito Hosted UI is on the correct auth domain
     const currentUrl = page.url();
@@ -35,7 +37,6 @@ test.describe('Sign in and out', () => {
     }
     expect(currentUrl).toContain(expectedAuthDomain);
 
-    const loginPage = new LoginPage(page);
     await loginPage.fillCognitoCredentials(username, password);
     await loginPage.expectLoggedIn();
 

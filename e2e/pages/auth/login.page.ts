@@ -15,15 +15,20 @@ export class LoginPage {
     await this.page.waitForURL('**/login**');
   }
 
+  async waitForCognitoForm({ timeout = 15_000 }: { timeout?: number } = {}): Promise<void> {
+    await this.page.locator('input[name="username"]:visible').waitFor({ state: 'visible', timeout });
+  }
+
   async fillCognitoCredentials(
     username: string,
     password: string,
+    { timeout = 15_000 }: { timeout?: number } = {},
   ): Promise<void> {
     const usernameInput = this.page.locator('input[name="username"]:visible');
     const passwordInput = this.page.locator('input[name="password"]:visible');
-    const submitButton = this.page.locator('input[type="submit"]:visible');
+    const submitButton = this.page.locator('form#primary-form button[type="submit"]:visible');
 
-    await usernameInput.waitFor({ state: 'visible', timeout: 15_000 });
+    await usernameInput.waitFor({ state: 'visible', timeout });
     await usernameInput.fill(username);
     await passwordInput.fill(password);
     await submitButton.click();
