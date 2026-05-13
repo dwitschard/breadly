@@ -171,3 +171,9 @@ test('admin views health dashboard, reloads data, and reloads the page', async (
 All substantial code changes are reviewed by the `code-reviewer` sub-agent after implementation and verification. The code-reviewer enforces the conventions defined in each project's `AGENTS.md` and focuses on readability, maintainability, component slicing, and testability.
 
 **The code-reviewer must always run `npm test` in every affected project as the final step of its review and must not finish until all tests pass.** For changes that include E2E coverage (Phase 4 was not skipped), it must also run `npm test` in `e2e/`. This catches type drift in test fixtures and broken user journeys before the changes reach CI.
+
+## README Setup Section
+
+`README.md` at the repo root contains a **Setup** section that documents all steps required to bring the project up from scratch (IAM bootstrap, GitHub secrets/variables, Terraform state buckets, global infra, first deploy, user activation, and local dev).
+
+**After any change that affects setup prerequisites** — new secrets, new environment variables, new one-time scripts, new Terraform roots, new local dev requirements — update the Setup section in `README.md` to reflect it.
