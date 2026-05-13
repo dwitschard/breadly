@@ -40,7 +40,41 @@ runs:
       if: inputs.local_backend == 'false'
       shell: bash
       working-directory: ${{ inputs.working_dir }}
-      run: echo "Update Terraform state if needed"
+      run: |
+        # Migrate aws_cognito_managed_login_branding resource IDs from the old Cognito
+        # client-ID format to the branding UUID format required by AWS provider v6.x.
+        STATE=$(terraform state pull 2>/dev/null) || true
+        if [[ -z "$STATE" ]]; then exit 0; fi
+
+        STALE=$(echo "$STATE" | jq -r '
+          .resources[] |
+          select(.type == "aws_cognito_managed_login_branding") |
+          . as $r |
+          .instances[] |
+          select(.attributes.id | test("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$") | not) |
+          [$r.module // "null", $r.name, (.index_key // "null" | tostring),
+           .attributes.user_pool_id, .attributes.client_id] | @tsv
+        ' 2>/dev/null) || true
+        if [[ -z "$STALE" ]]; then exit 0; fi
+
+        while IFS=$'\t' read -r mod name idx user_pool_id client_id; do
+          prefix="$([ "$mod" != "null" ] && echo "${mod}." || echo "")"
+          suffix="$([ "$idx" != "null" ] && echo "[${idx}]" || echo "")"
+          addr="${prefix}aws_cognito_managed_login_branding.${name}${suffix}"
+
+          echo "Migrating branding ID for $addr"
+          BRANDING_UUID=$(aws cognito-idp describe-managed-login-branding-by-client \
+            --user-pool-id "$user_pool_id" --client-id "$client_id" \
+            --query 'ManagedLoginBranding.ManagedLoginBrandingId' --output text 2>/dev/null) || true
+
+          terraform state rm "$addr" || true
+          if [[ -n "$BRANDING_UUID" && "$BRANDING_UUID" != "None" ]]; then
+            echo "  → reimporting as $BRANDING_UUID"
+            terraform import "$addr" "$BRANDING_UUID"
+          else
+            echo "  → no existing branding found, will be created fresh on apply"
+          fi
+        done <<< "$STALE"
 
     # Release stale DynamoDB state locks left behind by crashed CI runners.
     - name: Release stale state lock
