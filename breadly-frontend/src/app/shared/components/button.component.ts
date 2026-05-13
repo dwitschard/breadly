@@ -43,7 +43,7 @@ export class ButtonComponent {
 
   protected readonly computedClass = computed(() => {
     const base =
-      'inline-flex items-center justify-center gap-2 h-control min-w-touch px-4 text-sm font-medium leading-none rounded-control border cursor-pointer select-none whitespace-nowrap transition-all duration-fast ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
+      'inline-flex items-center justify-center gap-2 py-1 px-4 text-sm font-medium rounded-control border cursor-pointer select-none whitespace-nowrap transition-all duration-fast ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants: Record<ButtonVariant, string> = {
       primary: 'bg-brand text-brand-on border-transparent hover:bg-brand-hover',
