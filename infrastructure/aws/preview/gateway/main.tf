@@ -11,6 +11,49 @@
 # SSM — read global outputs
 # ---------------------------------------------------------------------------
 
+data "aws_caller_identity" "current" {}
+
+locals {
+  preview_domain      = "preview.${data.aws_ssm_parameter.app_domain.value}"
+  domain_name         = data.aws_ssm_parameter.domain_name.value
+  preview_auth_domain = "preview.auth.${local.domain_name}"
+  preview_url         = "https://${local.preview_domain}"
+
+  # Extract the GitHub Actions OIDC role name from the current assumed-session ARN.
+  # OIDC assumed-role ARN format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+  # Used to grant the role the cognito-idp:DescribeManagedLoginBrandingByClient permission,
+  # which is required by both the Terraform provider and the state migration step when
+  # branding resources need to be imported with their correct UUID IDs.
+  _gh_role_name = try(regex(":assumed-role/([^/]+)/", data.aws_caller_identity.current.arn)[0], "")
+}
+
+# ---------------------------------------------------------------------------
+# IAM — grant the GitHub Actions role the permission it needs to look up
+# managed login branding by client ID. This is required so the provider can
+# handle ManagedLoginBrandingExistsException during Create (upsert), and so
+# the state migration step can import branding resources by their UUID.
+# ---------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "github_actions_cognito_branding" {
+  count = local._gh_role_name != "" ? 1 : 0
+
+  name = "${var.project_name}-cognito-describe-branding-by-client"
+  role = local._gh_role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["cognito-idp:DescribeManagedLoginBrandingByClient"]
+      Resource = "*"
+    }]
+  })
+}
+
+# ---------------------------------------------------------------------------
+# SSM — read global outputs
+# ---------------------------------------------------------------------------
+
 data "aws_ssm_parameter" "hosted_zone_id" {
   name = "/${var.project_name}/global/hosted-zone-id"
 }
@@ -29,13 +72,6 @@ data "aws_ssm_parameter" "domain_name" {
 
 data "aws_ssm_parameter" "oac_preview_id" {
   name = "/${var.project_name}/global/oac-preview-id"
-}
-
-locals {
-  preview_domain      = "preview.${data.aws_ssm_parameter.app_domain.value}"
-  domain_name         = data.aws_ssm_parameter.domain_name.value
-  preview_auth_domain = "preview.auth.${local.domain_name}"
-  preview_url         = "https://${local.preview_domain}"
 }
 
 # ---------------------------------------------------------------------------

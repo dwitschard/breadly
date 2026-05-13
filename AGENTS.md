@@ -166,6 +166,21 @@ test('admin views health dashboard, reloads data, and reloads the page', async (
 - **No user-facing behavior changes (pure backend or config-only changes):** skip Phase 4 (E2E)
 - **New user-facing feature:** Phase 4 (E2E) is **mandatory** — at least one happy-path spec required
 
+## Infrastructure (Terraform)
+
+### Terraform State Migrations
+
+When a Terraform resource ID format changes (e.g. after a provider upgrade), or when resources need to be moved, removed, or reimported in state, **do not add manual CLI instructions**. Instead, add the migration logic to the `Update Terraform State` step in `.github/actions/terraform-action/action.yml`.
+
+That step is the designated place for all programmatic state fixups. It runs automatically before every `terraform plan` across all environments and workspaces. The pattern is:
+
+1. Detect whether migration is needed (check state for the stale condition — IDs in wrong format, missing attributes, etc.)
+2. Exit early if nothing to do — the step must be a no-op once the migration has run
+3. Call AWS CLI or Terraform CLI to fix the state (`terraform state rm` + `terraform import`, or `terraform state mv`)
+4. Log clearly what was changed
+
+Keep the step idempotent: running it repeatedly on an already-migrated state must produce no changes and no errors.
+
 ## Code Review
 
 All substantial code changes are reviewed by the `code-reviewer` sub-agent after implementation and verification. The code-reviewer enforces the conventions defined in each project's `AGENTS.md` and focuses on readability, maintainability, component slicing, and testability.

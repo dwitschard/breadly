@@ -41,8 +41,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: |
-        terraform state rm 'module.cognito.aws_cognito_managed_login_branding.this[0]' 2>/dev/null || true
-        terraform state rm 'aws_cognito_managed_login_branding.localhost' 2>/dev/null || true
+        echo "State migration placeholder — no active migrations required."
 
     # Release stale DynamoDB state locks left behind by crashed CI runners.
     - name: Release stale state lock

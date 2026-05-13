@@ -79,11 +79,43 @@ jobs:
     secrets: inherit
 
   # ---------------------------------------------------------------------------
+  # Deploy shared preview gateway (API GW + S3 + CloudFront + Cognito pool)
+  # ---------------------------------------------------------------------------
+  # The gateway contains shared one-time infrastructure for all preview branches.
+  # It is only applied from main to prevent race conditions between branches.
+  deploy-gateway:
+    name: Preview Gateway
+    runs-on: ubuntu-latest
+    environment: preview
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform (shared gateway)
+        uses: ./.github/actions/terraform-setup
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+          environment: preview
+          session_name: github-preview-gateway-main
+          aws_oidc_role_arn: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_region: ${{ vars.AWS_REGION }}
+          project_name: ${{ env.PROJECT_NAME }}
+
+      - name: Terraform apply (shared gateway)
+        uses: ./.github/actions/terraform-action
+        with:
+          working_dir: infrastructure/aws/preview/gateway
+
+  # ---------------------------------------------------------------------------
   # Deploy temporary preview environment (reusable workflow)
   # ---------------------------------------------------------------------------
   deploy-preview:
     name: Deploy Temporary Preview
-    needs: [build-backend, build-frontend-preview]
+    needs: [build-backend, build-frontend-preview, deploy-gateway]
     uses: ./.github/workflows/_deploy-preview.yml
     permissions:
       id-token: write
