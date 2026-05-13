@@ -74,10 +74,11 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working_dir }}
       run: |
+        # TODO: remove -upgrade once all lock files are committed with aws >= 6.12.0
         if [[ "${{ inputs.local_backend }}" == "true" ]]; then
-          terraform init
+          terraform init -upgrade
         else
-          terraform init \
+          terraform init -upgrade \
             -backend-config="bucket=${{ inputs.project_name }}-${{ inputs.environment }}-tfstate" \
             -backend-config="dynamodb_table=${{ inputs.project_name }}-${{ inputs.environment }}-tfstate-lock" \
             -backend-config="region=${{ inputs.aws_region }}"

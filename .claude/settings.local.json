@@ -59,12 +59,11 @@
       "Bash(grep -oP '.{0,20}inject.*Injector.{0,50}')",
       "Bash(grep -E \"\\\\.\\(ts|js|tsx|jsx|py\\)$\")",
       "Bash(npx jest *)",
-      "Bash(wait)",
-      "Bash(npm test:ci)",
-      "Bash(npm uninstall *)",
-      "Bash(git -C /Users/V009403/source-vontobel/private/breadly log --all --oneline --grep=\"design-tokens\\\\|tailwind\\\\|token\" -i)",
-      "Bash(git -C /Users/V009403/source-vontobel/private/breadly show eeee7b5:breadly-frontend/src/styles.scss)",
-      "Bash(git log *)"
+      "Bash(grep -E \"\\\\.\\(scss|css\\)$\")",
+      "Bash(npx vitest *)",
+      "Bash(gh api *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh search *)"
     ]
   }
 }

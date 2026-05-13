@@ -1,45 +1,48 @@
 # Notes
 
 ## AI Stuff
+- [ ] UI Design Skill?
 - [ ] TDD Skill for Implementation -> Combination with Angular Testing Library
 - [ ] How to continuously update AGENTS.md Files? In Dev Cycle Loop?
 
 ## Next Tasks
 
 ## To Verify
+- [x] Deploy Temporary Preview / Deploy summary <- remove e2e deployment info if it is run on `main` as it only lives a very short time frame
 - [ ] Check new E-Mail Address will not receive emails in SPAM Folder
-- [ ] Verify if custom Error Codes from Lambda-Backend are mapped to corresponding HTTP Status Codes
 
 ### Next
-- [~] Create Design System Components
-  - [~] Make sure all variables are exposed and usable for other components too (similar to our Setup)
-  - [~] Tailwind Presets should be configurable and manageable in repository for later adjustments
+
+- [ ] Dynamo Setup
+  - [~] Add E-Mail and Last-Login to User Settings
 
 - [ ] Fix Styling of Authentication
+  - [ ] Adjust `settings.json` to match design system
+  - [ ] Reuse of Design Tokens `_tokens.scss` (other branch) possible?
 
-- [x] Give AI possibility to run e2e locally
-  - [x] Add IAM-User with Inline Policy for local development to access DynamoDB (local)
-    - [x] Document in a Readme when setting up project again
-    - [x] Create a Script for it to be run on Shell for those IAM Permissions
-  - [x] Should be a quality gate before finishing a UI Task
+- [ ] Create Design System Components
+  - [ ] Everything configurable via Config (JSON or similar)
+  - [ ] Make sure all variables are exposed and usable for other components too (similar to our Setup)
+
+
+- [ ] Give AI possibility to run e2e locally
+  - [ ] Should be a quality gate before finishing a UI Task
 
 
 - [ ] Implement Design according to ClaudeDesign using the Design System Components
-  - [~] Create a Favicon and add it to the Application
+  - [ ] Create a Favicon and add it to the Application
 
 
 - [ ] DB Schema for Recipes
   - [x] Think about general structure
-    - [ ] Are all SKs and GSIs updated automatically? 
-    - [ ] Any LSIs used that I need to manage?
+    - [ ] Are all SKs and GSIs updated automatically? Any LSIs used that I need to manage?
   - [ ] Create a document describing all UIs / User Journeys needed to allow database interaction with the new schema
-    - [ ] Used for Claude Design afterward
-    - [ ] Used to create E2E Tests
+    - [ ] Used for Claude Design afterwards
   - [ ] Create Seeding Mechanism and dummy data
   - [ ] Implement it in DynamoDB & update Backend / Frontend accordingly
 
 
-- [ ] Remove MongoDB Connection → Use AWS DocumentDB if really needed 
+- [ ] Remove MongoDB Connection -> Use AWS DocumentDB if really needed 
     - [ ] Also remove ApplicationDatabase
 
 
@@ -54,11 +57,13 @@
   - [ ] Potential Fix: Store the selected theme and language in local storage and load it on app start before rendering anything
 - [ ] Remove the now unnecessary path `/preview` part of any preview path as it is already within the subpath of the URL
 - [ ] Environment Tag should be below navigation bar and centered (completely removed in prod) to not squeeze the ui
+- [ ] Map Custom Error Codes to HTTP Status Codes in API GW (Currently all errors are 500)
+    - [ ] if necessary -> implement custom error code in valid range
 
 
 ## Ideas
 - [ ] Can Template be registered in AWS and being referenced? Challenge current approach
-  - [ ] if not possible → Template Visible in Local Dev Mode?
+  - [ ] if not possible -> Template Visible in Local Dev Mode?
 
 - [ ] Create Architecture Document with Mermaid Diagrams and update it after every feature change
   - [ ] Infrastructure
@@ -66,22 +71,21 @@
 
 - [ ] Implement a custom ui for login / registration
 
+- [ ] Decide on UI Library / Elements
+
+- [ ] Think about how to split different applications (or later potentially even domains) into different Lambda's
+  - [ ] Impact on Terraform probably quite large, gain?
+
 ## Backlog
 - [ ] Store Auth Token as HttpOnly Cookie to prevent XSS Attacks
-  → Not easily possible, requires loop through BFF
-  → Probably not relevant for now
-
-- [x] Decide on UI Library / Elements
-  → not needed for now
-
-- [x] Think about how to split different applications (or later potentially even domains) into different Lambda's
-  → Impact on Terraform probably quite large, gain?
+    - Not easily possible, requires loop through BFF
+    - Probably not relevant for now
 
 ## Questions
 Deploy setup:
 1. Where to Store if Boostrap is done or not (Chicken and Egg problem)
 
-Answer: Don't store it → leave the bucket there forever ;-)
+Answer: Don't store it -> leave the bucket there forever ;-)
 
 2. Is it safe to expose the following variables to $GITHUB_ENV in [action.yml](../.github/actions/terraform-action/action.yml)
     1. Is this the preferred way of injecting env vars for terraform from github actions?
@@ -96,8 +100,7 @@ Answer: Use a Setup-Script that needs to be run manually from local machine usin
 
 
 ### Done
-- [x] Dynamo DB Setup
-- [x] Minor Bugs (Reload Issue, Playwright Setup locally)
+- [x] Minor Bugs (Reload Issue, Playwright Setup locally, )
 - [x] Integrate Email Sending Capability for Application (AWS SES)
 - [x] Integrate Scheduling Capability for Application (AWS EventBridge)
 - [x] Domain Integration for all Environments including IDP (AWS Cognito)
