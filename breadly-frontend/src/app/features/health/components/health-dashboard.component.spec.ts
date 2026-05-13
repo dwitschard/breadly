@@ -6,9 +6,9 @@ describe('HealthDashboardComponent', () => {
   it('renders API, MongoDB, and DynamoDB check items', async () => {
     await setup({ health: mockHealth, apiResponseTime: '142ms' });
 
-    expect(screen.getByText('HEALTH.API')).toBeInTheDocument();
-    expect(screen.getByText('HEALTH.MONGODB')).toBeInTheDocument();
-    expect(screen.getByText('HEALTH.DYNAMODB')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH.API_STATUS')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH.DB_STATUS')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH.DYNAMODB_STATUS')).toBeInTheDocument();
   });
 
   it('displays apiResponseTime in the API check row when provided', async () => {

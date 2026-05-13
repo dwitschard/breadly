@@ -69,7 +69,8 @@
       "Bash(xargs cat)",
       "Bash(node_modules/.bin/playwright --version)",
       "Bash(/Users/V009403/source-vontobel/private/breadly/e2e/node_modules/.bin/playwright --version)",
-      "Bash(node_modules/.bin/playwright install *)"
+      "Bash(node_modules/.bin/playwright install *)",
+      "Read(//home/V009403/.cache/ms-playwright/**)"
     ]
   }
 }

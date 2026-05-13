@@ -1,0 +1,130 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div
+    class="bg-surface-card border border-border rounded-card p-4 sm:p-5 flex flex-col gap-3"
+    data-testid="health-check-api"
+  >
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-base font-medium text-content">{{ 'HEALTH.API_STATUS' | translate }}</span>
+      <app-tag
+        data-testid="health-check-api-status"
+        [attr.data-status]="health().checks.api.status"
+        [variant]="health().checks.api.status === 'ok' ? 'success' : 'danger'"
+        [dot]="true"
+        [attr.aria-label]="
+          health().checks.api.status === 'ok'
+            ? ('HEALTH.OPERATIONAL' | translate)
+            : ('HEALTH.ERROR' | translate)
+        "
+      >
+        {{
+          health().checks.api.status === 'ok'
+            ? ('HEALTH.STATUS_OK' | translate)
+            : ('HEALTH.STATUS_ERROR' | translate)
+        }}
+      </app-tag>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      @if (apiResponseTime()) {
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-content-muted">{{ 'HEALTH.RESPONSE_TIME' | translate }}</span>
+          <span
+            data-testid="health-check-api-time"
+            class="text-sm font-mono font-medium text-content"
+            >{{ apiResponseTime() }}</span
+          >
+        </div>
+      } @else {
+        <span data-testid="health-check-api-time" class="sr-only"></span>
+      }
+      @if (health().checks.api.status !== 'ok') {
+        <p
+          class="text-sm text-danger-text bg-danger-bg border border-danger-border rounded-control px-3 py-2"
+        >
+          {{ 'HEALTH.API_ERROR_MESSAGE' | translate }}
+        </p>
+      }
+    </div>
+  </div>
+
+  <div
+    class="bg-surface-card border border-border rounded-card p-4 sm:p-5 flex flex-col gap-3"
+    data-testid="health-check-mongodb"
+  >
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-base font-medium text-content">{{ 'HEALTH.DB_STATUS' | translate }}</span>
+      <app-tag
+        data-testid="health-check-mongodb-status"
+        [attr.data-status]="health().checks.mongodb.status"
+        [variant]="health().checks.mongodb.status === 'ok' ? 'success' : 'danger'"
+        [dot]="true"
+        [attr.aria-label]="
+          health().checks.mongodb.status === 'ok'
+            ? ('HEALTH.OPERATIONAL' | translate)
+            : ('HEALTH.ERROR' | translate)
+        "
+      >
+        {{
+          health().checks.mongodb.status === 'ok'
+            ? ('HEALTH.STATUS_OK' | translate)
+            : ('HEALTH.STATUS_ERROR' | translate)
+        }}
+      </app-tag>
+    </div>
+    @if (health().checks.mongodb.status !== 'ok') {
+      <p
+        class="text-sm text-danger-text bg-danger-bg border border-danger-border rounded-control px-3 py-2"
+      >
+        {{ 'HEALTH.DB_ERROR_MESSAGE' | translate }}
+      </p>
+    }
+  </div>
+
+  <div
+    class="bg-surface-card border border-border rounded-card p-4 sm:p-5 flex flex-col gap-3"
+    data-testid="health-check-dynamodb"
+  >
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-base font-medium text-content">{{
+        'HEALTH.DYNAMODB_STATUS' | translate
+      }}</span>
+      <app-tag
+        data-testid="health-check-dynamodb-status"
+        [attr.data-status]="health().checks.dynamodb.status"
+        [variant]="health().checks.dynamodb.status === 'ok' ? 'success' : 'danger'"
+        [dot]="true"
+        [attr.aria-label]="
+          health().checks.dynamodb.status === 'ok'
+            ? ('HEALTH.OPERATIONAL' | translate)
+            : ('HEALTH.ERROR' | translate)
+        "
+      >
+        {{
+          health().checks.dynamodb.status === 'ok'
+            ? ('HEALTH.STATUS_OK' | translate)
+            : ('HEALTH.STATUS_ERROR' | translate)
+        }}
+      </app-tag>
+    </div>
+    @if (health().checks.dynamodb.status !== 'ok') {
+      <p
+        class="text-sm text-danger-text bg-danger-bg border border-danger-border rounded-control px-3 py-2"
+      >
+        {{ 'HEALTH.DB_ERROR_MESSAGE' | translate }}
+      </p>
+    }
+  </div>
+</div>
+
+<p data-testid="health-overall-status" class="text-sm text-content-subtle">
+  {{ 'HEALTH.OVERALL_STATUS' | translate }}
+  <span
+    class="font-semibold"
+    [class.text-green-600]="health().status === 'ok'"
+    [class.text-danger-text]="health().status !== 'ok'"
+    >{{
+      health().status === 'ok'
+        ? ('HEALTH.ALL_OPERATIONAL' | translate)
+        : ('HEALTH.DEGRADED' | translate)
+    }}</span
+  >
+</p>

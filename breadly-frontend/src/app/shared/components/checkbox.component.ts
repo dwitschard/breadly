@@ -80,7 +80,8 @@ export class CheckboxComponent {
     const hasError = this.error() && this._touched();
     const hasWarning = this.warning() && this._touched();
     if (isChecked && hasWarning) return `${base} bg-warning border-warning`;
-    if (isChecked) return `${base} bg-brand border-brand hover:bg-brand-hover hover:border-brand-hover`;
+    if (isChecked)
+      return `${base} bg-brand border-brand hover:bg-brand-hover hover:border-brand-hover`;
     if (hasError) return `${base} border-danger bg-surface-card`;
     if (hasWarning) return `${base} border-warning bg-surface-card hover:bg-warning-bg`;
     return `${base} border-border bg-surface-card hover:bg-brand-muted hover:border-brand-focus`;

@@ -25,18 +25,25 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
     TranslateModule,
   ],
   template: `
-    <main class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <app-headline level="h2" data-testid="health-title">
-          {{ 'HEALTH.TITLE' | translate }}
-        </app-headline>
+    <main class="max-w-3xl mx-auto py-8 flex flex-col gap-6">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium text-content-subtle uppercase tracking-caps mb-1.5">
+            {{ 'HEALTH.ADMIN_AREA' | translate }}
+          </p>
+          <app-headline level="h2" data-testid="health-title">
+            {{ 'HEALTH.TITLE' | translate }}
+          </app-headline>
+        </div>
         <app-button
           data-testid="health-reload-btn"
+          [variant]="'secondary'"
           [icon]="LucideRefreshCw"
           [disabled]="healthService.healthResource.isLoading()"
           [ariaLabel]="'COMMON.RELOAD' | translate"
           (clicked)="healthService.reload()"
-        />
+          >{{ 'HEALTH.RELOAD_BTN' | translate }}</app-button
+        >
       </div>
 
       @if (healthService.healthResource.isLoading()) {
@@ -50,12 +57,10 @@ const DEV_FALLBACK: VersionInfo = { version: 'dev', releaseUrl: '' };
         />
       }
 
-      <section class="mt-8">
-        <health-version-info
-          [frontendVersion]="frontendVersion()"
-          [backendVersion]="backendVersion()"
-        />
-      </section>
+      <health-version-info
+        [frontendVersion]="frontendVersion()"
+        [backendVersion]="backendVersion()"
+      />
     </main>
   `,
 })

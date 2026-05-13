@@ -23,7 +23,7 @@ import { SpinnerComponent } from './spinner.component';
           [disabled]="disabled()"
           [required]="required()"
           [attr.maxlength]="maxLength() ?? null"
-          [attr.aria-invalid]="(error() || warning()) || null"
+          [attr.aria-invalid]="error() || warning() || null"
           [attr.aria-describedby]="helperText() ? helperId : null"
           [value]="value()"
           [class]="inputClass()"
