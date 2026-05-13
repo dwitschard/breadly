@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { chromium } from '@playwright/test';
+import { LoginPage } from './pages/auth/login.page';
 import { writeStorageState } from './helpers/storage-state.helper';
 
 interface UserConfig {
@@ -43,16 +44,11 @@ async function globalSetup(): Promise<void> {
       const page = await context.newPage();
 
       // Navigate to a protected route — the app will redirect to the Cognito Hosted UI
-      await page.goto(`${baseURL}recipes`);
+      await page.goto(`${baseURL}recipes`, { waitUntil: 'domcontentloaded' });
 
-      // Wait for the Cognito Hosted UI login form
-      const usernameInput = page.locator('input[id="signInFormUsername"]:visible');
-      await usernameInput.waitFor({ state: 'visible', timeout: 30_000 });
-
-      // Fill credentials and submit
-      await usernameInput.fill(user.username);
-      await page.locator('input[id="signInFormPassword"]:visible').fill(user.password);
-      await page.locator('input[type="submit"][name="signInSubmitButton"]:visible').click();
+      // Fill credentials and submit via the shared page object
+      const loginPage = new LoginPage(page);
+      await loginPage.fillCognitoCredentials(user.username, user.password, { timeout: 60_000 });
 
       // Wait for the OIDC callback to complete and the app to redirect to /recipes
       await page.waitForURL('**/recipes**', { timeout: 30_000 });
