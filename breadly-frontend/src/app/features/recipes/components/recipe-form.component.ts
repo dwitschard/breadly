@@ -16,7 +16,8 @@ import { ButtonComponent } from '../../../shared/components/button.component';
         id="recipe-name"
         data-testid="recipe-name-input"
         type="text"
-        [(ngModel)]="name"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
         name="name"
         [placeholder]="'RECIPES.NAME_PLACEHOLDER' | translate"
         required
@@ -25,7 +26,7 @@ import { ButtonComponent } from '../../../shared/components/button.component';
       />
       <app-button
         type="submit"
-        data-testid="recipe-add-btn"
+        [testId]="'recipe-add-btn'"
         [icon]="LucidePlus"
         [disabled]="name().length === 0"
         [ariaLabel]="'COMMON.ADD' | translate"

@@ -24,7 +24,7 @@ import { ButtonComponent } from '../../../shared/components/button.component';
             <app-button
               variant="ghost"
               [icon]="LucideTrash2"
-              [attr.data-testid]="'recipe-delete-btn-' + recipe._id"
+              [testId]="'recipe-delete-btn-' + recipe._id"
               [ariaLabel]="'RECIPES.DELETE_LABEL' | translate: { name: recipe.name }"
               (clicked)="deleteRecipe.emit(recipe)"
             />

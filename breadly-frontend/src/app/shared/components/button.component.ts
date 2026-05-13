@@ -13,7 +13,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
       [type]="type()"
       [disabled]="disabled() || loading()"
       [class]="computedClass()"
-      data-testid="button"
+      [attr.data-testid]="testId()"
       [attr.aria-label]="ariaLabel()"
       [attr.aria-busy]="loading() ? 'true' : null"
       (click)="clicked.emit()"
@@ -37,6 +37,7 @@ export class ButtonComponent {
   readonly type = input<'button' | 'submit' | 'reset'>('button');
   readonly icon = input<Type<unknown> | null>(null);
   readonly ariaLabel = input<string | null>(null);
+  readonly testId = input<string | null>(null);
 
   readonly clicked = output<void>();
 

@@ -16,7 +16,7 @@ import { HeadlineComponent } from '../../shared/components/headline.component';
         {{ 'HOME.SUBTITLE' | translate }}
       </p>
       @if (!isLoggedIn()) {
-        <app-button type="button" data-testid="home-login-btn" (clicked)="loginClick.emit()">
+        <app-button type="button" [testId]="'home-login-btn'" (clicked)="loginClick.emit()">
           {{ 'HOME.LOGIN_BUTTON' | translate }}
         </app-button>
       }
